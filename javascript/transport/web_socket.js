@@ -7,6 +7,7 @@ var Faye_Event = require('../util/browser/event');
 var Faye_URI = require('../util/uri');
 var Faye_Promise = require('../util/promise');
 var Faye_Deferrable = require('../mixins/deferrable');
+var Faye_Set = require('../util/set');
 
 var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   UNCONNECTED:  1,
@@ -22,7 +23,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   request: function(messages) {
-    this._pending = this._pending || new Faye.Set();
+    this._pending = this._pending || new Faye_Set();
     for (var i = 0, n = messages.length; i < n; i++) this._pending.add(messages[i]);
 
     var promise = new Faye_Promise();
@@ -157,4 +158,4 @@ if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
     Faye_Transport_WebSocket._unloaded = true;
   });
 
-module.exports = Faye_Transport;
+module.exports = Faye_Transport_WebSocket;
