@@ -1,4 +1,9 @@
-Faye.Server.Socket = Faye.Class({
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Class = require('../util/class');
+
+var Faye_Server_Socket = Faye_Class({
   initialize: function(server, socket, request) {
     this._server  = server;
     this._socket  = socket;
@@ -17,3 +22,6 @@ Faye.Server.Socket = Faye.Class({
     delete this._socket;
   }
 });
+
+
+module.exports = Faye_Server_Socket;

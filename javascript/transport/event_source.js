@@ -1,14 +1,23 @@
-Faye.Transport.EventSource = Faye.extend(Faye.Class(Faye.Transport, {
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Class = require('../util/class');
+var Faye_Transport = require('./transport');
+var Faye_URI = require('../util/uri');
+var Faye_Deferrable = require('../mixins/deferrable');
+var Faye_Transport_XHR = require('./xhr');
+
+var Faye_Transport_EventSource = Faye.extend(Faye_Class(Faye_Transport, {
   initialize: function(dispatcher, endpoint) {
-    Faye.Transport.prototype.initialize.call(this, dispatcher, endpoint);
+    Faye_Transport.prototype.initialize.call(this, dispatcher, endpoint);
     if (!Faye.ENV.EventSource) return this.setDeferredStatus('failed');
 
-    this._xhr = new Faye.Transport.XHR(dispatcher, endpoint);
+    this._xhr = new Faye_Transport_XHR(dispatcher, endpoint);
 
     endpoint = Faye.copyObject(endpoint);
     endpoint.pathname += '/' + dispatcher.clientId;
 
-    var socket = new EventSource(Faye.URI.stringify(endpoint)),
+    var socket = new EventSource(Faye_URI.stringify(endpoint)),
         self   = this;
 
     socket.onopen = function() {
@@ -57,7 +66,7 @@ Faye.Transport.EventSource = Faye.extend(Faye.Class(Faye.Transport, {
     var id = dispatcher.clientId;
     if (!id) return callback.call(context, false);
 
-    Faye.Transport.XHR.isUsable(dispatcher, endpoint, function(usable) {
+    Faye_Transport_XHR.isUsable(dispatcher, endpoint, function(usable) {
       if (!usable) return callback.call(context, false);
       this.create(dispatcher, endpoint).isUsable(callback, context);
     }, this);
@@ -69,12 +78,14 @@ Faye.Transport.EventSource = Faye.extend(Faye.Class(Faye.Transport, {
 
     endpoint = Faye.copyObject(endpoint);
     endpoint.pathname += '/' + (id || '');
-    var url = Faye.URI.stringify(endpoint);
+    var url = Faye_URI.stringify(endpoint);
 
     sockets[url] = sockets[url] || new this(dispatcher, endpoint);
     return sockets[url];
   }
 });
 
-Faye.extend(Faye.Transport.EventSource.prototype, Faye.Deferrable);
-Faye.Transport.register('eventsource', Faye.Transport.EventSource);
+Faye.extend(Faye_Transport_EventSource.prototype, Faye_Deferrable);
+Faye_Transport.register('eventsource', Faye_Transport_EventSource);
+
+module.exports = Faye_Transport_EventSource;

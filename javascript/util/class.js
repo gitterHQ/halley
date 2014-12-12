@@ -1,4 +1,8 @@
-Faye.Class = function(parent, methods) {
+'use strict';
+
+var Faye = require('../faye');
+
+var Faye_Class = function(parent, methods) {
   if (typeof parent !== 'function') {
     methods = parent;
     parent  = Object;
@@ -17,3 +21,5 @@ Faye.Class = function(parent, methods) {
 
   return klass;
 };
+
+module.exports = Faye_Class;

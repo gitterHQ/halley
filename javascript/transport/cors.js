@@ -1,4 +1,11 @@
-Faye.Transport.CORS = Faye.extend(Faye.Class(Faye.Transport, {
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Class = require('../util/class');
+var Faye_Transport = require('./transport');
+var Faye_URI = require('../util/uri');
+
+var Faye_Transport_CORS = Faye.extend(Faye_Class(Faye_Transport, {
   encode: function(messages) {
     return 'message=' + encodeURIComponent(Faye.toJSON(messages));
   },
@@ -10,7 +17,7 @@ Faye.Transport.CORS = Faye.extend(Faye.Class(Faye.Transport, {
         self     = this,
         key;
 
-    xhr.open('POST', Faye.URI.stringify(this.endpoint), true);
+    xhr.open('POST', Faye_URI.stringify(this.endpoint), true);
 
     if (xhr.setRequestHeader) {
       xhr.setRequestHeader('Pragma', 'no-cache');
@@ -51,7 +58,7 @@ Faye.Transport.CORS = Faye.extend(Faye.Class(Faye.Transport, {
   }
 }), {
   isUsable: function(dispatcher, endpoint, callback, context) {
-    if (Faye.URI.isSameOrigin(endpoint))
+    if (Faye_URI.isSameOrigin(endpoint))
       return callback.call(context, false);
 
     if (Faye.ENV.XDomainRequest)
@@ -65,4 +72,6 @@ Faye.Transport.CORS = Faye.extend(Faye.Class(Faye.Transport, {
   }
 });
 
-Faye.Transport.register('cross-origin-long-polling', Faye.Transport.CORS);
+Faye_Transport.register('cross-origin-long-polling', Faye_Transport_CORS);
+
+module.exports = Faye_Transport_CORS;

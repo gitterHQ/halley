@@ -1,4 +1,8 @@
-Faye.Event = {
+'use strict';
+
+var Faye = require('../../faye');
+
+var Faye_Event = {
   _registry: [],
 
   on: function(element, eventName, callback, context) {
@@ -40,4 +44,6 @@ Faye.Event = {
   }
 };
 
-if (Faye.ENV.onunload !== undefined) Faye.Event.on(Faye.ENV, 'unload', Faye.Event.detach, Faye.Event);
+if (Faye.ENV.onunload !== undefined) Faye_Event.on(Faye.ENV, 'unload', Faye_Event.detach, Faye_Event);
+
+module.exports = Faye_Event;

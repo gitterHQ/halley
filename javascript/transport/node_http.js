@@ -1,6 +1,15 @@
-Faye.Transport.NodeHttp = Faye.extend(Faye.Class(Faye.Transport, {
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Class = require('../util/class');
+var Faye_Transport = require('./transport');
+var http = require('http');
+var https = require('https');
+var Faye_URI = require('../util/uri');
+
+var Faye_Transport_NodeHttp = Faye.extend(Faye_Class(Faye_Transport, {
   initialize: function() {
-    Faye.Transport.prototype.initialize.apply(this, arguments);
+    Faye_Transport.prototype.initialize.apply(this, arguments);
 
     this._endpointSecure = (this.SECURE_PROTOCOLS.indexOf(this.endpoint.protocol) >= 0);
     this._httpClient     = this._endpointSecure ? https : http;
@@ -112,8 +121,10 @@ Faye.Transport.NodeHttp = Faye.extend(Faye.Class(Faye.Transport, {
 
 }), {
   isUsable: function(dispatcher, endpoint, callback, context) {
-    callback.call(context, Faye.URI.isURI(endpoint));
+    callback.call(context, Faye_URI.isURI(endpoint));
   }
 });
 
-Faye.Transport.register('long-polling', Faye.Transport.NodeHttp);
+Faye_Transport.register('long-polling', Faye_Transport_NodeHttp);
+
+module.exports = Faye_Transport_NodeHttp;

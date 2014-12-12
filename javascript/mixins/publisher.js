@@ -1,4 +1,9 @@
-Faye.Publisher = {
+'use strict';
+
+var Faye = require('../faye');
+var Faye_EventEmitter = require('../util/event_emitter');
+
+var Faye_Publisher = {
   countListeners: function(eventType) {
     return this.listeners(eventType).length;
   },
@@ -26,5 +31,7 @@ Faye.Publisher = {
   }
 };
 
-Faye.extend(Faye.Publisher, Faye.EventEmitter.prototype);
-Faye.Publisher.trigger = Faye.Publisher.emit;
+Faye.extend(Faye_Publisher, Faye_EventEmitter.prototype);
+Faye_Publisher.trigger = Faye_Publisher.emit;
+
+module.exports = Faye_Publisher;

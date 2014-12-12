@@ -1,4 +1,4 @@
-Faye.StaticServer = Faye.Class({
+Faye_StaticServer = Faye_Class({
   initialize: function(directory, pathRegex) {
     this._directory = directory;
     this._pathRegex = pathRegex;
@@ -51,7 +51,7 @@ Faye.StaticServer = Faye.Class({
     }
     else {
       headers['Content-Length'] = cache.content.length;
-      Faye.extend(headers, Faye.NodeAdapter.prototype[type]);
+      Faye.extend(headers, Faye_NodeAdapter.prototype[type]);
       response.writeHead(200, headers);
       response.end(cache.content);
     }

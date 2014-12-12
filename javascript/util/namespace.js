@@ -1,4 +1,8 @@
-Faye.Namespace = Faye.Class({
+'use strict';
+
+var Faye_Class = require('./class');
+
+var Faye_Namespace = Faye_Class({
   initialize: function() {
     this._used = {};
   },
@@ -18,3 +22,5 @@ Faye.Namespace = Faye.Class({
     delete this._used[id];
   }
 });
+
+module.exports = Faye_Namespace;

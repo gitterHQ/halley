@@ -1,11 +1,21 @@
-Faye.Server = Faye.Class({
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Class = require('../util/class');
+var Faye_Server_Socket = require('./socket');
+var Faye_Logging = require('../mixins/logging');
+var Faye_Extensible = require('./extensible');
+var Faye_Channel = require('./channel');
+var Faye_Error = require('../error');
+
+var Faye_Server = Faye_Class({
   META_METHODS: ['handshake', 'connect', 'disconnect', 'subscribe', 'unsubscribe'],
 
   initialize: function(options) {
     this._options  = options || {};
     var engineOpts = this._options.engine || {};
     engineOpts.timeout = this._options.timeout;
-    this._engine   = Faye.Engine.get(engineOpts);
+    this._engine   = Faye_Engine.get(engineOpts);
 
     this.info('Created new server: ?', this._options);
   },
@@ -16,7 +26,7 @@ Faye.Server = Faye.Class({
 
   openSocket: function(clientId, socket, request) {
     if (!clientId || !socket) return;
-    this._engine.openSocket(clientId, new Faye.Server.Socket(this, socket, request));
+    this._engine.openSocket(clientId, new Faye_Server_Socket(this, socket, request));
   },
 
   closeSocket: function(clientId, close) {
@@ -88,11 +98,11 @@ Faye.Server = Faye.Class({
         error       = message.error,
         response;
 
-    if (Faye.Channel.isMeta(channelName))
+    if (Faye_Channel.isMeta(channelName))
       return this._handleMeta(message, local, callback, context);
 
-    if (!Faye.Grammar.CHANNEL_NAME.test(channelName))
-      error = Faye.Error.channelInvalid(channelName);
+    if (!Faye_Grammar.CHANNEL_NAME.test(channelName))
+      error = Faye_Error.channelInvalid(channelName);
 
     if (!error) this._engine.publish(message);
 
@@ -103,12 +113,12 @@ Faye.Server = Faye.Class({
   },
 
   _handleMeta: function(message, local, callback, context) {
-    var method = Faye.Channel.parse(message.channel)[1],
+    var method = Faye_Channel.parse(message.channel)[1],
         response;
 
     if (Faye.indexOf(this.META_METHODS, method) < 0) {
       response = this._makeResponse(message);
-      response.error = Faye.Error.channelForbidden(message.channel);
+      response.error = Faye_Error.channelForbidden(message.channel);
       response.successful = false;
       return callback.call(context, [response]);
     }
@@ -121,7 +131,7 @@ Faye.Server = Faye.Class({
   },
 
   _advize: function(response, connectionType) {
-    if (Faye.indexOf([Faye.Channel.HANDSHAKE, Faye.Channel.CONNECT], response.channel) < 0)
+    if (Faye.indexOf([Faye_Channel.HANDSHAKE, Faye_Channel.CONNECT], response.channel) < 0)
       return;
 
     var interval, timeout;
@@ -155,7 +165,7 @@ Faye.Server = Faye.Class({
     response.version = Faye.BAYEUX_VERSION;
 
     if (!message.version)
-      response.error = Faye.Error.parameterMissing('version');
+      response.error = Faye_Error.parameterMissing('version');
 
     var clientConns = message.supportedConnectionTypes,
         commonConns;
@@ -167,9 +177,9 @@ Faye.Server = Faye.Class({
         return Faye.indexOf(Faye.CONNECTION_TYPES, conn) >= 0;
       });
       if (commonConns.length === 0)
-        response.error = Faye.Error.conntypeMismatch(clientConns);
+        response.error = Faye_Error.conntypeMismatch(clientConns);
     } else {
-      response.error = Faye.Error.parameterMissing('supportedConnectionTypes');
+      response.error = Faye_Error.parameterMissing('supportedConnectionTypes');
     }
 
     response.successful = !response.error;
@@ -191,13 +201,13 @@ Faye.Server = Faye.Class({
         connectionType = message.connectionType;
 
     this._engine.clientExists(clientId, function(exists) {
-      if (!exists)         response.error = Faye.Error.clientUnknown(clientId);
-      if (!clientId)       response.error = Faye.Error.parameterMissing('clientId');
+      if (!exists)         response.error = Faye_Error.clientUnknown(clientId);
+      if (!clientId)       response.error = Faye_Error.parameterMissing('clientId');
 
       if (Faye.indexOf(Faye.CONNECTION_TYPES, connectionType) < 0)
-        response.error = Faye.Error.conntypeMismatch(connectionType);
+        response.error = Faye_Error.conntypeMismatch(connectionType);
 
-      if (!connectionType) response.error = Faye.Error.parameterMissing('connectionType');
+      if (!connectionType) response.error = Faye_Error.parameterMissing('connectionType');
 
       response.successful = !response.error;
 
@@ -224,8 +234,8 @@ Faye.Server = Faye.Class({
         clientId = message.clientId;
 
     this._engine.clientExists(clientId, function(exists) {
-      if (!exists)   response.error = Faye.Error.clientUnknown(clientId);
-      if (!clientId) response.error = Faye.Error.parameterMissing('clientId');
+      if (!exists)   response.error = Faye_Error.clientUnknown(clientId);
+      if (!clientId) response.error = Faye_Error.parameterMissing('clientId');
 
       response.successful = !response.error;
       if (!response.successful) delete response.clientId;
@@ -248,9 +258,9 @@ Faye.Server = Faye.Class({
     subscription = subscription ? [].concat(subscription) : [];
 
     this._engine.clientExists(clientId, function(exists) {
-      if (!exists)               response.error = Faye.Error.clientUnknown(clientId);
-      if (!clientId)             response.error = Faye.Error.parameterMissing('clientId');
-      if (!message.subscription) response.error = Faye.Error.parameterMissing('subscription');
+      if (!exists)               response.error = Faye_Error.clientUnknown(clientId);
+      if (!clientId)             response.error = Faye_Error.parameterMissing('clientId');
+      if (!message.subscription) response.error = Faye_Error.parameterMissing('subscription');
 
       response.subscription = message.subscription || [];
 
@@ -258,8 +268,8 @@ Faye.Server = Faye.Class({
         channel = subscription[i];
 
         if (response.error) break;
-        if (!local && !Faye.Channel.isSubscribable(channel)) response.error = Faye.Error.channelForbidden(channel);
-        if (!Faye.Channel.isValid(channel))                  response.error = Faye.Error.channelInvalid(channel);
+        if (!local && !Faye_Channel.isSubscribable(channel)) response.error = Faye_Error.channelForbidden(channel);
+        if (!Faye_Channel.isValid(channel))                  response.error = Faye_Error.channelInvalid(channel);
 
         if (response.error) break;
         this._engine.subscribe(clientId, channel);
@@ -283,9 +293,9 @@ Faye.Server = Faye.Class({
     subscription = subscription ? [].concat(subscription) : [];
 
     this._engine.clientExists(clientId, function(exists) {
-      if (!exists)               response.error = Faye.Error.clientUnknown(clientId);
-      if (!clientId)             response.error = Faye.Error.parameterMissing('clientId');
-      if (!message.subscription) response.error = Faye.Error.parameterMissing('subscription');
+      if (!exists)               response.error = Faye_Error.clientUnknown(clientId);
+      if (!clientId)             response.error = Faye_Error.parameterMissing('clientId');
+      if (!message.subscription) response.error = Faye_Error.parameterMissing('subscription');
 
       response.subscription = message.subscription || [];
 
@@ -293,8 +303,8 @@ Faye.Server = Faye.Class({
         channel = subscription[i];
 
         if (response.error) break;
-        if (!local && !Faye.Channel.isSubscribable(channel)) response.error = Faye.Error.channelForbidden(channel);
-        if (!Faye.Channel.isValid(channel))                  response.error = Faye.Error.channelInvalid(channel);
+        if (!local && !Faye_Channel.isSubscribable(channel)) response.error = Faye_Error.channelForbidden(channel);
+        if (!Faye_Channel.isValid(channel))                  response.error = Faye_Error.channelInvalid(channel);
 
         if (response.error) break;
         this._engine.unsubscribe(clientId, channel);
@@ -306,5 +316,7 @@ Faye.Server = Faye.Class({
   }
 });
 
-Faye.extend(Faye.Server.prototype, Faye.Logging);
-Faye.extend(Faye.Server.prototype, Faye.Extensible);
+Faye.extend(Faye_Server.prototype, Faye_Logging);
+Faye.extend(Faye_Server.prototype, Faye_Extensible);
+
+module.exports = Faye_Server;

@@ -1,3 +1,5 @@
+'use strict';
+
 var crypto = require('crypto'),
     fs     = require('fs'),
     http   = require('http'),
@@ -12,10 +14,10 @@ var crypto = require('crypto'),
     tunnel = require('tunnel-agent');
 
 Faye.WebSocket   = require('faye-websocket');
-Faye.EventSource = Faye.WebSocket.EventSource;
+Faye_EventSource = Faye.WebSocket.EventSource;
 Faye.Cookies     = require('tough-cookie');
 
-Faye.NodeAdapter = Faye.Class({
+Faye_NodeAdapter = Faye_Class({
   DEFAULT_ENDPOINT: '/bayeux',
   SCRIPT_PATH:      'faye-browser-min.js',
 
@@ -29,9 +31,9 @@ Faye.NodeAdapter = Faye.Class({
     this._options    = options || {};
     this._endpoint   = this._options.mount || this.DEFAULT_ENDPOINT;
     this._endpointRe = new RegExp('^' + this._endpoint.replace(/\/$/, '') + '(/[^/]*)*(\\.[^\\.]+)?$');
-    this._server     = new Faye.Server(this._options);
+    this._server     = new Faye_Server(this._options);
 
-    this._static = new Faye.StaticServer(path.dirname(__filename) + '/../browser', /\.(?:js|map)$/);
+    this._static = new Faye_StaticServer(path.dirname(__filename) + '/../browser', /\.(?:js|map)$/);
     this._static.map(path.basename(this._endpoint) + '.js', this.SCRIPT_PATH);
     this._static.map('client.js', this.SCRIPT_PATH);
 
@@ -60,7 +62,7 @@ Faye.NodeAdapter = Faye.Class({
   },
 
   getClient: function() {
-    return this._client = this._client || new Faye.Client(this._server);
+    return this._client = this._client || new Faye_Client(this._server);
   },
 
   attach: function(httpServer) {
@@ -104,7 +106,7 @@ Faye.NodeAdapter = Faye.Class({
     if (requestMethod === 'OPTIONS' || request.headers['access-control-request-method'] === 'POST')
       return this._handleOptions(response);
 
-    if (Faye.EventSource.isEventSource(request))
+    if (Faye_EventSource.isEventSource(request))
       return this.handleEventSource(request, response);
 
     if (requestMethod === 'GET')
@@ -202,7 +204,7 @@ Faye.NodeAdapter = Faye.Class({
   },
 
   handleEventSource: function(request, response) {
-    var es       = new Faye.EventSource(request, response, {ping: this._options.ping}),
+    var es       = new Faye_EventSource(request, response, {ping: this._options.ping}),
         clientId = es.url.split('/').pop(),
         self     = this;
 
@@ -272,10 +274,10 @@ Faye.NodeAdapter = Faye.Class({
   }
 });
 
-for (var method in Faye.Publisher) (function(method) {
-  Faye.NodeAdapter.prototype[method] = function() {
+for (var method in Faye_Publisher) (function(method) {
+  Faye_NodeAdapter.prototype[method] = function() {
     return this._server._engine[method].apply(this._server._engine, arguments);
   };
 })(method);
 
-Faye.extend(Faye.NodeAdapter.prototype, Faye.Logging);
+Faye.extend(Faye_NodeAdapter.prototype, Faye_Logging);

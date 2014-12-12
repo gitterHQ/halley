@@ -1,4 +1,8 @@
-Faye.Logging = {
+'use strict';
+
+var Faye = require('../faye');
+
+var Faye_Logging = {
   LOG_LEVELS: {
     fatal:  4,
     error:  3,
@@ -38,10 +42,12 @@ Faye.Logging = {
 };
 
 (function() {
-  for (var key in Faye.Logging.LOG_LEVELS)
+  for (var key in Faye_Logging.LOG_LEVELS)
     (function(level) {
-      Faye.Logging[level] = function() {
+      Faye_Logging[level] = function() {
         this.writeLog(arguments, level);
       };
     })(key);
 })();
+
+module.exports = Faye_Logging;

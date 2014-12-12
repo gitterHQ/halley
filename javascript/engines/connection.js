@@ -1,4 +1,12 @@
-Faye.Engine.Connection = Faye.Class({
+'use strict';
+
+var Faye_Class = require('../util/class');
+var Faye = require('../faye');
+var Faye_Set = require('../util/set');
+var Faye_Deferrable = require('../mixins/deferrable');
+var Faye_Timeouts = require('../mixins/timeouts');
+
+var Faye_Engine_Connection = Faye_Class({
   initialize: function(engine, id, options) {
     this._engine  = engine;
     this._id      = id;
@@ -44,5 +52,7 @@ Faye.Engine.Connection = Faye.Class({
   }
 });
 
-Faye.extend(Faye.Engine.Connection.prototype, Faye.Deferrable);
-Faye.extend(Faye.Engine.Connection.prototype, Faye.Timeouts);
+Faye.extend(Faye_Engine_Connection.prototype, Faye_Deferrable);
+Faye.extend(Faye_Engine_Connection.prototype, Faye_Timeouts);
+
+module.exports = Faye_Engine_Connection;

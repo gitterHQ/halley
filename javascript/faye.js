@@ -1,3 +1,5 @@
+'use strict';
+
 var Faye = {
   VERSION:          '1.0.3',
 
@@ -133,7 +135,4 @@ var Faye = {
   }
 };
 
-if (typeof module !== 'undefined')
-  module.exports = Faye;
-else if (typeof window !== 'undefined')
-  window.Faye = Faye;
+module.exports = Faye;

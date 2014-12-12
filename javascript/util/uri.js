@@ -1,4 +1,8 @@
-Faye.URI = {
+'use strict';
+
+var Faye = require('../faye');
+
+var Faye_URI = {
   isURI: function(uri) {
     return uri && uri.protocol && uri.host && uri.path;
   },
@@ -80,3 +84,5 @@ Faye.URI = {
     return '?' + pairs.join('&');
   }
 };
+
+module.exports = Faye_URI;

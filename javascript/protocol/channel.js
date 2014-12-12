@@ -1,4 +1,11 @@
-Faye.Channel = Faye.Class({
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Publisher = require('../mixins/publisher');
+var Faye_Class = require('../util/class');
+var Faye_Grammar = require('./grammar');
+
+var Faye_Channel = Faye_Class({
   initialize: function(name) {
     this.id = this.name = name;
   },
@@ -12,9 +19,9 @@ Faye.Channel = Faye.Class({
   }
 });
 
-Faye.extend(Faye.Channel.prototype, Faye.Publisher);
+Faye.extend(Faye_Channel.prototype, Faye_Publisher);
 
-Faye.extend(Faye.Channel, {
+Faye.extend(Faye_Channel, {
   HANDSHAKE:    '/meta/handshake',
   CONNECT:      '/meta/connect',
   SUBSCRIBE:    '/meta/subscribe',
@@ -42,8 +49,8 @@ Faye.extend(Faye.Channel, {
   },
 
   isValid: function(name) {
-    return Faye.Grammar.CHANNEL_NAME.test(name) ||
-           Faye.Grammar.CHANNEL_PATTERN.test(name);
+    return Faye_Grammar.CHANNEL_NAME.test(name) ||
+           Faye_Grammar.CHANNEL_PATTERN.test(name);
   },
 
   parse: function(name) {
@@ -70,7 +77,7 @@ Faye.extend(Faye.Channel, {
     return !this.isMeta(name) && !this.isService(name);
   },
 
-  Set: Faye.Class({
+  Set: Faye_Class({
     initialize: function() {
       this._channels = {};
     },
@@ -93,7 +100,7 @@ Faye.extend(Faye.Channel, {
       var name;
       for (var i = 0, n = names.length; i < n; i++) {
         name = names[i];
-        var channel = this._channels[name] = this._channels[name] || new Faye.Channel(name);
+        var channel = this._channels[name] = this._channels[name] || new Faye_Channel(name);
         if (callback) channel.bind('message', callback, context);
       }
     },
@@ -112,7 +119,7 @@ Faye.extend(Faye.Channel, {
     },
 
     distributeMessage: function(message) {
-      var channels = Faye.Channel.expand(message.channel);
+      var channels = Faye_Channel.expand(message.channel);
 
       for (var i = 0, n = channels.length; i < n; i++) {
         var channel = this._channels[channels[i]];
@@ -121,3 +128,5 @@ Faye.extend(Faye.Channel, {
     }
   })
 });
+
+module.exports = Faye_Channel;

@@ -1,4 +1,15 @@
-Faye.Dispatcher = Faye.Class({
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Scheduler = require('./scheduler');
+var Faye_Class = require('../util/class');
+var Faye_Transport = require('../transport/transport');
+var Faye_Publisher = require('../mixins/publisher');
+var Faye_Logging = require('../mixins/logging');
+var Faye_URI = require('../util/uri');
+
+
+var Faye_Dispatcher = Faye_Class({
   MAX_REQUEST_SIZE: 2048,
   DEFAULT_RETRY:    5,
 
@@ -7,7 +18,7 @@ Faye.Dispatcher = Faye.Class({
 
   initialize: function(client, endpoint, options) {
     this._client     = client;
-    this.endpoint    = Faye.URI.parse(endpoint);
+    this.endpoint    = Faye_URI.parse(endpoint);
     this._alternates = options.endpoints || {};
 
     this.cookies    = Faye.Cookies && new Faye.Cookies.CookieJar();
@@ -16,7 +27,7 @@ Faye.Dispatcher = Faye.Class({
     this.headers    = {};
     this.retry      = options.retry || this.DEFAULT_RETRY;
     this.proxy      = options.proxy || {};
-    this._scheduler = options.scheduler || Faye.Scheduler;
+    this._scheduler = options.scheduler || Faye_Scheduler;
     this._state     = 0;
     this.transports = {};
 
@@ -24,7 +35,7 @@ Faye.Dispatcher = Faye.Class({
     this.tls.ca = this.tls.ca || options.ca;
 
     for (var type in this._alternates)
-      this._alternates[type] = Faye.URI.parse(this._alternates[type]);
+      this._alternates[type] = Faye_URI.parse(this._alternates[type]);
 
     this.maxRequestSize = this.MAX_REQUEST_SIZE;
   },
@@ -48,12 +59,12 @@ Faye.Dispatcher = Faye.Class({
   },
 
   getConnectionTypes: function() {
-    return Faye.Transport.getConnectionTypes();
+    return Faye_Transport.getConnectionTypes();
   },
 
   selectTransport: function(transportTypes) {
-    Faye.Transport.get(this, transportTypes, this._disabled, function(transport) {
-      this.debug('Selected ? transport for ?', transport.connectionType, Faye.URI.stringify(transport.endpoint));
+    Faye_Transport.get(this, transportTypes, this._disabled, function(transport) {
+      this.debug('Selected ? transport for ?', transport.connectionType, Faye_URI.stringify(transport.endpoint));
 
       if (transport === this._transport) return;
       if (this._transport) this._transport.close();
@@ -150,5 +161,8 @@ Faye.Dispatcher = Faye.Class({
   }
 });
 
-Faye.extend(Faye.Dispatcher.prototype, Faye.Publisher);
-Faye.extend(Faye.Dispatcher.prototype, Faye.Logging);
+Faye.extend(Faye_Dispatcher.prototype, Faye_Publisher);
+Faye.extend(Faye_Dispatcher.prototype, Faye_Logging);
+
+
+module.exports = Faye_Dispatcher;

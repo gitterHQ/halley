@@ -1,4 +1,12 @@
-Faye.Transport.XHR = Faye.extend(Faye.Class(Faye.Transport, {
+'use strict';
+
+var Faye = require('../faye');
+var Faye_Class = require('../util/class');
+var Faye_Transport = require('./transport');
+var Faye_URI = require('../util/uri');
+var Faye_Event = require('../util/browser/event');
+
+var Faye_Transport_XHR = Faye.extend(Faye_Class(Faye_Transport, {
   encode: function(messages) {
     return Faye.toJSON(messages);
   },
@@ -20,7 +28,7 @@ Faye.Transport.XHR = Faye.extend(Faye.Class(Faye.Transport, {
     }
 
     var abort = function() { xhr.abort() };
-    if (Faye.ENV.onbeforeunload !== undefined) Faye.Event.on(Faye.ENV, 'beforeunload', abort);
+    if (Faye.ENV.onbeforeunload !== undefined) Faye_Event.on(Faye.ENV, 'beforeunload', abort);
 
     xhr.onreadystatechange = function() {
       if (!xhr || xhr.readyState !== 4) return;
@@ -30,7 +38,7 @@ Faye.Transport.XHR = Faye.extend(Faye.Class(Faye.Transport, {
           text       = xhr.responseText,
           successful = (status >= 200 && status < 300) || status === 304 || status === 1223;
 
-      if (Faye.ENV.onbeforeunload !== undefined) Faye.Event.detach(Faye.ENV, 'beforeunload', abort);
+      if (Faye.ENV.onbeforeunload !== undefined) Faye_Event.detach(Faye.ENV, 'beforeunload', abort);
       xhr.onreadystatechange = function() {};
       xhr = null;
 
@@ -51,8 +59,8 @@ Faye.Transport.XHR = Faye.extend(Faye.Class(Faye.Transport, {
   }
 }), {
   isUsable: function(dispatcher, endpoint, callback, context) {
-    callback.call(context, Faye.URI.isSameOrigin(endpoint));
+    callback.call(context, Faye_URI.isSameOrigin(endpoint));
   }
 });
 
-Faye.Transport.register('long-polling', Faye.Transport.XHR);
+Faye_Transport.register('long-polling', Faye_Transport_XHR);

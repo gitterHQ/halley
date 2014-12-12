@@ -1,8 +1,13 @@
-Faye.Deferrable = {
+'use strict';
+
+var Faye_Promise = require('../util/promise');
+var Faye = require('../faye');
+
+var Faye_Deferrable = {
   then: function(callback, errback) {
     var self = this;
     if (!this._promise)
-      this._promise = new Faye.Promise(function(fulfill, reject) {
+      this._promise = new Faye_Promise(function(fulfill, reject) {
         self._fulfill = fulfill;
         self._reject  = reject;
       });
@@ -42,3 +47,5 @@ Faye.Deferrable = {
       delete this._promise;
   }
 };
+
+module.exports = Faye_Deferrable;

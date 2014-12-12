@@ -1,5 +1,7 @@
-(function() {
-var EventEmitter = Faye.EventEmitter = function() {};
+'use strict';
+
+module.exports = (function() {
+var EventEmitter = function() {};
 
 /*
 Copyright Joyent, Inc. and other Node contributors. All rights reserved.
@@ -170,5 +172,7 @@ EventEmitter.prototype.listeners = function(type) {
   }
   return this._events[type];
 };
+
+return EventEmitter;
 
 })();

@@ -1,14 +1,21 @@
-Faye.Engine.Memory = function(server, options) {
+'use strict';
+
+var Faye_Class = require('../util/class');
+var Faye = require('../faye');
+var Faye_Set = require('../util/set');
+var Faye_Timeouts = require('../mixins/timeouts');
+
+var Faye_Engine_Memory = function(server, options) {
   this._server    = server;
   this._options   = options || {};
   this.reset();
 };
 
-Faye.Engine.Memory.create = function(server, options) {
+Faye_Engine_Memory.create = function(server, options) {
   return new this(server, options);
 };
 
-Faye.Engine.Memory.prototype = {
+Faye_Engine_Memory.prototype = {
   disconnect: function() {
     this.reset();
     this.removeAllTimeouts();
@@ -63,10 +70,10 @@ Faye.Engine.Memory.prototype = {
   subscribe: function(clientId, channel, callback, context) {
     var clients = this._clients, channels = this._channels;
 
-    clients[clientId] = clients[clientId] || new Faye.Set();
+    clients[clientId] = clients[clientId] || new Faye_Set();
     var trigger = clients[clientId].add(channel);
 
-    channels[channel] = channels[channel] || new Faye.Set();
+    channels[channel] = channels[channel] || new Faye_Set();
     channels[channel].add(clientId);
 
     this._server.debug('Subscribed client ? to channel ?', clientId, channel);
@@ -98,7 +105,7 @@ Faye.Engine.Memory.prototype = {
     this._server.debug('Publishing message ?', message);
 
     var messages = this._messages,
-        clients  = new Faye.Set(),
+        clients  = new Faye_Set(),
         subs;
 
     for (var i = 0, n = channels.length; i < n; i++) {
@@ -123,4 +130,6 @@ Faye.Engine.Memory.prototype = {
     delete this._messages[clientId];
   }
 };
-Faye.extend(Faye.Engine.Memory.prototype, Faye.Timeouts);
+Faye.extend(Faye_Engine_Memory.prototype, Faye_Timeouts);
+
+module.exports = Faye_Engine_Memory;

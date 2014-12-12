@@ -1,12 +1,18 @@
-Faye.Engine = {
+'use strict';
+
+var Faye_Class = require('../util/class');
+var Faye = require('../faye');
+var Faye_Promise = require('../util/promise');
+
+Faye_Engine = {
   get: function(options) {
-    return new Faye.Engine.Proxy(options);
+    return new Faye_Engine_Proxy(options);
   },
 
   METHODS: ['createClient', 'clientExists', 'destroyClient', 'ping', 'subscribe', 'unsubscribe']
 };
 
-Faye.Engine.Proxy = Faye.Class({
+Faye_Engine_Proxy = Faye_Class({
   MAX_DELAY:  0,
   INTERVAL:   0,
   TIMEOUT:    60,
@@ -19,12 +25,12 @@ Faye.Engine.Proxy = Faye.Class({
     this.interval     = this._options.interval || this.INTERVAL;
     this.timeout      = this._options.timeout  || this.TIMEOUT;
 
-    var engineClass = this._options.type || Faye.Engine.Memory;
+    var engineClass = this._options.type || Faye_Engine_Memory;
     this._engine    = engineClass.create(this, this._options);
 
     this.bind('close', function(clientId) {
       var self = this;
-      Faye.Promise.defer(function() { self.flushConnection(clientId) });
+      Faye_Promise.defer(function() { self.flushConnection(clientId) });
     }, this);
 
     this.debug('Created new engine: ?', this._options);
@@ -45,7 +51,7 @@ Faye.Engine.Proxy = Faye.Class({
   connection: function(clientId, create) {
     var conn = this._connections[clientId];
     if (conn || !create) return conn;
-    this._connections[clientId] = new Faye.Engine.Connection(this, clientId);
+    this._connections[clientId] = new Faye_Engine.Connection(this, clientId);
     this.trigger('connection:open', clientId);
     return this._connections[clientId];
   },
@@ -100,16 +106,16 @@ Faye.Engine.Proxy = Faye.Class({
   },
 
   publish: function(message) {
-    var channels = Faye.Channel.expand(message.channel);
+    var channels = Faye_Channel.expand(message.channel);
     return this._engine.publish(message, channels);
   }
 });
 
-Faye.Engine.METHODS.forEach(function(method) {
-  Faye.Engine.Proxy.prototype[method] = function() {
+Faye_Engine.METHODS.forEach(function(method) {
+  Faye_Engine_Proxy.prototype[method] = function() {
     return this._engine[method].apply(this._engine, arguments);
   };
 });
 
-Faye.extend(Faye.Engine.Proxy.prototype, Faye.Publisher);
-Faye.extend(Faye.Engine.Proxy.prototype, Faye.Logging);
+Faye.extend(Faye_Engine_Proxy.prototype, Faye_Publisher);
+Faye.extend(Faye_Engine_Proxy.prototype, Faye_Logging);

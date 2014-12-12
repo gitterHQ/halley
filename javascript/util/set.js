@@ -1,4 +1,8 @@
-Faye.Set = Faye.Class({
+'use strict';
+
+var Faye_Class = require('./class');
+
+var Faye_Set = Faye_Class({
   initialize: function() {
     this._index = {};
   },
@@ -44,3 +48,5 @@ Faye.Set = Faye.Class({
     return array;
   }
 });
+
+module.exports = Faye_Set;

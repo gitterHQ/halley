@@ -1,5 +1,6 @@
-(function() {
 'use strict';
+
+module.exports = (function() {
 
 var timeout = setTimeout, defer;
 
@@ -159,9 +160,6 @@ Promise.rejected = function(reason) {
   return new Promise(function(fulfill, reject) { reject(reason) });
 };
 
-if (typeof Faye === 'undefined')
-  module.exports = Promise;
-else
-  Faye.Promise = Promise;
+return Promise;
 
 })();

@@ -1,4 +1,8 @@
-Faye.Timeouts = {
+'use strict';
+
+var Faye = require('../faye');
+
+var Faye_Timeouts = {
   addTimeout: function(name, delay, callback, context) {
     this._timeouts = this._timeouts || {};
     if (this._timeouts.hasOwnProperty(name)) return;
@@ -22,3 +26,5 @@ Faye.Timeouts = {
     for (var name in this._timeouts) this.removeTimeout(name);
   }
 };
+
+module.exports = Faye_Timeouts;
