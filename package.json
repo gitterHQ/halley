@@ -1,5 +1,5 @@
 {
-  "name": "faye",
+  "name": "gitter-faye",
   "description": "Simple pub/sub messaging for the web",
   "homepage": "http://faye.jcoglan.com",
   "author": "James Coglan <jcoglan@gmail.com> (http://jcoglan.com/)",
@@ -12,7 +12,7 @@
     "http"
   ],
   "license": "MIT",
-  "version": "1.0.3",
+  "version": "1.0.3b",
   "engines": {
     "node": ">=0.6.0"
   },
@@ -139,5 +139,8 @@
         "build/README.md": "README.md"
       }
     }
+  },
+  "publishConfig": {
+    "registry": "http://beta-internal:8089/nexus/content/repositories/gitter-private/"
   }
 }

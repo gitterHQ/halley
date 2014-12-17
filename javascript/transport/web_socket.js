@@ -107,7 +107,6 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   _createSocket: function() {
-    debugger;
     var url     = Faye_Transport_WebSocket.getSocketUrl(this.endpoint),
         cookie  = this._getCookies(),
         headers = this._dispatcher.headers,
@@ -117,8 +116,8 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     if (cookie !== '') options.headers['Cookie'] = cookie;
 
     if (Faye.WebSocket)        return new Faye.WebSocket.Client(url, [], options);
-    if (Faye.ENV.MozWebSocket) return new MozWebSocket(url);
-    if (Faye.ENV.WebSocket)    return new WebSocket(url);
+    if (Faye.ENV.MozWebSocket) return new Faye.ENV.MozWebSocket(url);
+    if (Faye.ENV.WebSocket)    return new Faye.ENV.WebSocket(url);
   },
 
   _ping: function() {

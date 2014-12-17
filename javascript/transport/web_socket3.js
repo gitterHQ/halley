@@ -228,14 +228,13 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
 
     options.headers.Cookie = self._getCookies();
 
-    // TODO: come up with a better test
-    if (typeof window === 'undefined') {
-      socket = new (require('faye-websocket').Client)(url, [], options);
+    if (Faye.WebSocket) {
+      socket = new Faye.WebSocket.Client(url, [], options);
+    } else if (Faye.ENV.MozWebSocket) {
+      socket = new Faye.ENV.MozWebSocket(url);
+    } else if (Faye.ENV.WebSocket) {
+      socket = new Faye.ENV.WebSocket(url);
     }
-
-    // if (Faye.WebSocket)        ;
-    if (Faye.ENV.MozWebSocket) socket = new Faye.ENV.MozWebSocket(url);
-    if (Faye.ENV.WebSocket)    socket = new Faye.ENV.WebSocket(url);
 
     if (!socket) {
       self._state.transition('socketClosed', new Error('Sockets not supported'));

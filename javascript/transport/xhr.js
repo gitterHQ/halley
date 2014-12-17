@@ -64,3 +64,5 @@ var Faye_Transport_XHR = Faye.extend(Faye_Class(Faye_Transport, {
 });
 
 Faye_Transport.register('long-polling', Faye_Transport_XHR);
+
+module.exports = Faye_Transport_XHR;

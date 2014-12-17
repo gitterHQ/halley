@@ -1,20 +1,11 @@
 'use strict';
 
-var crypto = require('crypto'),
-    fs     = require('fs'),
-    http   = require('http'),
-    https  = require('https'),
-    net    = require('net'),
-    path   = require('path'),
-    tls    = require('tls'),
+var path   = require('path'),
     url    = require('url'),
-    querystring = require('querystring'),
-    csprng = require('csprng'),
-    tunnel = require('tunnel-agent');
+    querystring = require('querystring');
 
 var Faye_WebSocket    = require('faye-websocket');
 var Faye_EventSource  = Faye_WebSocket.EventSource;
-var Faye_Cookies      = require('tough-cookie');
 var Faye_Server       = require('../protocol/server');
 var Faye_StaticServer = require('./static_server');
 var Faye_Publisher    = require('../mixins/publisher');
@@ -178,11 +169,41 @@ var Faye_NodeAdapter = Faye_Class({
   },
 
   handleUpgrade: function(request, socket, head) {
-    var ws       = new Faye_WebSocket(request, socket, head, null, {ping: this._options.ping}),
+    /** Don't use the automatic websocket ping as the default
+     *  behaviour does disconnect on lack of a response        */
+    var ws       = new Faye_WebSocket(request, socket, head, null, { /* ping: this._options.ping */ }),
         clientId = null,
-        self     = this;
+        self     = this,
+        pingId   = 0,
+        pingTimeout = this._options.ping * 1000 / 4,
+        pingTimer;
 
     request.originalUrl = request.url;
+
+    // Using our own ping
+    pingTimer = setInterval(function() {
+      var timeoutTimer;
+      pingId += 1;
+
+      var canPing = ws.ping(pingId.toString(), function() {
+        clearTimeout(timeoutTimer);
+      });
+
+      // If it's possible to ping, await a timeout
+      if(canPing) {
+        timeoutTimer = setTimeout(function() {
+          self.warn("Client timeout on ping: ?", clientId);
+
+          if(ws) {
+            ws.close();
+          }
+        }, pingTimeout);
+      } else {
+        // Can't ping? Stop using this interval
+        clearTimeout(pingTimer);
+      }
+    }, this._options.ping * 1000);
+
 
     ws.onmessage = function(event) {
       try {
@@ -204,6 +225,7 @@ var Faye_NodeAdapter = Faye_Class({
     };
 
     ws.onclose = function(event) {
+      clearTimeout(pingTimer);
       self._server.closeSocket(clientId);
       ws = null;
     };
