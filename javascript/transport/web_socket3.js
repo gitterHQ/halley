@@ -300,7 +300,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     this.removeTimeout('pingTimeout');
 
     if(navigatorConnection) {
-      connection.removeEventListener('typechange', this._onNetworkEventBound, false);
+      navigatorConnection.removeEventListener('typechange', this._onNetworkEventBound, false);
     }
 
     if (Faye.ENV.removeEventListener) {
