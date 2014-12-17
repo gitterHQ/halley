@@ -11,11 +11,6 @@ var Faye_Set = require('../util/set');
 var Faye_Logging = require('../mixins/logging');
 var Faye_FSM = require('../util/fsm');
 
-function delay(ms) {
-  return new Faye_Promise(function(resolve) {
-    setTimeout(resolve, ms);
-  });
-}
 
 var FSM = {
   initial: "NEVER_CONNECTED",
@@ -352,11 +347,14 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       console.error('message received from socket', socket, 'expected', this._socket);
     }
 
-    for (var i = 0, n = replies.length; i < n; i++) {
-      if (replies[i].successful !== undefined) {
-        this._pending.remove(replies[i]);
+    if(this._pending) {
+      for (var i = 0, n = replies.length; i < n; i++) {
+        if (replies[i].successful !== undefined) {
+          this._pending.remove(replies[i]);
+        }
       }
     }
+
     this._receive(replies);
   },
 

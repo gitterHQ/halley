@@ -1,10 +1,15 @@
 'use strict';
 
-var Faye_Client = require('./protocol/client');
-require('./transport/web_socket3');
-require('./transport/event_source');
-require('./transport/xhr');
-require('./transport/cors');
-require('./transport/jsonp');
+var Faye = require('./faye');
+Faye.Client = require('./protocol/client');
 
-module.exports = Faye_Client;
+/* Register the transports. Order is important */
+Faye.Transport = {
+  WebSocket: require('./transport/web_socket3'),
+  EventSource: require('./transport/event_source'),
+  XHR: require('./transport/xhr'),
+  CORS: require('./transport/cors'),
+  JSONP: require('./transport/jsonp')
+};
+
+module.exports = Faye;

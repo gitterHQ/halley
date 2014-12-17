@@ -1,16 +1,15 @@
 'use strict';
 
-/* Register protocols */
-require('./transport/node_local');
-require('./transport/web_socket');
-require('./transport/node_http');
-
-
 var Faye = require('./faye');
-// Optional dependencies
-Faye.WebSocket = require('./transport/web_socket');
+Faye.Client = require('./protocol/client');
 
-module.exports = {
-  NodeAdapter: require('./adapters/node_adapter'),
-  Client: require('./protocol/client')
+/* Register protocols */
+Faye.Transport = {
+  NodeLocal: require('./transport/node_local'),
+  WebSocket: require('./transport/web_socket'),
+  NodeHttp: require('./transport/node_http')
 };
+
+Faye.NodeAdapter = require('./adapters/node_adapter');
+
+module.exports = Faye;
