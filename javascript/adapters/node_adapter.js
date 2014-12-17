@@ -197,6 +197,15 @@ var Faye_NodeAdapter = Faye_Class({
           if(ws) {
             ws.close();
           }
+
+          // Close the connection immediately. Dont wait for the close to
+          // complete. It may take a while
+          if(clientId) {
+            self._server.closeSocket(clientId);
+          }
+
+          clearTimeout(pingTimer);
+
         }, pingTimeout);
       } else {
         // Can't ping? Stop using this interval
