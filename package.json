@@ -17,7 +17,7 @@
     "node": ">=0.6.0"
   },
   "main": "./javascript/faye-node",
-  "browserify": "./browser/faye-browser",
+  "browserify": "./javascript/faye-browser",
   "dependencies": {
     "csprng": "",
     "faye-websocket": ">=0.8.0",

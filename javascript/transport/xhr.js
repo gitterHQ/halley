@@ -13,7 +13,7 @@ var Faye_Transport_XHR = Faye.extend(Faye_Class(Faye_Transport, {
 
   request: function(messages) {
     var href = this.endpoint.href,
-        xhr  = Faye.ENV.ActiveXObject ? new ActiveXObject('Microsoft.XMLHTTP') : new XMLHttpRequest(),
+        xhr  = Faye.ENV.ActiveXObject ? new Faye.ENV.ActiveXObject('Microsoft.XMLHTTP') : new Faye.ENV.XMLHttpRequest(),
         self = this;
 
     xhr.open('POST', href, true);
