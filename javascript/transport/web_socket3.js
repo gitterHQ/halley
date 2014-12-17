@@ -54,7 +54,7 @@ var FSM = {
 };
 
 
-var connection = Faye.ENV.navigator && (Faye.ENV.navigator.connection || Faye.ENV.navigator.mozConnection || Faye.ENV.navigator.webkitConnection);
+var navigatorConnection = Faye.ENV.navigator && (Faye.ENV.navigator.connection || Faye.ENV.navigator.mozConnection || Faye.ENV.navigator.webkitConnection);
 
 var Socket_Promise = Faye_Class({
 
@@ -267,13 +267,13 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       this._onNetworkEventBound = this._onNetworkEvent.bind(this);
     }
 
-    if (connection) {
-      connection.addEventListener('typechange', this._onNetworkEventBound, false);
+    if (navigatorConnection) {
+      navigatorConnection.addEventListener('typechange', this._onNetworkEventBound, false);
     }
 
     if (Faye.ENV.addEventListener) {
-      connection.addEventListener('online', this._onNetworkEventBound, false);
-      connection.addEventListener('offline', this._onNetworkEventBound, false);
+      Faye.ENV.addEventListener('online', this._onNetworkEventBound, false);
+      Faye.ENV.addEventListener('offline', this._onNetworkEventBound, false);
     }
 
     this._sleepDetectionLast = Date.now();
@@ -304,13 +304,13 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     this.removeTimeout('ping');
     this.removeTimeout('pingTimeout');
 
-    if(connection) {
+    if(navigatorConnection) {
       connection.removeEventListener('typechange', this._onNetworkEventBound, false);
     }
 
     if (Faye.ENV.removeEventListener) {
-      connection.removeEventListener('online', this._onNetworkEventBound, false);
-      connection.removeEventListener('offline', this._onNetworkEventBound, false);
+      Faye.ENV.removeEventListener('online', this._onNetworkEventBound, false);
+      Faye.ENV.removeEventListener('offline', this._onNetworkEventBound, false);
     }
 
     clearTimeout(this._sleepDetectionTimer);
