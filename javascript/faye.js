@@ -4,7 +4,6 @@ var Faye = {
   VERSION:          '1.0.3',
 
   BAYEUX_VERSION:   '1.0',
-  ID_LENGTH:        160,
   JSONP_CALLBACK:   'jsonpcallback',
   CONNECTION_TYPES: ['long-polling', 'cross-origin-long-polling', 'callback-polling', 'websocket', 'eventsource', 'in-process'],
 
@@ -21,14 +20,6 @@ var Faye = {
         dest[key] = source[key];
     }
     return dest;
-  },
-
-  random: function(bitlength) {
-    bitlength = bitlength || this.ID_LENGTH;
-    var maxLength = Math.ceil(bitlength * Math.log(2) / Math.log(36));
-    var string = csprng(bitlength, 36);
-    while (string.length < maxLength) string = '0' + string;
-    return string;
   },
 
   clientIdFromMessages: function(messages) {

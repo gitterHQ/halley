@@ -7,6 +7,8 @@ var Faye_Logging = require('../mixins/logging');
 var Faye_Extensible = require('./extensible');
 var Faye_Channel = require('./channel');
 var Faye_Error = require('../error');
+var Faye_Engine = require('../engines/engine');
+var Faye_Grammar = require('./grammar');
 
 var Faye_Server = Faye_Class({
   META_METHODS: ['handshake', 'connect', 'disconnect', 'subscribe', 'unsubscribe'],

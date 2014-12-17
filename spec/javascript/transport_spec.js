@@ -1,7 +1,15 @@
+var Faye_URI = require('../../javascript/util/uri');
+var Faye_Transport = require('../../javascript/transport/transport');
+var Faye_Transport_NodeLocal = require('../../javascript/transport/node_local');
+var Faye_Transport_NodeHttp = require('../../javascript/transport/node_local');
+var Faye_Transport_WebSocket = require('../../javascript/transport/web_socket');
+var Faye_Transport_XHR = require('../../javascript/transport/xhr');
+var Faye_Class = require('../../javascript/util/class')
+
 JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
   before(function() { with(this) {
     this.dispatcher = {
-      endpoint:       Faye.URI.parse("http://example.com/"),
+      endpoint:       Faye_URI.parse("http://example.com/"),
       endpoints:      {},
       maxRequestSize: 2048,
       headers:        {},
@@ -10,14 +18,14 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
     }
     dispatcher.endpointFor = function() { return dispatcher.endpoint }
 
-    if (Faye.Transport.NodeLocal) {
-      this.LocalTransport = Faye.Transport.NodeLocal
-      this.HttpTransport  = Faye.Transport.NodeHttp
+    if (Faye_Transport_NodeLocal) {
+      this.LocalTransport = Faye_Transport_NodeLocal
+      this.HttpTransport  = Faye_Transport_NodeHttp
       this.inProcess      = "in-process"
       this.longPolling    = "long-polling"
     } else {
-      this.LocalTransport = Faye.Transport.WebSocket
-      this.HttpTransport  = Faye.Transport.XHR
+      this.LocalTransport = Faye_Transport_WebSocket
+      this.HttpTransport  = Faye_Transport_XHR
       this.inProcess      = "websocket"
       this.longPolling    = "long-polling"
     }
@@ -31,7 +39,7 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
 
     describe("when no transport is usable", function() { with(this) {
       it("raises an exception", function() { with(this) {
-        assertThrows(Error, function() { Faye.Transport.get(dispatcher, [longPolling, inProcess], []) })
+        assertThrows(Error, function() { Faye_Transport.get(dispatcher, [longPolling, inProcess], []) })
       }})
     }})
 
@@ -41,17 +49,17 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
       }})
 
       it("returns a transport of the usable type", function() { with(this) {
-        Faye.Transport.get(dispatcher, [longPolling, inProcess], [], function(transport) {
+        Faye_Transport.get(dispatcher, [longPolling, inProcess], [], function(transport) {
           assertKindOf( HttpTransport, transport )
         })
       }})
 
       it("raises an exception if the usable type is not requested", function() { with(this) {
-        assertThrows(Error, function() { Faye.Transport.get(dispatcher, [inProcess], []) })
+        assertThrows(Error, function() { Faye_Transport.get(dispatcher, [inProcess], []) })
       }})
 
       it("allows the usable type to be specifically selected", function() { with(this) {
-        Faye.Transport.get(dispatcher, [longPolling], [], function(transport) {
+        Faye_Transport.get(dispatcher, [longPolling], [], function(transport) {
           assertKindOf( HttpTransport, transport )
         })
       }})
@@ -64,22 +72,22 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
       }})
 
       it("returns the most preferred type", function() { with(this) {
-        Faye.Transport.get(dispatcher, [longPolling, inProcess], [], function(transport) {
+        Faye_Transport.get(dispatcher, [longPolling, inProcess], [], function(transport) {
           assertKindOf( LocalTransport, transport )
         })
       }})
 
       it("does not return disabled types", function() { with(this) {
-        Faye.Transport.get(dispatcher, [longPolling, inProcess], [inProcess], function(transport) {
+        Faye_Transport.get(dispatcher, [longPolling, inProcess], [inProcess], function(transport) {
           assertKindOf( HttpTransport, transport )
         })
       }})
 
       it("allows types to be specifically selected", function() { with(this) {
-        Faye.Transport.get(dispatcher, [inProcess], [], function(transport) {
+        Faye_Transport.get(dispatcher, [inProcess], [], function(transport) {
           assertKindOf( LocalTransport, transport )
         })
-        Faye.Transport.get(dispatcher, [longPolling], [], function(transport) {
+        Faye_Transport.get(dispatcher, [longPolling], [], function(transport) {
           assertKindOf( HttpTransport, transport )
         })
       }})
@@ -97,7 +105,7 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
 
     describe("for batching transports", function() { with(this) {
       before(function() { with(this) {
-        this.Transport = Faye.Class(Faye.Transport, {batching: true})
+        this.Transport = Faye_Class(Faye_Transport, {batching: true})
         this.transport = new Transport(dispatcher, dispatcher.endpoint)
       }})
 
@@ -135,7 +143,7 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
 
     describe("for non-batching transports", function() { with(this) {
       before(function() { with(this) {
-        this.Transport = Faye.Class(Faye.Transport, {batching: false})
+        this.Transport = Faye_Class(Faye_Transport, {batching: false})
         this.transport = new Transport(dispatcher, dispatcher.endpoint)
       }})
 

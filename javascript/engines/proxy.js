@@ -3,16 +3,14 @@
 var Faye_Class = require('../util/class');
 var Faye = require('../faye');
 var Faye_Promise = require('../util/promise');
+var Faye_Engine_Memory = require('./memory');
+var Faye_Engine_Connection = require('./connection');
+var Faye_Channel = require('../protocol/channel');
+var Faye_Publisher = require('../mixins/publisher');
+var Faye_Logging = require('../mixins/logging');
+var Faye_random = require('../util/random');
 
-Faye_Engine = {
-  get: function(options) {
-    return new Faye_Engine_Proxy(options);
-  },
-
-  METHODS: ['createClient', 'clientExists', 'destroyClient', 'ping', 'subscribe', 'unsubscribe']
-};
-
-Faye_Engine_Proxy = Faye_Class({
+var Faye_Engine_Proxy = Faye_Class({
   MAX_DELAY:  0,
   INTERVAL:   0,
   TIMEOUT:    60,
@@ -30,7 +28,7 @@ Faye_Engine_Proxy = Faye_Class({
 
     this.bind('close', function(clientId) {
       var self = this;
-      Faye_Promise.defer(function() { self.flushConnection(clientId) });
+      Faye_Promise.defer(function() { self.flushConnection(clientId); });
     }, this);
 
     this.debug('Created new engine: ?', this._options);
@@ -51,7 +49,7 @@ Faye_Engine_Proxy = Faye_Class({
   connection: function(clientId, create) {
     var conn = this._connections[clientId];
     if (conn || !create) return conn;
-    this._connections[clientId] = new Faye_Engine.Connection(this, clientId);
+    this._connections[clientId] = new Faye_Engine_Connection(this, clientId);
     this.trigger('connection:open', clientId);
     return this._connections[clientId];
   },
@@ -83,7 +81,7 @@ Faye_Engine_Proxy = Faye_Class({
   },
 
   generateId: function() {
-    return Faye.random();
+    return Faye_random();
   },
 
   flushConnection: function(clientId, close) {
@@ -111,11 +109,8 @@ Faye_Engine_Proxy = Faye_Class({
   }
 });
 
-Faye_Engine.METHODS.forEach(function(method) {
-  Faye_Engine_Proxy.prototype[method] = function() {
-    return this._engine[method].apply(this._engine, arguments);
-  };
-});
 
 Faye.extend(Faye_Engine_Proxy.prototype, Faye_Publisher);
 Faye.extend(Faye_Engine_Proxy.prototype, Faye_Logging);
+
+module.exports = Faye_Engine_Proxy;

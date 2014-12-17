@@ -1,8 +1,11 @@
+var Faye_Engine = require('../../../javascript/engines/engine');
+var Faye_Server = require('../../../javascript/protocol/server');
+
 JS.ENV.Server.HandshakeSpec = JS.Test.describe("Server handshake", function() { with(this) {
   before(function() { with(this) {
     this.engine = {}
-    stub(Faye.Engine, "get").returns(engine)
-    this.server = new Faye.Server()
+    stub(Faye_Engine, "get").returns(engine)
+    this.server = new Faye_Server()
 
     this.connectionTypes = ["long-polling", "cross-origin-long-polling",
                             "callback-polling","websocket",

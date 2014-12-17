@@ -1,8 +1,11 @@
+var Faye_Server = require('../../javascript/protocol/server');
+var Faye_Engine = require('../../javascript/engines/engine');
+
 JS.ENV.ServerSpec = JS.Test.describe("Server", function() { with(this) {
   before(function() { with(this) {
     this.engine = {}
-    stub(Faye.Engine, "get").returns(engine)
-    this.server = new Faye.Server()
+    stub(Faye_Engine, "get").returns(engine)
+    this.server = new Faye_Server()
   }})
 
   describe("#process", function() { with(this) {

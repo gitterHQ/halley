@@ -1,3 +1,6 @@
+var Faye = require('../../javascript/faye');
+var Faye_random = require('../../javascript/util/random');
+
 JS.ENV.FayeSpec = JS.Test.describe("Faye", function() { with(this) {
   include(JS.Test.Helpers)
 
@@ -5,11 +8,11 @@ JS.ENV.FayeSpec = JS.Test.describe("Faye", function() { with(this) {
     if (typeof document !== "undefined") return
 
     it("returns a 160-bit random number in base 36", function() { with(this) {
-      assertMatch( /^[a-z0-9]+$/, Faye.random() )
+      assertMatch( /^[a-z0-9]+$/, Faye_random() )
     }})
 
     it("always produces the same length of string", function() { with(this) {
-      var ids = $R(1,100).map(function() { return Faye.random().length })
+      var ids = $R(1,100).map(function() { return Faye_random().length })
       var expected = $R(1,100).map(function() { return 31 })
       assertEqual( expected, ids )
     }})

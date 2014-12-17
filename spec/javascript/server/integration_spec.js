@@ -4,9 +4,13 @@ var fs    = require('fs'),
     cert  = fs.readFileSync(__dirname + '/../../../examples/server.crt'),
     key   = fs.readFileSync(__dirname + '/../../../examples/server.key')
 
+var Faye_Transport_WebSocket = require('../../../javascript/transport/web_socket');
+var Faye_NodeAdapter = require('../../../javascript/adapters/node_adapter');
+var Faye_Client = require('../../../javascript/protocol/client');
+
 JS.ENV.IntegrationSteps = JS.Test.asyncSteps({
   server: function(ssl, callback) {
-    this._adapter = new Faye.NodeAdapter({mount: "/bayeux", timeout: 2})
+    this._adapter = new Faye_NodeAdapter({mount: "/bayeux", timeout: 2})
 
     this._adapter.addExtension({
       incoming: function(message, callback) {
@@ -44,7 +48,7 @@ JS.ENV.IntegrationSteps = JS.Test.asyncSteps({
     var scheme          = this._secure ? "https" : "http"
     this._clients       = this._clients || {}
     this._inboxes       = this._inboxes || {}
-    this._clients[name] = new Faye.Client(scheme + "://localhost:" + this._port  + "/bayeux", {ca: cert})
+    this._clients[name] = new Faye_Client(scheme + "://localhost:" + this._port  + "/bayeux", {ca: cert})
     this._inboxes[name] = {}
 
     var n = channels.length
@@ -112,7 +116,7 @@ JS.ENV.Server.IntegrationSpec = JS.Test.describe("Server integration", function(
   sharedExamplesFor("network transports", function() { with(this) {
     describe("with HTTP transport", function() { with(this) {
       before(function() { with(this) {
-        stub(Faye.Transport.WebSocket, "isUsable").yields([false])
+        stub(Faye_Transport_WebSocket, "isUsable").yields([false])
       }})
 
       itShouldBehaveLike("message bus")
@@ -120,7 +124,7 @@ JS.ENV.Server.IntegrationSpec = JS.Test.describe("Server integration", function(
 
     describe("with WebSocket transport", function() { with(this) {
       before(function() { with(this) {
-        stub(Faye.Transport.WebSocket, "isUsable").yields([true])
+        stub(Faye_Transport_WebSocket, "isUsable").yields([true])
       }})
 
       itShouldBehaveLike("message bus")

@@ -9,6 +9,7 @@ var Faye_URI = {
 
   isSameOrigin: function(uri) {
     var location = Faye.ENV.location;
+    if (!location) return false;
     return uri.protocol === location.protocol &&
            uri.hostname === location.hostname &&
            uri.port     === location.port;

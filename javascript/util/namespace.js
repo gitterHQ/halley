@@ -1,6 +1,7 @@
 'use strict';
 
 var Faye_Class = require('./class');
+var Faye_random = require('./random');
 
 var Faye_Namespace = Faye_Class({
   initialize: function() {
@@ -12,9 +13,9 @@ var Faye_Namespace = Faye_Class({
   },
 
   generate: function() {
-    var name = Faye.random();
+    var name = Faye_random();
     while (this._used.hasOwnProperty(name))
-      name = Faye.random();
+      name = Faye_random();
     return this._used[name] = name;
   },
 

@@ -1,8 +1,14 @@
+var Faye_Scheduler = require('../../javascript/protocol/scheduler');
+var Faye_URI = require('../../javascript/util/uri');
+var Faye_Dispatcher = require('../../javascript/protocol/dispatcher');
+var Faye_Transport = require('../../javascript/transport/transport');
+var Faye_Promise = require('../../javascript/util/promise');
+
 JS.ENV.Scheduler = function() {
-  Faye.Scheduler.apply(this, arguments)
+  Faye_Scheduler.apply(this, arguments)
   Scheduler.instance = this
 }
-Scheduler.prototype = new Faye.Scheduler()
+Scheduler.prototype = new Faye_Scheduler()
 
 JS.ENV.DispatcherSpec = JS.Test.describe("Dispatcher", function() { with(this) {
   include(JS.Test.FakeClock)
@@ -10,12 +16,12 @@ JS.ENV.DispatcherSpec = JS.Test.describe("Dispatcher", function() { with(this) {
   before(function() { with(this) {
     this.client    = {}
     this.endpoint  = "http://localhost/"
-    this.transport = {endpoint: Faye.URI.parse(endpoint), connectionType: "long-polling"}
+    this.transport = {endpoint: Faye_URI.parse(endpoint), connectionType: "long-polling"}
 
     stub(client, "trigger")
-    stub(Faye.Transport, "get").yields([transport])
+    stub(Faye_Transport, "get").yields([transport])
 
-    this.dispatcher = new Faye.Dispatcher(client, endpoint, options())
+    this.dispatcher = new Faye_Dispatcher(client, endpoint, options())
 
     clock.stub()
   }})
@@ -50,13 +56,13 @@ JS.ENV.DispatcherSpec = JS.Test.describe("Dispatcher", function() { with(this) {
     }})
 
     it("asks Transport to select one of the given transports", function() { with(this) {
-      expect(Faye.Transport, "get").given(dispatcher, connectionTypes, []).yields([transport])
+      expect(Faye_Transport, "get").given(dispatcher, connectionTypes, []).yields([transport])
       dispatcher.selectTransport(connectionTypes)
     }})
 
     it("asks Transport not to select disabled transports", function() { with(this) {
       dispatcher.disable("websocket")
-      expect(Faye.Transport, "get").given(dispatcher, connectionTypes, ["websocket"]).yields([transport])
+      expect(Faye_Transport, "get").given(dispatcher, connectionTypes, ["websocket"]).yields([transport])
       dispatcher.selectTransport(connectionTypes)
     }})
 
@@ -67,8 +73,8 @@ JS.ENV.DispatcherSpec = JS.Test.describe("Dispatcher", function() { with(this) {
     }})
 
     it("closes the existing transport if a new one is selected", function() { with(this) {
-      var oldTransport = {endpoint: Faye.URI.parse(endpoint)}
-      stub(Faye.Transport, "get").given(dispatcher, ["long-polling"], []).yields([oldTransport])
+      var oldTransport = {endpoint: Faye_URI.parse(endpoint)}
+      stub(Faye_Transport, "get").given(dispatcher, ["long-polling"], []).yields([oldTransport])
       dispatcher.selectTransport(["long-polling"])
 
       expect(oldTransport, "close").exactly(1)
@@ -87,7 +93,7 @@ JS.ENV.DispatcherSpec = JS.Test.describe("Dispatcher", function() { with(this) {
     before(function() { with(this) {
       this.message    = {id: 1}
       this.request    = {}
-      this.reqPromise = Faye.Promise.fulfilled(request)
+      this.reqPromise = Faye_Promise.fulfilled(request)
 
       stub(transport, "close")
       stub(transport, "sendMessage").returns(reqPromise)
@@ -151,7 +157,7 @@ JS.ENV.DispatcherSpec = JS.Test.describe("Dispatcher", function() { with(this) {
       it("aborts the request used to send the message", function(resume) { with(this) {
         expect(request, "abort").exactly(1)
         dispatcher.handleError(message)
-        Faye.Promise.defer(resume)
+        Faye_Promise.defer(resume)
       }})
 
       it("does not resend a message with an ID it does not recognize", function() { with(this) {

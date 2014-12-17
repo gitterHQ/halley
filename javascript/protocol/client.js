@@ -298,6 +298,12 @@ var Faye_Client = Faye_Class({
     return publication;
   },
 
+  reset: function() {
+    this._dispatcher.close();
+    this._state = this.UNCONNECTED;
+    this._cycleConnection();
+  },
+
   _sendMessage: function(message, options, callback, context) {
     message.id = this._generateMessageId();
 

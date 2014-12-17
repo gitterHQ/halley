@@ -9,15 +9,21 @@ var crypto = require('crypto'),
     tls    = require('tls'),
     url    = require('url'),
     querystring = require('querystring'),
-
     csprng = require('csprng'),
     tunnel = require('tunnel-agent');
 
-Faye.WebSocket   = require('faye-websocket');
-Faye_EventSource = Faye.WebSocket.EventSource;
-Faye.Cookies     = require('tough-cookie');
+var Faye_WebSocket    = require('faye-websocket');
+var Faye_EventSource  = Faye_WebSocket.EventSource;
+var Faye_Cookies      = require('tough-cookie');
+var Faye_Server       = require('../protocol/server');
+var Faye_StaticServer = require('./static_server');
+var Faye_Publisher    = require('../mixins/publisher');
+var Faye              = require('../faye');
+var Faye_Class        = require('../util/class');
+var Faye_Client       = require('../protocol/client');
+var Faye_Logging      = require('../mixins/logging');
 
-Faye_NodeAdapter = Faye_Class({
+var Faye_NodeAdapter = Faye_Class({
   DEFAULT_ENDPOINT: '/bayeux',
   SCRIPT_PATH:      'faye-browser-min.js',
 
@@ -172,7 +178,7 @@ Faye_NodeAdapter = Faye_Class({
   },
 
   handleUpgrade: function(request, socket, head) {
-    var ws       = new Faye.WebSocket(request, socket, head, null, {ping: this._options.ping}),
+    var ws       = new Faye_WebSocket(request, socket, head, null, {ping: this._options.ping}),
         clientId = null,
         self     = this;
 
@@ -281,3 +287,5 @@ for (var method in Faye_Publisher) (function(method) {
 })(method);
 
 Faye.extend(Faye_NodeAdapter.prototype, Faye_Logging);
+
+module.exports = Faye_NodeAdapter;

@@ -1,3 +1,9 @@
+var Faye_Publisher = require('../../javascript/mixins/publisher');
+var Faye_Client = require('../../javascript/protocol/client');
+var Faye = require('../../javascript/faye');
+var Faye_Promise = require('../../javascript/util/promise');
+var Faye_Subscription = require('../../javascript/protocol/subscription');
+
 JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
   before(function() { with(this) {
     this.dispatcher = {connectionType: "fake-transport", retry: 5}
@@ -5,7 +11,7 @@ JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
     stub(dispatcher, "selectTransport")
     stub(dispatcher, "sendMessage")
 
-    Faye.extend(dispatcher, Faye.Publisher)
+    Faye.extend(dispatcher, Faye_Publisher)
     stub("new", Faye, "Dispatcher").returns(dispatcher)
 
     stub("setTimeout")
@@ -19,7 +25,7 @@ JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
   }})
 
   define("createClient", function() { with(this) {
-    this.client = new Faye.Client("http://localhost/")
+    this.client = new Faye_Client("http://localhost/")
   }})
 
   define("createConnectedClient", function() { with(this) {
@@ -46,7 +52,7 @@ JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
 
   describe("initialize", function() { with(this) {
     it("puts the client in the UNCONNECTED state", function() { with(this) {
-      var client = new Faye.Client("http://localhost/")
+      var client = new Faye_Client("http://localhost/")
       assertEqual( client.UNCONNECTED, client._state )
     }})
   }})
@@ -160,7 +166,6 @@ JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
                         supportedConnectionTypes: ["websocket"],
                         clientId:     "reconnectid",
                         subscription: "/messages/foo" })  // tacked on to trigger subscribe() callback
-
           resume()
         })
       }})
@@ -219,7 +224,7 @@ JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
           id:             instanceOf("string")
         }, 72, {})
         client.connect()
-        Faye.Promise.defer(resume)
+        Faye_Promise.defer(resume)
       }})
     }})
 
@@ -324,7 +329,7 @@ JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
         it("returns an array of subscriptions", function() { with(this) {
           var subs = client.subscribe(["/foo", "/bar"])
           assertEqual( 2, subs.length )
-          assertKindOf( Faye.Subscription, subs[0] )
+          assertKindOf( Faye_Subscription, subs[0] )
         }})
       }})
 

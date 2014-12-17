@@ -1,4 +1,16 @@
-Faye_StaticServer = Faye_Class({
+'use strict';
+
+var Faye_Class = require('../util/class');
+var url = require('url');
+var fs = require('fs');
+var path = require('path');
+var crypto = require('crypto');
+var Faye = require('../faye');
+
+var Faye_StaticServer = Faye_Class({
+  TYPE_JSON:    {'Content-Type': 'application/json; charset=utf-8'},
+  TYPE_SCRIPT:  {'Content-Type': 'text/javascript; charset=utf-8'},
+
   initialize: function(directory, pathRegex) {
     this._directory = directory;
     this._pathRegex = pathRegex;
@@ -51,9 +63,11 @@ Faye_StaticServer = Faye_Class({
     }
     else {
       headers['Content-Length'] = cache.content.length;
-      Faye.extend(headers, Faye_NodeAdapter.prototype[type]);
+      Faye.extend(headers, this[type]);
       response.writeHead(200, headers);
       response.end(cache.content);
     }
   }
 });
+
+module.exports = Faye_StaticServer;

@@ -1,9 +1,9 @@
 'use strict';
 
-var Faye_Class = require('../util/class');
 var Faye = require('../faye');
 var Faye_Set = require('../util/set');
 var Faye_Timeouts = require('../mixins/timeouts');
+var Faye_Namespace = require('../util/namespace');
 
 var Faye_Engine_Memory = function(server, options) {
   this._server    = server;
@@ -22,7 +22,7 @@ Faye_Engine_Memory.prototype = {
   },
 
   reset: function() {
-    this._namespace = new Faye.Namespace();
+    this._namespace = new Faye_Namespace();
     this._clients   = {};
     this._channels  = {};
     this._messages  = {};

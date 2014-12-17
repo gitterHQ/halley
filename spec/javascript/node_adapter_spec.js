@@ -1,10 +1,12 @@
-var http = require("http"),
-    querystring = require("querystring")
+var http = require("http");
+var querystring = require("querystring");
+var Faye_NodeAdapter = require('../../javascript/adapters/node_adapter');
+var Faye = require('../../javascript/faye');
 
 JS.ENV.NodeAdapterSteps = JS.Test.asyncSteps({
   start_server: function(port, resume) {
     this._port = port
-    this._app  = new Faye.NodeAdapter(this.options())
+    this._app  = new Faye_NodeAdapter(this.options())
     this._http = http.createServer()
     this._app.attach(this._http)
     this._http.listen(port, resume)
