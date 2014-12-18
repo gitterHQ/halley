@@ -107,11 +107,12 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   _createSocket: function() {
-    var url     = Faye_Transport_WebSocket.getSocketUrl(this.endpoint),
-        cookie  = this._getCookies(),
-        headers = this._dispatcher.headers,
-        tls     = this._dispatcher.tls,
-        options = {headers: headers, proxy: this._proxy, tls: tls};
+    var url        = Faye_Transport_WebSocket.getSocketUrl(this.endpoint),
+        headers    = this._dispatcher.headers,
+        extensions = this._dispatcher.wsExtensions,
+        cookie     = this._getCookies(),
+        tls        = this._dispatcher.tls,
+        options    = {extensions: extensions, headers: headers, proxy: this._proxy, tls: tls};
 
     if (cookie !== '') options.headers['Cookie'] = cookie;
 

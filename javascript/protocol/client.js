@@ -60,6 +60,10 @@ var Faye_Client = Faye_Class({
       }, this);
   },
 
+  addWebsocketExtension: function(extension) {
+    return this._dispatcher.addWebsocketExtension(extension);
+  },
+
   disable: function(feature) {
     return this._dispatcher.disable(feature);
   },
