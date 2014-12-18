@@ -186,8 +186,7 @@ var Faye_NodeAdapter = Faye_Class({
     /** Don't use the automatic websocket ping as the default
      *  behaviour does disconnect on lack of a response        */
     var options  = {extensions: this._extensions, /* ping: this._options.ping */},
-
-        ws       = new Faye.WebSocket(request, socket, head, [], options),
+        ws       = new Faye_WebSocket(request, socket, head, [], options),
         clientId = null,
         self     = this,
         pingId   = 0,
