@@ -12,7 +12,7 @@
     "http"
   ],
   "license": "MIT",
-  "version": "1.1.0-a",
+  "version": "1.1.0-b",
   "engines": {
     "node": ">=0.6.0"
   },
