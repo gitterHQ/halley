@@ -8,135 +8,391 @@ var Faye_URI = require('../util/uri');
 var Faye_Promise = require('../util/promise');
 var Faye_Deferrable = require('../mixins/deferrable');
 var Faye_Set = require('../util/set');
+var Faye_Logging = require('../mixins/logging');
+var Faye_FSM = require('../util/fsm');
+
+
+var FSM = {
+  initial: "NEVER_CONNECTED",
+  transitions: {
+    NEVER_CONNECTED: {
+      connect: "CONNECTING_INITIAL"
+    },
+    CONNECTING_INITIAL: {
+      socketClosed: "CLOSED",
+      socketConnected: "CONNECTED",
+      close: "CLOSED"
+    },
+    CONNECTING: {
+      socketClosed: "AWAITING_RETRY",
+      socketConnected: "CONNECTED",
+      close: "CLOSED"
+    },
+    CONNECTED: {
+      socketClosed: "AWAITING_RETRY",
+      pingTimeout: "RECONNECTING",
+      close: "CLOSED"
+    },
+    AWAITING_RETRY: {
+      close: "CLOSED",
+      connect: "RECONNECTING"
+    },
+    RECONNECTING: {
+      socketClosed: "AWAITING_RETRY",
+      socketConnected: "CONNECTED",
+      close: "CLOSED"
+    },
+    CLOSED: {
+      connect: "CONNECTING"
+    },
+  }
+};
+
+
+var navigatorConnection = Faye.ENV.navigator && (Faye.ENV.navigator.connection || Faye.ENV.navigator.mozConnection || Faye.ENV.navigator.webkitConnection);
+
+var Socket_Promise = Faye_Class({
+
+  initialize: function(socket, transport) {
+    var self = this;
+    this._socket = socket;
+    this._transport = transport;
+
+    this._socketPromise = new Faye_Promise(function(resolve, reject) {
+
+      switch (socket.readyState) {
+        case socket.OPEN:
+          resolve(self);
+          break;
+
+        case socket.CONNECTING:
+          // Timeout if the connection doesn't become established
+          var connectTimeout = setTimeout(function() {
+            reject(new Error('Timeout on connection'));
+          }, transport._dispatcher.timeout * 1000 / 4);
+
+          socket.onopen = function() {
+            clearTimeout(connectTimeout);
+            resolve(self);
+          };
+          break;
+
+        case socket.CLOSING:
+        case socket.CLOSED:
+          reject(new Error('Socket connection failed'));
+          return;
+      }
+
+      socket.onmessage = function(e) {
+        self._transport._onmessage(self, e);
+      };
+
+      socket.onclose = socket.onerror = function() {
+        socket.onclose = socket.onerror = null;
+
+        reject(new Error("Connection failed"));
+        self.failed();
+      };
+
+    }).then(function() {
+      self._setup = true;
+    }, function(err) {
+      self.failed();
+      throw err;
+    });
+  },
+
+  failed: function() {
+    if(!this._socket) return;
+    var socket = this._socket;
+    this._socket = null;
+
+    this._socketPromise = new Faye_Promise.rejected(new Error('Connection closed'));
+    if(this._setup) {
+      this._transport._socketClosed(this);
+    }
+
+    var state = socket.readyState;
+
+    if(state === socket.OPEN || state === socket.CONNECTING) {
+      socket.onerror = socket.onclose = null;
+      socket.close();
+    }
+
+  },
+
+  connected: function() {
+    return this._socketPromise;
+  },
+
+  send: function(messages) {
+    var self = this;
+    return this._socketPromise
+      .then(function() {
+        var socket = self._socket;
+
+        // Todo: deal with a timeout situation...
+        if(socket.readyState !== socket.OPEN) {
+          throw new Error('Socket is not open');
+        }
+
+        socket.send(Faye.toJSON(messages));
+      });
+  },
+
+  close: function() {
+    this.failed();
+  }
+
+});
+Faye.extend(Socket_Promise.prototype, Faye_Logging);
 
 var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
-  UNCONNECTED:  1,
-  CONNECTING:   2,
-  CONNECTED:    3,
-
   batching:     false,
+  initialize: function(dispatcher, endpoint) {
+    Faye_Transport.prototype.initialize.call(this, dispatcher, endpoint);
+
+    this._state = new Faye_FSM(FSM);
+    this._state.on('enter:CONNECTING', this._onEnterConnecting.bind(this));
+    this._state.on('enter:RECONNECTING', this._onEnterConnecting.bind(this));
+    this._state.on('enter:CONNECTING_INITIAL', this._onEnterConnecting.bind(this));
+    this._state.on('enter:AWAITING_RETRY', this._onEnterAwaitingRetry.bind(this));
+    this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
+    this._state.on('leave:CONNECTED', this._onLeaveConnected.bind(this));
+  },
 
   isUsable: function(callback, context) {
-    this.callback(function() { callback.call(context, true) });
-    this.errback(function() { callback.call(context, false) });
-    this.connect();
+    return this.connect()
+      .then(function() {
+        callback.call(context, true);
+      }, function() {
+        callback.call(context, false);
+      });
   },
 
   request: function(messages) {
-    this._pending = this._pending || new Faye_Set();
+    var self = this;
+    var aborted = false;
+
+    // Add all messages to the pending queue
+    if (!this._pending) this._pending = new Faye_Set();
     for (var i = 0, n = messages.length; i < n; i++) this._pending.add(messages[i]);
 
-    var promise = new Faye_Promise();
+    this.connect()
+      .then(function() {
+        if (aborted) {
+          throw new Error("Send aborted");
+        }
 
-    this.callback(function(socket) {
-      if (!socket) return;
-      socket.send(Faye.toJSON(messages));
-      Faye_Promise.fulfill(promise, socket);
-    }, this);
-
-    this.connect();
+        return self._socket.send(messages);
+      });
 
     return {
-      abort: function() { promise.then(function(ws) { ws.close() }) }
+      abort: function() {
+        /* If the message has not already been sent, abort the send */
+        aborted = true;
+      }
     };
   },
 
   connect: function() {
-    if (Faye_Transport_WebSocket._unloaded) return;
+    if(this._state.stateIs('CLOSED', 'NEVER_CONNECTED')) {
+      this._state.transition('connect');
+    }
 
-    this._state = this._state || this.UNCONNECTED;
-    if (this._state !== this.UNCONNECTED) return;
-    this._state = this.CONNECTING;
+    return this._state.waitFor({
+      fulfilled: 'CONNECTED',
+      rejected: 'CLOSED',
+      timeout: this._dispatcher.timeout * 1000 / 2
+    });
+  },
 
-    var socket = this._createSocket();
-    if (!socket) return this.setDeferredStatus('failed');
-
+  _onEnterConnecting: function() {
     var self = this;
 
-    socket.onopen = function() {
-      if (socket.headers) self._storeCookies(socket.headers['set-cookie']);
-      self._socket = socket;
-      self._state = self.CONNECTED;
-      self._everConnected = true;
-      self._ping();
-      self.setDeferredStatus('succeeded', socket);
-    };
+    if (Faye_Transport_WebSocket._unloaded) {
+      self._state.transition('socketClosed', new Error('Sockets unloading'));
+      return;
+    }
 
-    var closed = false;
-    socket.onclose = socket.onerror = function() {
-      if (closed) return;
-      closed = true;
+    var url     = Faye_Transport_WebSocket.getSocketUrl(self.endpoint),
+        headers = Faye.copyObject(self._dispatcher.headers),
+        options = { headers: headers, ca: self._dispatcher.ca },
+        socket;
 
-      var wasConnected = (self._state === self.CONNECTED);
-      socket.onopen = socket.onclose = socket.onerror = socket.onmessage = null;
+    options.headers.Cookie = self._getCookies();
 
-      delete self._socket;
-      self._state = self.UNCONNECTED;
-      self.removeTimeout('ping');
-      self.setDeferredStatus('unknown');
+    if (Faye.WebSocket) {
+      socket = new Faye.WebSocket.Client(url, [], options);
+    } else if (Faye.ENV.MozWebSocket) {
+      socket = new Faye.ENV.MozWebSocket(url);
+    } else if (Faye.ENV.WebSocket) {
+      socket = new Faye.ENV.WebSocket(url);
+    }
 
-      var pending = self._pending ? self._pending.toArray() : [];
-      delete self._pending;
+    if (!socket) {
+      self._state.transition('socketClosed', new Error('Sockets not supported'));
+      return;
+    }
 
-      if (wasConnected) {
-        self._handleError(pending, true);
-      } else if (self._everConnected) {
-        self._handleError(pending);
-      } else {
-        self.setDeferredStatus('failed');
+    self._socket = new Socket_Promise(socket, self);
+    self._socket.connected()
+      .then(function(socket) {
+        self._state.transition('socketConnected');
+      }, function(err) {
+        self._state.transition('socketClosed', err);
+      });
+  },
+
+  _onEnterAwaitingRetry: function() {
+    var self = this;
+    setTimeout(function() {
+      if(self._state.stateIs('AWAITING_RETRY')) {
+        self._state.transition('connect');
       }
-    };
+    }, this._dispatcher.retry * 1000 || 1000);
+  },
 
-    socket.onmessage = function(event) {
-      var replies = JSON.parse(event.data);
-      if (!replies) return;
+  _onEnterConnected: function(lastState) {
+    var self = this;
 
-      replies = [].concat(replies);
+    this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
+    if(!this._onNetworkEventBound) {
+      this._onNetworkEventBound = this._onNetworkEvent.bind(this);
+    }
 
-      for (var i = 0, n = replies.length; i < n; i++) {
-        if (replies[i].successful === undefined) continue;
-        self._pending.remove(replies[i]);
+    if (navigatorConnection) {
+      navigatorConnection.addEventListener('typechange', this._onNetworkEventBound, false);
+    }
+
+    if (Faye.ENV.addEventListener) {
+      Faye.ENV.addEventListener('online', this._onNetworkEventBound, false);
+      Faye.ENV.addEventListener('offline', this._onNetworkEventBound, false);
+    }
+
+    this._sleepDetectionLast = Date.now();
+    this._sleepDetectionTimer = setInterval(function() {
+      var now = Date.now();
+      if(self._sleepDetectionLast - now > 60000) {
+        self._onNetworkEvent();
       }
-      self._receive(replies);
-    };
+      self._sleepDetectionLast = now;
+    }, 30000);
+
+    if(lastState === 'RECONNECTING') {
+      setTimeout(function() {
+        self._dispatcher._client.connect(function() {}, self);
+
+      }, 0);
+    }
+  },
+
+  _onLeaveConnected: function() {
+    var socket = this._socket;
+    if(socket) {
+      this._socket = null;
+      socket.close();
+    }
+    this.removeTimeout('ping');
+    this.removeTimeout('pingTimeout');
+
+    if(navigatorConnection) {
+      navigatorConnection.removeEventListener('typechange', this._onNetworkEventBound, false);
+    }
+
+    if (Faye.ENV.removeEventListener) {
+      Faye.ENV.removeEventListener('online', this._onNetworkEventBound, false);
+      Faye.ENV.removeEventListener('offline', this._onNetworkEventBound, false);
+    }
+
+    clearTimeout(this._sleepDetectionTimer);
+
+    this._rejectPending();
   },
 
   close: function() {
-    if (!this._socket) return;
-    this._socket.close();
+    this._state.transitionIfPossible('close');
   },
 
-  _createSocket: function() {
-    var url        = Faye_Transport_WebSocket.getSocketUrl(this.endpoint),
-        headers    = this._dispatcher.headers,
-        extensions = this._dispatcher.wsExtensions,
-        cookie     = this._getCookies(),
-        tls        = this._dispatcher.tls,
-        options    = {extensions: extensions, headers: headers, proxy: this._proxy, tls: tls};
+  _rejectPending: function() {
+    var pending = this._pending ? this._pending.toArray() : [];
+    delete this._pending;
 
-    if (cookie !== '') options.headers['Cookie'] = cookie;
+    this._handleError(pending);
+  },
 
-    if (Faye.WebSocket)        return new Faye.WebSocket.Client(url, [], options);
-    if (Faye.ENV.MozWebSocket) return new Faye.ENV.MozWebSocket(url);
-    if (Faye.ENV.WebSocket)    return new Faye.ENV.WebSocket(url);
+  _onNetworkEvent: function() {
+    if(this._state.stateIs('CONNECTED')) {
+      this._ping();
+    } else if(this._state.stateIs('AWAITING_RETRY')) {
+      this._state.transition('connect');
+    }
+  },
+
+  _onmessage: function(socket, e) {
+    // Don't ignore messages from orphans
+    var replies = JSON.parse(e.data);
+    if (!replies) return;
+
+    replies = [].concat(replies);
+
+    if(this._socket === socket) {
+      this.removeTimeout('pingTimeout');
+      this.removeTimeout('ping');
+      this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
+    } else {
+      console.error('message received from socket', socket, 'expected', this._socket);
+    }
+
+    if(this._pending) {
+      for (var i = 0, n = replies.length; i < n; i++) {
+        if (replies[i].successful !== undefined) {
+          this._pending.remove(replies[i]);
+        }
+      }
+    }
+
+    this._receive(replies);
+  },
+
+  _socketClosed: function(socket) {
+    if(this._socket === socket) {
+      this._state.transitionIfPossible('socketClosed');
+    }
+
   },
 
   _ping: function() {
-    if (!this._socket) return;
-    this._socket.send('[]');
-    this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
+    this.removeTimeout('ping');
+    this.addTimeout('pingTimeout', this._dispatcher.timeout / 4, this._pingTimeout, this);
+    this._socket.send([]);
+  },
+
+  _pingTimeout: function() {
+    this._state.transitionIfPossible('pingTimeout');
   }
 
 }), {
+
   PROTOCOLS: {
     'http:':  'ws:',
     'https:': 'wss:'
   },
 
   create: function(dispatcher, endpoint) {
-    var sockets = dispatcher.transports.websocket = dispatcher.transports.websocket || {};
-    sockets[endpoint.href] = sockets[endpoint.href] || new this(dispatcher, endpoint);
-    return sockets[endpoint.href];
+    var sockets = dispatcher.transports.websocket;
+    if(!sockets) {
+      sockets = {};
+      dispatcher.transports.websocket = sockets;
+    }
+
+    if(sockets[endpoint.href]) {
+      return sockets[endpoint.href];
+    }
+
+    var socket =  new Faye_Transport_WebSocket(dispatcher, endpoint);
+    sockets[endpoint.href] = socket;
+    return socket;
   },
 
   getSocketUrl: function(endpoint) {
@@ -148,6 +404,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     this.create(dispatcher, endpoint).isUsable(callback, context);
   }
+
 });
 
 Faye.extend(Faye_Transport_WebSocket.prototype, Faye_Deferrable);
@@ -158,4 +415,4 @@ if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
     Faye_Transport_WebSocket._unloaded = true;
   });
 
-module.exports = Faye_Transport_WebSocket;
+module.exports = Faye_Transport;
