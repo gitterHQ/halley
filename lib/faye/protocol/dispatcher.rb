@@ -29,12 +29,14 @@ module Faye
       @disabled      = []
       @envelopes     = {}
       @headers       = {}
-      @proxy         = options[:proxy] || {}
       @retry         = options[:retry] || DEFAULT_RETRY
       @scheduler     = options[:scheduler] || Faye::Scheduler
       @state         = 0
       @transports    = {}
       @ws_extensions = []
+
+      @proxy = options[:proxy] || {}
+      @proxy = {:origin => @proxy} if String === @proxy
 
       [*options[:websocket_extensions]].each do |extension|
         add_websocket_extension(extension)
@@ -85,8 +87,6 @@ module Faye
     end
 
     def send_message(message, timeout, options = {})
-      return unless @transport
-
       id       = message['id']
       attempts = options[:attempts]
       deadline = options[:deadline] && Time.now.to_f + options[:deadline]
@@ -101,6 +101,7 @@ module Faye
     end
 
     def send_envelope(envelope)
+      return unless @transport
       return if envelope.request or envelope.timer
 
       message   = envelope.message

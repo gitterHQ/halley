@@ -15,7 +15,7 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
       headers:             {},
       proxy:               {},
       transports:          {},
-      websocketExtensions: []
+      wsExtensions:   []
     }
     dispatcher.endpointFor = function() { return dispatcher.endpoint }
 

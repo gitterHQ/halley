@@ -26,6 +26,8 @@ module Faye
       @app     = app if app.respond_to?(:call)
       @options = [app, options].grep(Hash).first || {}
 
+      ::WebSocket::Driver.validate_options(@options, [:engine, :mount, :ping, :timeout, :extensions, :websocket_extensions])
+
       @endpoint    = @options[:mount] || DEFAULT_ENDPOINT
       @extensions  = []
       @endpoint_re = Regexp.new('^' + @endpoint.gsub(/\/$/, '') + '(/[^/]*)*(\\.[^\\.]+)?$')
@@ -199,7 +201,7 @@ module Faye
 
           @server.close_socket(client_id, false) if client_id and cid and cid != client_id
           @server.open_socket(cid, ws, request)
-          client_id = cid
+          client_id = cid if cid
 
           @server.process(message, request) do |replies|
             ws.send(Faye.to_json(replies)) if ws

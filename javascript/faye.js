@@ -1,7 +1,7 @@
 'use strict';
 
 var Faye = {
-  VERSION:          '1.0.3',
+  VERSION:          '1.1.0',
 
   BAYEUX_VERSION:   '1.0',
   JSONP_CALLBACK:   'jsonpcallback',
@@ -20,6 +20,13 @@ var Faye = {
         dest[key] = source[key];
     }
     return dest;
+  },
+
+  validateOptions: function(options, validKeys) {
+    for (var key in options) {
+      if (this.indexOf(validKeys, key) < 0)
+        throw new Error('Unrecognized option: ' + key);
+    }
   },
 
   clientIdFromMessages: function(messages) {

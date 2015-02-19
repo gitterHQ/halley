@@ -26,11 +26,13 @@ var Faye_Dispatcher = Faye_Class({
     this._envelopes   = {};
     this.headers      = {};
     this.retry        = options.retry || this.DEFAULT_RETRY;
-    this.proxy        = options.proxy || {};
     this._scheduler   = options.scheduler || Faye_Scheduler;
     this._state       = 0;
     this.transports   = {};
     this.wsExtensions = [];
+
+    this.proxy = options.proxy || {};
+    if (typeof this._proxy === 'string') this._proxy = {origin: this._proxy};
 
     var exts = options.websocketExtensions;
     if (exts) {
@@ -87,7 +89,6 @@ var Faye_Dispatcher = Faye_Class({
   },
 
   sendMessage: function(message, timeout, options) {
-    if (!this._transport) return;
     options = options || {};
 
     var id       = message.id,
@@ -105,6 +106,7 @@ var Faye_Dispatcher = Faye_Class({
   },
 
   _sendEnvelope: function(envelope) {
+    if (!this._transport) return;
     if (envelope.request || envelope.timer) return;
 
     var message   = envelope.message,

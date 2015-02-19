@@ -35,6 +35,8 @@ var Faye_Client = Faye_Class({
     this.info('New client created for ?', endpoint);
     options = options || {};
 
+    Faye.validateOptions(options, ['interval', 'timeout', 'endpoints', 'proxy', 'retry', 'scheduler', 'websocketExtensions', 'tls', 'ca']);
+
     this._endpoint   = endpoint || this.DEFAULT_ENDPOINT;
     this._channels   = new Faye_Channel.Set();
     this._dispatcher = new Faye_Dispatcher(this, this._endpoint, options);
@@ -175,17 +177,24 @@ var Faye_Client = Faye_Class({
     this._state = this.DISCONNECTED;
 
     this.info('Disconnecting ?', this._dispatcher.clientId);
+    var promise = new Faye_Publication();
 
     this._sendMessage({
       channel:  Faye_Channel.DISCONNECT,
       clientId: this._dispatcher.clientId
 
     }, {}, function(response) {
-      if (response.successful) this._dispatcher.close();
+      if (response.successful) {
+        this._dispatcher.close();
+        promise.setDeferredStatus('succeeded');
+      } else {
+        promise.setDeferredStatus('failed', Faye_Error.parse(response.error));
+      }
     }, this);
 
     this.info('Clearing channel listeners for ?', this._dispatcher.clientId);
     this._channels = new Faye_Channel.Set();
+    return promise;
   },
 
   // Request                              Response
@@ -281,6 +290,7 @@ var Faye_Client = Faye_Class({
   //                * id                                 * error
   //                * ext                                * ext
   publish: function(channel, data, options) {
+    Faye.validateOptions(options || {}, ['attempts', 'deadline']);
     var publication = new Faye_Publication();
 
     this.connect(function() {

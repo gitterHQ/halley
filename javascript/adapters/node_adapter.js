@@ -25,7 +25,9 @@ var Faye_NodeAdapter = Faye_Class({
   VALID_JSONP_CALLBACK: /^[a-z_\$][a-z0-9_\$]*(\.[a-z_\$][a-z0-9_\$]*)*$/i,
 
   initialize: function(options) {
-    this._options    = options || {};
+    this._options = options || {};
+    Faye_WebSocket.validateOptions(this._options, ['engine', 'mount', 'ping', 'timeout', 'extensions', 'websocketExtensions']);
+
     this._extensions = [];
     this._endpoint   = this._options.mount || this.DEFAULT_ENDPOINT;
     this._endpointRe = new RegExp('^' + this._endpoint.replace(/\/$/, '') + '(/[^/]*)*(\\.[^\\.]+)?$');
@@ -238,7 +240,7 @@ var Faye_NodeAdapter = Faye_Class({
 
         if (clientId && cid && cid !== clientId) self._server.closeSocket(clientId, false);
         self._server.openSocket(cid, ws, request);
-        clientId = cid;
+        if (cid) clientId = cid;
 
         self._server.process(message, request, function(replies) {
           if (ws) ws.send(Faye.toJSON(replies));
