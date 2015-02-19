@@ -164,9 +164,6 @@ var Faye_Dispatcher = Faye_Class({
       this._sendEnvelope(envelope);
     } else {
       envelope.timer = Faye.ENV.setTimeout(function() {
-        if (!self._client || self._client._state === self._client.DISCONNECTED) {
-          return;
-        }
         envelope.timer = null;
         self._sendEnvelope(envelope);
       }, scheduler.getInterval() * 1000);
