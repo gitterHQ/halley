@@ -139,8 +139,5 @@
         "build/README.md": "README.md"
       }
     }
-  },
-  "publishConfig": {
-    "registry": "http://beta-internal:8089/nexus/content/repositories/gitter-private/"
   }
 }
