@@ -6,6 +6,8 @@ var Faye_Transport = require('./transport');
 var http = require('http');
 var https = require('https');
 var Faye_URI = require('../util/uri');
+var url = require('url');
+var tunnel = require('tunnel-agent');
 
 var Faye_Transport_NodeHttp = Faye.extend(Faye_Class(Faye_Transport, {
   initialize: function() {
