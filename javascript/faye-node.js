@@ -2,6 +2,7 @@
 
 var Faye = require('./faye');
 Faye.Client = require('./protocol/client');
+Faye.WebSocket = require('faye-websocket');
 
 /* Register protocols */
 Faye.Transport = {

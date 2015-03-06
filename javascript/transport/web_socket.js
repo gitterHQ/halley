@@ -11,6 +11,17 @@ var Faye_Set = require('../util/set');
 var Faye_Logging = require('../mixins/logging');
 var Faye_FSM = require('../util/fsm');
 
+/* @const */
+var WS_CONNECTING  = 0;
+
+/* @const */
+var WS_OPEN = 1;
+
+/* @const */
+var WS_CLOSING = 2;
+
+/* @const */
+var WS_CLOSED  = 3;
 
 var FSM = {
   initial: "NEVER_CONNECTED",
@@ -59,13 +70,12 @@ var Socket_Promise = Faye_Class({
     this._transport = transport;
 
     this._socketPromise = new Faye_Promise(function(resolve, reject) {
-
       switch (socket.readyState) {
-        case socket.OPEN:
+        case WS_OPEN:
           resolve(self);
           break;
 
-        case socket.CONNECTING:
+        case WS_CONNECTING:
           // Timeout if the connection doesn't become established
           var connectTimeout = setTimeout(function() {
             reject(new Error('Timeout on connection'));
@@ -77,8 +87,8 @@ var Socket_Promise = Faye_Class({
           };
           break;
 
-        case socket.CLOSING:
-        case socket.CLOSED:
+        case WS_CLOSING:
+        case WS_CLOSED:
           reject(new Error('Socket connection failed'));
           return;
       }
@@ -104,6 +114,8 @@ var Socket_Promise = Faye_Class({
   },
 
   failed: function() {
+    this.warn('Marking underlying websocket as failed');
+
     if(!this._socket) return;
     var socket = this._socket;
     this._socket = null;
@@ -116,7 +128,7 @@ var Socket_Promise = Faye_Class({
     var state = socket.readyState;
     socket.onerror = socket.onclose = socket.onmessage = null;
 
-    if(state === socket.OPEN || state === socket.CONNECTING) {
+    if(state === WS_OPEN || state === WS_CONNECTING) {
       socket.close();
     }
 
@@ -133,7 +145,7 @@ var Socket_Promise = Faye_Class({
         var socket = self._socket;
 
         // Todo: deal with a timeout situation...
-        if(socket.readyState !== socket.OPEN) {
+        if(socket.readyState !== WS_OPEN) {
           throw new Error('Socket is not open');
         }
 
@@ -142,6 +154,8 @@ var Socket_Promise = Faye_Class({
   },
 
   close: function() {
+    this.info('Underlying WebSocket close');
+
     this.failed();
   }
 
@@ -215,6 +229,8 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       self._state.transition('socketClosed', new Error('Sockets unloading'));
       return;
     }
+
+    self.info('Entered connecting state, creating new WebSocket connection');
 
     var url     = Faye_Transport_WebSocket.getSocketUrl(self.endpoint),
         headers = Faye.copyObject(self._dispatcher.headers),
