@@ -88,7 +88,8 @@ var Socket_Promise = Faye_Class({
       };
 
       socket.onclose = socket.onerror = function() {
-        socket.onclose = socket.onerror = null;
+        self.info('Closing WebSocket');
+        socket.onclose = socket.onerror = socket.onmessage = null;
 
         reject(new Error("Connection failed"));
         self.failed();
@@ -113,9 +114,9 @@ var Socket_Promise = Faye_Class({
     }
 
     var state = socket.readyState;
+    socket.onerror = socket.onclose = socket.onmessage = null;
 
     if(state === socket.OPEN || state === socket.CONNECTING) {
-      socket.onerror = socket.onclose = null;
       socket.close();
     }
 
@@ -254,6 +255,8 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   _onEnterConnected: function(lastState) {
+    this.debug('WebSocket entering connected state');
+
     var self = this;
 
     this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
@@ -288,6 +291,8 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   _onLeaveConnected: function() {
+    this.debug('WebSocket leaving connected state');
+
     var socket = this._socket;
     if(socket) {
       this._socket = null;
@@ -311,6 +316,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   close: function() {
+    this.debug('WebSocket close requested');
     this._state.transitionIfPossible('close');
   },
 
@@ -341,7 +347,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       this.removeTimeout('ping');
       this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
     } else {
-      console.error('message received from socket', socket, 'expected', this._socket);
+      this.error('message received from incorrect socket');
     }
 
     if(this._pending) {
@@ -408,6 +414,8 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
 });
 
 Faye.extend(Faye_Transport_WebSocket.prototype, Faye_Deferrable);
+Faye.extend(Socket_Promise.prototype, Faye_Logging);
+
 Faye_Transport.register('websocket', Faye_Transport_WebSocket);
 
 if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)

@@ -12,7 +12,8 @@ var Faye_Logging = {
   },
 
   writeLog: function(messageArgs, level) {
-    if (!Faye.logger) return;
+    // Only log on the given level if it's enabled
+    if (!Faye.logger || (typeof Faye.logger[level] !== 'function' && typeof Faye.logger !== 'function')) return;
 
     var args   = Array.prototype.slice.apply(messageArgs),
         banner = '[Faye',

@@ -67,6 +67,7 @@ var Faye_Dispatcher = Faye_Class({
   },
 
   close: function() {
+    this.info('Dispatcher close requested');
     var transport = this._transport;
     delete this._transport;
     if (transport) transport.close();

@@ -313,6 +313,7 @@ var Faye_Client = Faye_Class({
   },
 
   reset: function() {
+    this.info('Client reset requested');
     this._dispatcher.close();
     this._state = this.UNCONNECTED;
     this._cycleConnection();
