@@ -20,7 +20,7 @@
   "browserify": "./javascript/faye-browser",
   "dependencies": {
     "csprng": "",
-    "faye-websocket": "0.9.1",
+    "faye-websocket": "~0.9.4",
     "tough-cookie": "",
     "tunnel-agent": ""
   },
