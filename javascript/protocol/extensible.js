@@ -1,7 +1,6 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Logging = require('../mixins/logging');
+var debug = require('debug-proxy')('faye:extensible');
 
 var Faye_Extensible = {
   addExtension: function(extension) {
@@ -21,7 +20,7 @@ var Faye_Extensible = {
   },
 
   pipeThroughExtensions: function(stage, message, request, callback, context) {
-    this.debug('Passing through ? extensions: ?', stage, message);
+    debug('Passing through %s extensions: %s', stage, message);
 
     if (!this._extensions) return callback.call(context, message);
     var extensions = this._extensions.slice();
@@ -41,7 +40,5 @@ var Faye_Extensible = {
     pipe(message);
   }
 };
-
-Faye.extend(Faye_Extensible, Faye_Logging);
 
 module.exports = Faye_Extensible;

@@ -1,20 +1,20 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
-var Faye_Extensible = require('./extensible');
-var Faye_Publisher = require('../mixins/publisher');
-var Faye_Logging = require('../mixins/logging');
-var Faye_Error = require('../error');
-var Faye_Channel = require('./channel');
-var Faye_Dispatcher = require('./dispatcher');
-var Faye_Event = require('../util/browser/event');
-var Faye_Promise = require('../util/promise');
+var Faye              = require('../faye');
+var Faye_Class        = require('../util/class');
+var Faye_Extensible   = require('./extensible');
+var Faye_Publisher    = require('../mixins/publisher');
+var Faye_Error        = require('../error');
+var Faye_Channel      = require('./channel');
+var Faye_Dispatcher   = require('./dispatcher');
+var Faye_Event        = require('../util/browser/event');
+var Faye_Promise      = require('../util/promise');
 var Faye_Subscription = require('./subscription');
-var Faye_Publication = require('./publication');
-var Faye_URI = require('../util/uri');
-var Faye_Promise = require('../util/promise');
-var Faye_Deferrable = require('../mixins/deferrable');
+var Faye_Publication  = require('./publication');
+var Faye_URI          = require('../util/uri');
+var Faye_Promise      = require('../util/promise');
+var Faye_Deferrable   = require('../mixins/deferrable');
+var debug             = require('debug-proxy')('faye:client');
 
 var Faye_Client = Faye_Class({
   UNCONNECTED:        1,
@@ -32,7 +32,7 @@ var Faye_Client = Faye_Class({
   INTERVAL:           0,
 
   initialize: function(endpoint, options) {
-    this.info('New client created for ?', endpoint);
+    debug('New client created for %s', endpoint);
     options = options || {};
 
     Faye.validateOptions(options, ['interval', 'timeout', 'endpoints', 'proxy', 'retry', 'scheduler', 'websocketExtensions', 'tls', 'ca']);
@@ -100,7 +100,7 @@ var Faye_Client = Faye_Class({
     this._state = this.CONNECTING;
     var self = this;
 
-    this.info('Initiating handshake with ?', Faye_URI.stringify(this._endpoint));
+    debug('Initiating handshake with %s', Faye_URI.stringify(this._endpoint));
     this._dispatcher.selectTransport(Faye.MANDATORY_CONNECTION_TYPES);
 
     this._sendMessage({
@@ -116,13 +116,13 @@ var Faye_Client = Faye_Class({
 
         this._dispatcher.selectTransport(response.supportedConnectionTypes);
 
-        this.info('Handshake successful: ?', this._dispatcher.clientId);
+        debug('Handshake successful: %s', this._dispatcher.clientId);
 
         this.subscribe(this._channels.getKeys(), true);
         if (callback) Faye_Promise.defer(function() { callback.call(context) });
 
       } else {
-        this.info('Handshake unsuccessful');
+        debug('Handshake unsuccessful');
         Faye.ENV.setTimeout(function() { self.handshake(callback, context) }, this._dispatcher.retry * 1000);
         this._state = this.UNCONNECTED;
       }
@@ -148,14 +148,14 @@ var Faye_Client = Faye_Class({
     this.callback(callback, context);
     if (this._state !== this.CONNECTED) return;
 
-    this.info('Calling deferred actions for ?', this._dispatcher.clientId);
+    debug('Calling deferred actions for %s', this._dispatcher.clientId);
     this.setDeferredStatus('succeeded');
     this.setDeferredStatus('unknown');
 
     if (this._connectRequest) return;
     this._connectRequest = true;
 
-    this.info('Initiating connection for ?', this._dispatcher.clientId);
+    debug('Initiating connection for %s', this._dispatcher.clientId);
 
     this._sendMessage({
       channel:        Faye_Channel.CONNECT,
@@ -176,7 +176,7 @@ var Faye_Client = Faye_Class({
     if (this._state !== this.CONNECTED) return;
     this._state = this.DISCONNECTED;
 
-    this.info('Disconnecting ?', this._dispatcher.clientId);
+    debug('Disconnecting %s', this._dispatcher.clientId);
     var promise = new Faye_Publication();
 
     this._sendMessage({
@@ -192,7 +192,7 @@ var Faye_Client = Faye_Class({
       }
     }, this);
 
-    this.info('Clearing channel listeners for ?', this._dispatcher.clientId);
+    debug('Clearing channel listeners for %s', this._dispatcher.clientId);
     this._channels = new Faye_Channel.Set();
     return promise;
   },
@@ -224,7 +224,7 @@ var Faye_Client = Faye_Class({
     }
 
     this.connect(function() {
-      this.info('Client ? attempting to subscribe to ?', this._dispatcher.clientId, channel);
+      debug('Client %s attempting to subscribe to %s', this._dispatcher.clientId, channel);
       if (!force) this._channels.subscribe([channel], callback, context);
 
       this._sendMessage({
@@ -238,8 +238,7 @@ var Faye_Client = Faye_Class({
           return this._channels.unsubscribe(channel, callback, context);
         }
 
-        var channels = [].concat(response.subscription);
-        this.info('Subscription acknowledged for ? to ?', this._dispatcher.clientId, channels);
+        debug('Subscription acknowledged for %s to %s', this._dispatcher.clientId, response.subscription);
         subscription.setDeferredStatus('succeeded');
       }, this);
     }, this);
@@ -267,7 +266,7 @@ var Faye_Client = Faye_Class({
     if (!dead) return;
 
     this.connect(function() {
-      this.info('Client ? attempting to unsubscribe from ?', this._dispatcher.clientId, channel);
+      debug('Client %s attempting to unsubscribe from %s', this._dispatcher.clientId, channel);
 
       this._sendMessage({
         channel:      Faye_Channel.UNSUBSCRIBE,
@@ -278,7 +277,7 @@ var Faye_Client = Faye_Class({
         if (!response.successful) return;
 
         var channels = [].concat(response.subscription);
-        this.info('Unsubscription acknowledged for ? from ?', this._dispatcher.clientId, channels);
+        debug('Unsubscription acknowledged for %s from %s', this._dispatcher.clientId, channels);
       }, this);
     }, this);
   },
@@ -294,7 +293,7 @@ var Faye_Client = Faye_Class({
     var publication = new Faye_Publication();
 
     this.connect(function() {
-      this.info('Client ? queueing published message to ?: ?', this._dispatcher.clientId, channel, data);
+      debug('Client %s queueing published message to %s: %S', this._dispatcher.clientId, channel, data);
 
       this._sendMessage({
         channel:  channel,
@@ -313,7 +312,7 @@ var Faye_Client = Faye_Class({
   },
 
   reset: function() {
-    this.info('Client reset requested');
+    debug('Client reset requested');
     this._dispatcher.close();
     this._state = this.UNCONNECTED;
     this._cycleConnection();
@@ -368,14 +367,14 @@ var Faye_Client = Faye_Class({
 
   _deliverMessage: function(message) {
     if (!message.channel || message.data === undefined) return;
-    this.info('Client ? calling listeners for ? with ?', this._dispatcher.clientId, message.channel, message.data);
+    debug('Client %s calling listeners for %s with %j', this._dispatcher.clientId, message.channel, message.data);
     this._channels.distributeMessage(message);
   },
 
   _cycleConnection: function() {
     if (this._connectRequest) {
       this._connectRequest = null;
-      this.info('Closed connection for ?', this._dispatcher.clientId);
+      debug('Closed connection for %s', this._dispatcher.clientId);
     }
     var self = this;
     Faye.ENV.setTimeout(function() { self.connect() }, this._advice.interval);
@@ -384,7 +383,6 @@ var Faye_Client = Faye_Class({
 
 Faye.extend(Faye_Client.prototype, Faye_Deferrable);
 Faye.extend(Faye_Client.prototype, Faye_Publisher);
-Faye.extend(Faye_Client.prototype, Faye_Logging);
 Faye.extend(Faye_Client.prototype, Faye_Extensible);
 
 module.exports = Faye_Client;

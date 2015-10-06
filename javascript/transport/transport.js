@@ -1,12 +1,12 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
+var Faye          = require('../faye');
+var Faye_Class    = require('../util/class');
 var Faye_Timeouts = require('../mixins/timeouts');
-var Faye_Logging = require('../mixins/logging');
-var Faye_URI = require('../util/uri');
-var Faye_Promise = require('../util/promise');
-var Faye_Channel = require('../protocol/channel');
+var Faye_URI      = require('../util/uri');
+var Faye_Promise  = require('../util/promise');
+var Faye_Channel  = require('../protocol/channel');
+var debug         = require('debug-proxy')('faye:transport');
 
 var Faye_Transport = Faye.extend(Faye_Class({
   DEFAULT_PORTS:    {'http:': 80, 'https:': 443, 'ws:': 80, 'wss:': 443},
@@ -35,7 +35,7 @@ var Faye_Transport = Faye.extend(Faye_Class({
   },
 
   sendMessage: function(message) {
-    this.debug('Client ? sending message to ?: ?',
+    debug('Client %s sending message to %s: %s',
                this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), message);
 
     if (!this.batching) return Faye_Promise.fulfilled(this.request([message]));
@@ -78,10 +78,10 @@ var Faye_Transport = Faye.extend(Faye_Class({
   },
 
   _receive: function(replies) {
-    if (!replies) return; 
+    if (!replies) return;
     replies = [].concat(replies);
 
-    this.debug('Client ? received from ? via ?: ?',
+    debug('Client %s received from %s via %s: %s',
                this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), this.connectionType, replies);
 
     for (var i = 0, n = replies.length; i < n; i++)
@@ -91,7 +91,7 @@ var Faye_Transport = Faye.extend(Faye_Class({
   _handleError: function(messages, immediate) {
     messages = [].concat(messages);
 
-    this.debug('Client ? failed to send to ? via ?: ?',
+    debug('Client %s failed to send to %s via %s: %s',
                this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), this.connectionType, messages);
 
     for (var i = 0, n = messages.length; i < n; i++)
@@ -161,7 +161,6 @@ var Faye_Transport = Faye.extend(Faye_Class({
   _transports: []
 });
 
-Faye.extend(Faye_Transport.prototype, Faye_Logging);
 Faye.extend(Faye_Transport.prototype, Faye_Timeouts);
 
 module.exports = Faye_Transport;

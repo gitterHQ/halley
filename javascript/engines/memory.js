@@ -1,9 +1,10 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Set = require('../util/set');
-var Faye_Timeouts = require('../mixins/timeouts');
+var Faye           = require('../faye');
+var Faye_Set       = require('../util/set');
+var Faye_Timeouts  = require('../mixins/timeouts');
 var Faye_Namespace = require('../util/namespace');
+var debug          = require('debug-proxy')('faye:memory-engine');
 
 var Faye_Engine_Memory = function(server, options) {
   this._server    = server;
@@ -30,7 +31,7 @@ Faye_Engine_Memory.prototype = {
 
   createClient: function(callback, context) {
     var clientId = this._namespace.generate();
-    this._server.debug('Created new client ?', clientId);
+    debug('Created new client %s', clientId);
     this.ping(clientId);
     this._server.trigger('handshake', clientId);
     callback.call(context, clientId);
@@ -46,7 +47,7 @@ Faye_Engine_Memory.prototype = {
     this.removeTimeout(clientId);
     this._namespace.release(clientId);
     delete this._messages[clientId];
-    this._server.debug('Destroyed client ?', clientId);
+    debug('Destroyed client %s', clientId);
     this._server.trigger('disconnect', clientId);
     this._server.trigger('close', clientId);
     if (callback) callback.call(context);
@@ -60,7 +61,7 @@ Faye_Engine_Memory.prototype = {
     var timeout = this._server.timeout;
     if (typeof timeout !== 'number') return;
 
-    this._server.debug('Ping ?, ?', clientId, timeout);
+    debug('Ping %s, %s', clientId, timeout);
     this.removeTimeout(clientId);
     this.addTimeout(clientId, 2 * timeout, function() {
       this.destroyClient(clientId);
@@ -76,7 +77,7 @@ Faye_Engine_Memory.prototype = {
     channels[channel] = channels[channel] || new Faye_Set();
     channels[channel].add(clientId);
 
-    this._server.debug('Subscribed client ? to channel ?', clientId, channel);
+    debug('Subscribed client %s to channel %s', clientId, channel);
     if (trigger) this._server.trigger('subscribe', clientId, channel);
     if (callback) callback.call(context, true);
   },
@@ -96,13 +97,13 @@ Faye_Engine_Memory.prototype = {
       if (channels[channel].isEmpty()) delete channels[channel];
     }
 
-    this._server.debug('Unsubscribed client ? from channel ?', clientId, channel);
+    debug('Unsubscribed client %s from channel %s', clientId, channel);
     if (trigger) this._server.trigger('unsubscribe', clientId, channel);
     if (callback) callback.call(context, true);
   },
 
   publish: function(message, channels) {
-    this._server.debug('Publishing message ?', message);
+    debug('Publishing message %s', message);
 
     var messages = this._messages,
         clients  = new Faye_Set(),
@@ -115,7 +116,7 @@ Faye_Engine_Memory.prototype = {
     }
 
     clients.forEach(function(clientId) {
-      this._server.debug('Queueing for client ?: ?', clientId, message);
+      debug('Queueing for client %s: %s', clientId, message);
       messages[clientId] = messages[clientId] || [];
       messages[clientId].push(Faye.copyObject(message));
       this.emptyQueue(clientId);

@@ -1,14 +1,14 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
+var Faye               = require('../faye');
+var Faye_Class         = require('../util/class');
 var Faye_Server_Socket = require('./socket');
-var Faye_Logging = require('../mixins/logging');
-var Faye_Extensible = require('./extensible');
-var Faye_Channel = require('./channel');
-var Faye_Error = require('../error');
-var Faye_Engine = require('../engines/engine');
-var Faye_Grammar = require('./grammar');
+var Faye_Extensible    = require('./extensible');
+var Faye_Channel       = require('./channel');
+var Faye_Error         = require('../error');
+var Faye_Engine        = require('../engines/engine');
+var Faye_Grammar       = require('./grammar');
+var debug              = require('debug-proxy')('faye:server');
 
 var Faye_Server = Faye_Class({
   META_METHODS: ['handshake', 'connect', 'disconnect', 'subscribe', 'unsubscribe'],
@@ -19,7 +19,7 @@ var Faye_Server = Faye_Class({
     engineOpts.timeout = this._options.timeout;
     this._engine   = Faye_Engine.get(engineOpts);
 
-    this.info('Created new server: ?', this._options);
+    debug('Created new server: %j', this._options);
   },
 
   close: function() {
@@ -39,7 +39,7 @@ var Faye_Server = Faye_Class({
     var local = (request === null);
 
     messages = [].concat(messages);
-    this.info('Processing messages: ? (local: ?)', messages, local);
+    debug('Processing messages: %j (local: %s)', messages, local);
 
     if (messages.length === 0) return callback.call(context, []);
     var processed = 0, responses = [], self = this;
@@ -53,7 +53,7 @@ var Faye_Server = Faye_Class({
       while (n--) {
         if (!responses[n]) responses.splice(n,1);
       }
-      self.info('Returning replies: ?', responses);
+      debug('Returning replies: %j', responses);
       callback.call(context, responses);
     };
 
@@ -62,7 +62,7 @@ var Faye_Server = Faye_Class({
       if (expected === 0) gatherReplies(replies);
 
       for (var i = 0, n = replies.length; i < n; i++) {
-        this.debug('Processing reply: ?', replies[i]);
+        debug('Processing reply: %j', replies[i]);
         (function(index) {
           self.pipeThroughExtensions('outgoing', replies[index], request, function(message) {
             replies[index] = message;
@@ -94,7 +94,7 @@ var Faye_Server = Faye_Class({
 
   _handle: function(message, local, callback, context) {
     if (!message) return callback.call(context, []);
-    this.info('Handling message: ? (local: ?)', message, local);
+    debug('Handling message: %j (local: %s)', message, local);
 
     var channelName = message.channel,
         error       = message.error,
@@ -318,7 +318,6 @@ var Faye_Server = Faye_Class({
   }
 });
 
-Faye.extend(Faye_Server.prototype, Faye_Logging);
 Faye.extend(Faye_Server.prototype, Faye_Extensible);
 
 module.exports = Faye_Server;

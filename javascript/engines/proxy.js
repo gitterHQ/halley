@@ -1,14 +1,14 @@
 'use strict';
 
-var Faye_Class = require('../util/class');
-var Faye = require('../faye');
-var Faye_Promise = require('../util/promise');
-var Faye_Engine_Memory = require('./memory');
+var Faye_Class             = require('../util/class');
+var Faye                   = require('../faye');
+var Faye_Promise           = require('../util/promise');
+var Faye_Engine_Memory     = require('./memory');
 var Faye_Engine_Connection = require('./connection');
-var Faye_Channel = require('../protocol/channel');
-var Faye_Publisher = require('../mixins/publisher');
-var Faye_Logging = require('../mixins/logging');
-var Faye_random = require('../util/random');
+var Faye_Channel           = require('../protocol/channel');
+var Faye_Publisher         = require('../mixins/publisher');
+var Faye_random            = require('../util/random');
+var debug                  = require('debug-proxy')('faye:proxy-engine');
 
 var Faye_Engine_Proxy = Faye_Class({
   MAX_DELAY:  0,
@@ -31,11 +31,11 @@ var Faye_Engine_Proxy = Faye_Class({
       Faye_Promise.defer(function() { self.flushConnection(clientId); });
     }, this);
 
-    this.debug('Created new engine: ?', this._options);
+    debug('Created new engine: %j', this._options);
   },
 
   connect: function(clientId, options, callback, context) {
-    this.debug('Accepting connection from ?', clientId);
+    debug('Accepting connection from %s', clientId);
     this._engine.ping(clientId);
     var conn = this.connection(clientId, true);
     conn.connect(options, callback, context);
@@ -55,7 +55,7 @@ var Faye_Engine_Proxy = Faye_Class({
   },
 
   closeConnection: function(clientId) {
-    this.debug('Closing connection for ?', clientId);
+    debug('Closing connection for %s', clientId);
     var conn = this._connections[clientId];
     if (!conn) return;
     if (conn.socket) conn.socket.close();
@@ -86,7 +86,7 @@ var Faye_Engine_Proxy = Faye_Class({
 
   flushConnection: function(clientId, close) {
     if (!clientId) return;
-    this.debug('Flushing connection for ?', clientId);
+    debug('Flushing connection for %s', clientId);
     var conn = this.connection(clientId, false);
     if (!conn) return;
     if (close === false) conn.socket = null;
@@ -109,8 +109,6 @@ var Faye_Engine_Proxy = Faye_Class({
   }
 });
 
-
 Faye.extend(Faye_Engine_Proxy.prototype, Faye_Publisher);
-Faye.extend(Faye_Engine_Proxy.prototype, Faye_Logging);
 
 module.exports = Faye_Engine_Proxy;

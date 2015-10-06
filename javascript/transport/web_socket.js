@@ -1,15 +1,15 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
-var Faye_Transport = require('./transport');
-var Faye_Event = require('../util/browser/event');
-var Faye_URI = require('../util/uri');
-var Faye_Promise = require('../util/promise');
+var Faye            = require('../faye');
+var Faye_Class      = require('../util/class');
+var Faye_Transport  = require('./transport');
+var Faye_Event      = require('../util/browser/event');
+var Faye_URI        = require('../util/uri');
+var Faye_Promise    = require('../util/promise');
 var Faye_Deferrable = require('../mixins/deferrable');
-var Faye_Set = require('../util/set');
-var Faye_Logging = require('../mixins/logging');
-var Faye_FSM = require('../util/fsm');
+var Faye_Set        = require('../util/set');
+var Faye_FSM        = require('../util/fsm');
+var debug           = require('debug-proxy')('faye:websocket');
 
 /* @const */
 var WS_CONNECTING  = 0;
@@ -98,7 +98,7 @@ var Socket_Promise = Faye_Class({
       };
 
       socket.onclose = socket.onerror = function() {
-        self.info('Closing WebSocket');
+        debug('Closing WebSocket');
         socket.onclose = socket.onerror = socket.onmessage = null;
 
         reject(new Error("Connection failed"));
@@ -114,7 +114,7 @@ var Socket_Promise = Faye_Class({
   },
 
   failed: function() {
-    this.warn('Marking underlying websocket as failed');
+    debug('Marking underlying websocket as failed');
 
     if(!this._socket) return;
     var socket = this._socket;
@@ -154,13 +154,12 @@ var Socket_Promise = Faye_Class({
   },
 
   close: function() {
-    this.info('Underlying WebSocket close');
+    debug('Underlying WebSocket close');
 
     this.failed();
   }
 
 });
-Faye.extend(Socket_Promise.prototype, Faye_Logging);
 
 var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   batching:     false,
@@ -230,7 +229,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       return;
     }
 
-    self.info('Entered connecting state, creating new WebSocket connection');
+    debug('Entered connecting state, creating new WebSocket connection');
 
     var url     = Faye_Transport_WebSocket.getSocketUrl(self.endpoint),
         headers = Faye.copyObject(self._dispatcher.headers),
@@ -271,7 +270,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   _onEnterConnected: function(lastState) {
-    this.debug('WebSocket entering connected state');
+    debug('WebSocket entering connected state');
 
     var self = this;
 
@@ -307,7 +306,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   _onLeaveConnected: function() {
-    this.debug('WebSocket leaving connected state');
+    debug('WebSocket leaving connected state');
 
     var socket = this._socket;
     if(socket) {
@@ -332,7 +331,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   close: function() {
-    this.debug('WebSocket close requested');
+    debug('WebSocket close requested');
     this._state.transitionIfPossible('close');
   },
 
@@ -363,7 +362,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       this.removeTimeout('ping');
       this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
     } else {
-      this.error('message received from incorrect socket');
+      debug('message received from incorrect socket');
     }
 
     if(this._pending) {
@@ -430,7 +429,6 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
 });
 
 Faye.extend(Faye_Transport_WebSocket.prototype, Faye_Deferrable);
-Faye.extend(Socket_Promise.prototype, Faye_Logging);
 
 Faye_Transport.register('websocket', Faye_Transport_WebSocket);
 

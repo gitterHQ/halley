@@ -13,6 +13,7 @@ var Faye              = require('../faye');
 var Faye_Class        = require('../util/class');
 var Faye_Client       = require('../protocol/client');
 var Faye_Logging      = require('../mixins/logging');
+var debug             = require('debug-proxy')('faye:node-adapter');
 
 var Faye_NodeAdapter = Faye_Class({
   DEFAULT_ENDPOINT: '/bayeux',
@@ -144,7 +145,7 @@ var Faye_NodeAdapter = Faye_Class({
       return this._returnError(response, {message: 'Received request with no message: ' + this._formatRequest(request)});
 
     try {
-      this.debug('Received message via HTTP ' + request.method + ': ?', params.message);
+      debug('Received message via HTTP %s: %s', request.method, params.message);
 
       var message = JSON.parse(params.message),
           jsonp   = params.jsonp || Faye.JSONP_CALLBACK,
@@ -171,7 +172,7 @@ var Faye_NodeAdapter = Faye_Class({
         headers['Content-Length'] = new Buffer(body, 'utf8').length.toString();
         headers['Connection'] = 'close';
 
-        this.debug('HTTP response: ?', body);
+        debug('HTTP response: %s', body);
         response.writeHead(200, headers);
         response.end(body);
       }, this);
@@ -233,7 +234,7 @@ var Faye_NodeAdapter = Faye_Class({
 
     ws.onmessage = function(event) {
       try {
-        self.debug('Received message via WebSocket[' + ws.version + ']: ?', event.data);
+        debug('Received message via WebSocket[%s]: %s', ws.version, event.data);
 
         var message = JSON.parse(event.data),
             cid     = Faye.clientIdFromMessages(message);
@@ -262,7 +263,7 @@ var Faye_NodeAdapter = Faye_Class({
         clientId = es.url.split('/').pop(),
         self     = this;
 
-    this.debug('Opened EventSource connection for ?', clientId);
+    debug('Opened EventSource connection for %s', clientId);
     this._server.openSocket(clientId, es, request);
 
     es.onclose = function(event) {

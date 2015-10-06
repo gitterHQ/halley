@@ -1,12 +1,12 @@
 'use strict';
 
-var Faye = require('../faye');
+var Faye           = require('../faye');
 var Faye_Scheduler = require('./scheduler');
-var Faye_Class = require('../util/class');
+var Faye_Class     = require('../util/class');
 var Faye_Transport = require('../transport/transport');
 var Faye_Publisher = require('../mixins/publisher');
-var Faye_Logging = require('../mixins/logging');
-var Faye_URI = require('../util/uri');
+var Faye_URI       = require('../util/uri');
+var debug          = require('debug-proxy')('faye:dispatcher');
 
 
 var Faye_Dispatcher = Faye_Class({
@@ -67,7 +67,7 @@ var Faye_Dispatcher = Faye_Class({
   },
 
   close: function() {
-    this.info('Dispatcher close requested');
+    debug('Dispatcher close requested');
     var transport = this._transport;
     delete this._transport;
     if (transport) transport.close();
@@ -79,7 +79,7 @@ var Faye_Dispatcher = Faye_Class({
 
   selectTransport: function(transportTypes) {
     Faye_Transport.get(this, transportTypes, this._disabled, function(transport) {
-      this.debug('Selected ? transport for ?', transport.connectionType, Faye_URI.stringify(transport.endpoint));
+      debug('Selected %s transport for %s', transport.connectionType, Faye_URI.stringify(transport.endpoint));
 
       if (transport === this._transport) return;
       if (this._transport) this._transport.close();
@@ -177,7 +177,5 @@ var Faye_Dispatcher = Faye_Class({
 });
 
 Faye.extend(Faye_Dispatcher.prototype, Faye_Publisher);
-Faye.extend(Faye_Dispatcher.prototype, Faye_Logging);
-
 
 module.exports = Faye_Dispatcher;
