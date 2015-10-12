@@ -18,8 +18,15 @@ var Faye_Server_Socket = Faye_Class({
   },
 
   close: function() {
-    if (this._socket) this._socket.close();
-    delete this._socket;
+    var socket = this._socket;
+    this._socket = null;
+
+    if (socket) {
+      // Give the client enough time to process the disconnect
+      setImmediate(function() {
+        socket.close();
+      });
+    }
   }
 });
 

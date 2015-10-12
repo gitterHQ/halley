@@ -20,17 +20,24 @@
   "browserify": "./javascript/faye-browser",
   "dependencies": {
     "csprng": "",
+    "debug": "^2.2.0",
     "debug-proxy": "^0.1.2",
     "faye-websocket": "~0.9.4",
     "tough-cookie": "",
-    "tunnel-agent": ""
+    "tunnel-agent": "",
+    "util-deprecate": "^1.0.2"
   },
   "devDependencies": {
+    "express": "^4.13.3",
     "jstest": "~1.0.0",
     "mime": "~1.2.0",
+    "mocha": "^2.3.3",
+    "mocha-loader": "^0.7.1",
     "permessage-deflate": ">=0.1.0",
     "promises-aplus-tests": "~2.0.0",
-    "wake": "~0.3.0"
+    "wake": "~0.3.0",
+    "webpack": "^1.12.2",
+    "webpack-dev-middleware": "^1.2.0"
   },
   "scripts": {
     "build": "./node_modules/.bin/wake",

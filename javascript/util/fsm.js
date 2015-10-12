@@ -3,7 +3,8 @@
 var Faye = require('../faye');
 var Faye_Class = require('./class');
 var Faye_EventEmitter = require('./event_emitter');
-var Faye_Promise = require('./promise');
+var Promise = require('bluebird');
+var debug = require('debug-proxy')('faye:fsm');
 
 var Faye_FSM = Faye_Class({
   initialize: function(config) {
@@ -58,11 +59,13 @@ var Faye_FSM = Faye_Class({
       if (newState === this._state) return;
 
       this.emit('transition', transition, this._state, newState);
+      debug('%s: leave: %s', this._config.name, this._state);
       this.emit('leave:' + this._state, newState);
 
       var oldState = this._state;
       this._state = newState;
 
+      debug('%s enter:%s', this._config.name, this._state);
       this.emit('enter:' + this._state, oldState);
     } catch(e) {
       this.emit('error', e);
@@ -85,10 +88,10 @@ var Faye_FSM = Faye_Class({
   waitFor: function(options) {
     var self = this;
 
-    if(this._state === options.fulfilled) return Faye_Promise.resolved();
-    if(this._state === options.rejected) return Faye_Promise.rejected();
+    if(this._state === options.fulfilled) return Promise.resolve();
+    if(this._state === options.rejected) return Promise.reject();
 
-    return new Faye_Promise(function(resolve, reject) {
+    return new Promise(function(resolve, reject) {
       var timeoutId;
       var fulfilled = options.fulfilled;
       var rejected = options.rejected;

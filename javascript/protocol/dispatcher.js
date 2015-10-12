@@ -8,7 +8,6 @@ var Faye_Publisher = require('../mixins/publisher');
 var Faye_URI       = require('../util/uri');
 var debug          = require('debug-proxy')('faye:dispatcher');
 
-
 var Faye_Dispatcher = Faye_Class({
   MAX_REQUEST_SIZE: 2048,
   DEFAULT_RETRY:    5,
@@ -77,16 +76,20 @@ var Faye_Dispatcher = Faye_Class({
     return Faye_Transport.getConnectionTypes();
   },
 
-  selectTransport: function(transportTypes) {
-    Faye_Transport.get(this, transportTypes, this._disabled, function(transport) {
+  selectTransport: function(transportTypes, callback, context) {
+    var self = this;
+    debug('Selecting transport');
+
+    Faye_Transport.get(self, transportTypes, self._disabled, function(transport) {
       debug('Selected %s transport for %s', transport.connectionType, Faye_URI.stringify(transport.endpoint));
 
-      if (transport === this._transport) return;
-      if (this._transport) this._transport.close();
+      if (transport === self._transport) return;
+      if (self._transport) self._transport.close();
 
-      this._transport = transport;
-      this.connectionType = transport.connectionType;
-    }, this);
+      self._transport = transport;
+      self.connectionType = transport.connectionType;
+      if (callback) callback.call(context, transport);
+    });
   },
 
   sendMessage: function(message, timeout, options) {
@@ -99,7 +102,7 @@ var Faye_Dispatcher = Faye_Class({
         scheduler;
 
     if (!envelope) {
-      scheduler = new this._scheduler(message, {timeout: timeout, interval: this.retry, attempts: attempts, deadline: deadline});
+      scheduler = new this._scheduler(message, { timeout: timeout, interval: this.retry, attempts: attempts, deadline: deadline });
       envelope  = this._envelopes[id] = {message: message, scheduler: scheduler};
     }
 
@@ -121,6 +124,7 @@ var Faye_Dispatcher = Faye_Class({
     }
 
     envelope.timer = Faye.ENV.setTimeout(function() {
+      debug('Envelope timeout %j', envelope);
       self.handleError(message);
     }, scheduler.getTimeout() * 1000);
 
@@ -161,18 +165,33 @@ var Faye_Dispatcher = Faye_Class({
     Faye.ENV.clearTimeout(envelope.timer);
     envelope.request = envelope.timer = null;
 
-    if (immediate) {
-      this._sendEnvelope(envelope);
+    if (!scheduler.isDeliverable()) {
+      scheduler.abort();
+      debug('Ignoring error on envelope %j', envelope);
+      delete this._envelopes[message.id];
     } else {
-      envelope.timer = Faye.ENV.setTimeout(function() {
-        envelope.timer = null;
-        self._sendEnvelope(envelope);
-      }, scheduler.getInterval() * 1000);
+      if (immediate) {
+        this._sendEnvelope(envelope);
+      } else {
+        envelope.timer = Faye.ENV.setTimeout(function() {
+          envelope.timer = null;
+          self._sendEnvelope(envelope);
+        }, scheduler.getInterval() * 1000);
+      }
     }
+
 
     if (this._state === this.DOWN) return;
     this._state = this.DOWN;
     this._client.trigger('transport:down');
+  },
+
+  transportDown: function(transport) {
+    if (transport !== this._transport) {
+      return;
+    }
+    debug('Transport down');
+    this.trigger('transportDown');
   }
 });
 

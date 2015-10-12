@@ -2,6 +2,7 @@
 
 var debug = require('debug-proxy')('faye:extensible');
 
+// TODO: move from a mixin to a delegate
 var Faye_Extensible = {
   addExtension: function(extension) {
     this._extensions = this._extensions || [];
@@ -20,7 +21,7 @@ var Faye_Extensible = {
   },
 
   pipeThroughExtensions: function(stage, message, request, callback, context) {
-    debug('Passing through %s extensions: %s', stage, message);
+    debug('Passing through %s extensions: %j', stage, message);
 
     if (!this._extensions) return callback.call(context, message);
     var extensions = this._extensions.slice();

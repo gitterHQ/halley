@@ -241,7 +241,6 @@ var Faye_Server = Faye_Class({
 
       response.successful = !response.error;
       if (!response.successful) delete response.clientId;
-
       if (response.successful) this._engine.destroyClient(clientId);
       callback.call(context, response);
     }, this);

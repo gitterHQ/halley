@@ -1,13 +1,14 @@
 'use strict';
 
-var Faye_Promise = require('../util/promise');
-var Faye = require('../faye');
+var Promise = require('bluebird');
+var deprecate = require('util-deprecate');
 
+/** TODO: remove this */
 var Faye_Deferrable = {
-  then: function(callback, errback) {
+  then: deprecate(function(callback, errback) {
     var self = this;
     if (!this._promise)
-      this._promise = new Faye_Promise(function(fulfill, reject) {
+      this._promise = new Promise(function(fulfill, reject) {
         self._fulfill = fulfill;
         self._reject  = reject;
       });
@@ -16,26 +17,26 @@ var Faye_Deferrable = {
       return this._promise;
     else
       return this._promise.then(callback, errback);
-  },
+  }, 'Faye_Deferrable.then() is deprecated'),
 
-  callback: function(callback, context) {
-    return this.then(function(value) { callback.call(context, value) });
-  },
+  callback: deprecate(function(callback, context) {
+    return this.then(function(value) { callback.call(context, value); });
+  }, 'Faye_Deferrable.callback() is deprecated'),
 
-  errback: function(callback, context) {
-    return this.then(null, function(reason) { callback.call(context, reason) });
-  },
+  errback: deprecate(function(callback, context) {
+    return this.then(null, function(reason) { callback.call(context, reason); });
+  }, 'Faye_Deferrable.errback() is deprecated'),
 
-  timeout: function(seconds, message) {
-    this.then();
-    var self = this;
-    this._timer = Faye.ENV.setTimeout(function() {
-      self._reject(message);
-    }, seconds * 1000);
-  },
+  // timeout: function(seconds, message) {
+  //   this.then();
+  //   var self = this;
+  //   this._timer = Faye.ENV.setTimeout(function() {
+  //     self._reject(message);
+  //   }, seconds * 1000);
+  // },
 
-  setDeferredStatus: function(status, value) {
-    if (this._timer) Faye.ENV.clearTimeout(this._timer);
+  setDeferredStatus: deprecate(function(status, value) {
+    // if (this._timer) Faye.ENV.clearTimeout(this._timer);
 
     this.then();
 
@@ -45,7 +46,7 @@ var Faye_Deferrable = {
       this._reject(value);
     else
       delete this._promise;
-  }
+  }, 'Faye_Deferrable.setDeferredStatus() is deprecated')
 };
 
 module.exports = Faye_Deferrable;

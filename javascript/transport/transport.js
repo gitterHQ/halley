@@ -4,7 +4,7 @@ var Faye          = require('../faye');
 var Faye_Class    = require('../util/class');
 var Faye_Timeouts = require('../mixins/timeouts');
 var Faye_URI      = require('../util/uri');
-var Faye_Promise  = require('../util/promise');
+var Promise       = require('bluebird');
 var Faye_Channel  = require('../protocol/channel');
 var debug         = require('debug-proxy')('faye:transport');
 
@@ -28,29 +28,40 @@ var Faye_Transport = Faye.extend(Faye_Class({
     // }
   },
 
-  close: function() {},
+  close: function() {
+  },
 
-  encode: function(messages) {
+  encode: function(/* messages */) {
     return '';
   },
 
+  /* Returns a promise of a request */
   sendMessage: function(message) {
-    debug('Client %s sending message to %s: %s',
+    var self = this;
+    debug('Client %s sending message to %s: %j',
                this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), message);
 
-    if (!this.batching) return Faye_Promise.fulfilled(this.request([message]));
+    if (!this.batching) return Promise.resolve(this.request([message]));
 
     this._outbox.push(message);
     this._flushLargeBatch();
-    this._promise = this._promise || new Faye_Promise();
+    if (!this._promise) {
+      this._promise = new Promise(function(resolve, reject) {
+        self._resolve = resolve;
+        self._reject = reject;
+      });
+    }
 
+    // For a handshake, flush almost immediately
     if (message.channel === Faye_Channel.HANDSHAKE) {
       this.addTimeout('publish', 0.01, this._flush, this);
       return this._promise;
     }
 
-    if (message.channel === Faye_Channel.CONNECT)
+    // TODO: consider why we're doing this
+    if (message.channel === Faye_Channel.CONNECT) {
       this._connectMessage = message;
+    }
 
     this.addTimeout('publish', this.MAX_DELAY, this._flush, this);
     return this._promise;
@@ -59,11 +70,15 @@ var Faye_Transport = Faye.extend(Faye_Class({
   _flush: function() {
     this.removeTimeout('publish');
 
+    // TODO: figure out what this is about
     if (this._outbox.length > 1 && this._connectMessage)
-      this._connectMessage.advice = {timeout: 0};
+      this._connectMessage.advice = { timeout: 0 };
 
-    Faye_Promise.fulfill(this._promise, this.request(this._outbox));
+    // Faye_Promise.fulfill(this._promise, this.request(this._outbox));
+    this._resolve(this.request(this._outbox));
     delete this._promise;
+    delete this._resolve;
+    delete this._reject;
 
     this._connectMessage = null;
     this._outbox = [];
@@ -81,21 +96,23 @@ var Faye_Transport = Faye.extend(Faye_Class({
     if (!replies) return;
     replies = [].concat(replies);
 
-    debug('Client %s received from %s via %s: %s',
+    debug('Client %s received from %s via %s: %j',
                this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), this.connectionType, replies);
 
-    for (var i = 0, n = replies.length; i < n; i++)
+    for (var i = 0, n = replies.length; i < n; i++) {
       this._dispatcher.handleResponse(replies[i]);
+    }
   },
 
-  _handleError: function(messages, immediate) {
+  _handleError: function(messages) {
     messages = [].concat(messages);
 
-    debug('Client %s failed to send to %s via %s: %s',
+    debug('Client %s failed to send to %s via %s: %j',
                this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), this.connectionType, messages);
 
-    for (var i = 0, n = messages.length; i < n; i++)
+    for (var i = 0, n = messages.length; i < n; i++) {
       this._dispatcher.handleError(messages[i]);
+    }
   },
 
   _getCookies: function() {
@@ -128,20 +145,20 @@ var Faye_Transport = Faye.extend(Faye_Class({
     var endpoint = dispatcher.endpoint;
 
     Faye.asyncEach(this._transports, function(pair, resume) {
-      var connType     = pair[0], klass = pair[1],
+      var connType     = pair[0], Klass = pair[1],
           connEndpoint = dispatcher.endpointFor(connType);
 
       if (Faye.indexOf(disabled, connType) >= 0)
         return resume();
 
       if (Faye.indexOf(allowed, connType) < 0) {
-        klass.isUsable(dispatcher, connEndpoint, function() {});
+        Klass.isUsable(dispatcher, connEndpoint, function() {});
         return resume();
       }
 
-      klass.isUsable(dispatcher, connEndpoint, function(isUsable) {
+      Klass.isUsable(dispatcher, connEndpoint, function(isUsable) {
         if (!isUsable) return resume();
-        var transport = klass.hasOwnProperty('create') ? klass.create(dispatcher, connEndpoint) : new klass(dispatcher, connEndpoint);
+        var transport = Klass.hasOwnProperty('create') ? Klass.create(dispatcher, connEndpoint) : new Klass(dispatcher, connEndpoint);
         callback.call(context, transport);
       });
     }, function() {
@@ -155,7 +172,7 @@ var Faye_Transport = Faye.extend(Faye_Class({
   },
 
   getConnectionTypes: function() {
-    return Faye.map(this._transports, function(t) { return t[0] });
+    return Faye.map(this._transports, function(t) { return t[0]; });
   },
 
   _transports: []

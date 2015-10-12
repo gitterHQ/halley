@@ -2,7 +2,6 @@
 
 var Faye_Class = require('../util/class');
 var Faye = require('../faye');
-var Faye_Set = require('../util/set');
 var Faye_Deferrable = require('../mixins/deferrable');
 var Faye_Timeouts = require('../mixins/timeouts');
 

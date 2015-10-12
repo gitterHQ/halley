@@ -2,7 +2,6 @@
 
 var Faye_Class             = require('../util/class');
 var Faye                   = require('../faye');
-var Faye_Promise           = require('../util/promise');
 var Faye_Engine_Memory     = require('./memory');
 var Faye_Engine_Connection = require('./connection');
 var Faye_Channel           = require('../protocol/channel');
@@ -28,7 +27,9 @@ var Faye_Engine_Proxy = Faye_Class({
 
     this.bind('close', function(clientId) {
       var self = this;
-      Faye_Promise.defer(function() { self.flushConnection(clientId); });
+      setImmediate(function() {
+        self.flushConnection(clientId);
+      });
     }, this);
 
     debug('Created new engine: %j', this._options);

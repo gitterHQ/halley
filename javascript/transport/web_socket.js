@@ -5,10 +5,11 @@ var Faye_Class      = require('../util/class');
 var Faye_Transport  = require('./transport');
 var Faye_Event      = require('../util/browser/event');
 var Faye_URI        = require('../util/uri');
-var Faye_Promise    = require('../util/promise');
+var Promise         = require('bluebird');
 var Faye_Deferrable = require('../mixins/deferrable');
 var Faye_Set        = require('../util/set');
 var Faye_FSM        = require('../util/fsm');
+var websocketFactory = require('./websocket-factory');
 var debug           = require('debug-proxy')('faye:websocket');
 
 /* @const */
@@ -24,155 +25,44 @@ var WS_CLOSING = 2;
 var WS_CLOSED  = 3;
 
 var FSM = {
+  name: "websocket",
   initial: "NEVER_CONNECTED",
   transitions: {
     NEVER_CONNECTED: {
-      connect: "CONNECTING_INITIAL"
+      connect: "CONNECTING"
     },
-    CONNECTING_INITIAL: {
+    CONNECTING: {
       socketClosed: "CLOSED",
       socketConnected: "CONNECTED",
       close: "CLOSED"
     },
-    CONNECTING: {
-      socketClosed: "AWAITING_RETRY",
-      socketConnected: "CONNECTED",
-      close: "CLOSED"
-    },
     CONNECTED: {
-      socketClosed: "AWAITING_RETRY",
-      pingTimeout: "RECONNECTING",
-      close: "CLOSED"
-    },
-    AWAITING_RETRY: {
-      close: "CLOSED",
-      connect: "RECONNECTING"
-    },
-    RECONNECTING: {
-      socketClosed: "AWAITING_RETRY",
-      socketConnected: "CONNECTED",
+      pingTimeout: "CLOSED",
+      socketClosed: "CLOSED",
       close: "CLOSED"
     },
     CLOSED: {
-      connect: "CONNECTING"
     },
   }
 };
 
-
 var navigatorConnection = Faye.ENV.navigator && (Faye.ENV.navigator.connection || Faye.ENV.navigator.mozConnection || Faye.ENV.navigator.webkitConnection);
-
-var Socket_Promise = Faye_Class({
-
-  initialize: function(socket, transport) {
-    var self = this;
-    this._socket = socket;
-    this._transport = transport;
-
-    this._socketPromise = new Faye_Promise(function(resolve, reject) {
-      switch (socket.readyState) {
-        case WS_OPEN:
-          resolve(self);
-          break;
-
-        case WS_CONNECTING:
-          // Timeout if the connection doesn't become established
-          var connectTimeout = setTimeout(function() {
-            reject(new Error('Timeout on connection'));
-          }, transport._dispatcher.timeout * 1000 / 4);
-
-          socket.onopen = function() {
-            clearTimeout(connectTimeout);
-            resolve(self);
-          };
-          break;
-
-        case WS_CLOSING:
-        case WS_CLOSED:
-          reject(new Error('Socket connection failed'));
-          return;
-      }
-
-      socket.onmessage = function(e) {
-        self._transport._onmessage(self, e);
-      };
-
-      socket.onclose = socket.onerror = function() {
-        debug('Closing WebSocket');
-        socket.onclose = socket.onerror = socket.onmessage = null;
-
-        reject(new Error("Connection failed"));
-        self.failed();
-      };
-
-    }).then(function() {
-      self._setup = true;
-    }, function(err) {
-      self.failed();
-      throw err;
-    });
-  },
-
-  failed: function() {
-    debug('Marking underlying websocket as failed');
-
-    if(!this._socket) return;
-    var socket = this._socket;
-    this._socket = null;
-
-    this._socketPromise = new Faye_Promise.rejected(new Error('Connection closed'));
-    if(this._setup) {
-      this._transport._socketClosed(this);
-    }
-
-    var state = socket.readyState;
-    socket.onerror = socket.onclose = socket.onmessage = null;
-
-    if(state === WS_OPEN || state === WS_CONNECTING) {
-      socket.close();
-    }
-
-  },
-
-  connected: function() {
-    return this._socketPromise;
-  },
-
-  send: function(messages) {
-    var self = this;
-    return this._socketPromise
-      .then(function() {
-        var socket = self._socket;
-
-        // Todo: deal with a timeout situation...
-        if(socket.readyState !== WS_OPEN) {
-          throw new Error('Socket is not open');
-        }
-
-        socket.send(Faye.toJSON(messages));
-      });
-  },
-
-  close: function() {
-    debug('Underlying WebSocket close');
-
-    this.failed();
-  }
-
-});
 
 var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   batching:     false,
   initialize: function(dispatcher, endpoint) {
-    Faye_Transport.prototype.initialize.call(this, dispatcher, endpoint);
+    debug('Initialising websocket transport');
 
     this._state = new Faye_FSM(FSM);
     this._state.on('enter:CONNECTING', this._onEnterConnecting.bind(this));
-    this._state.on('enter:RECONNECTING', this._onEnterConnecting.bind(this));
-    this._state.on('enter:CONNECTING_INITIAL', this._onEnterConnecting.bind(this));
-    this._state.on('enter:AWAITING_RETRY', this._onEnterAwaitingRetry.bind(this));
     this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
     this._state.on('leave:CONNECTED', this._onLeaveConnected.bind(this));
+    this._state.on('enter:CLOSED', this._onEnterClosed.bind(this));
+
+    Faye_Transport.prototype.initialize.call(this, dispatcher, endpoint);
+
+    // Connect immediately
+    this._state.transitionIfPossible('connect');
   },
 
   isUsable: function(callback, context) {
@@ -184,6 +74,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       });
   },
 
+  /* Returns a request */
   request: function(messages) {
     var self = this;
     var aborted = false;
@@ -192,15 +83,21 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     if (!this._pending) this._pending = new Faye_Set();
     for (var i = 0, n = messages.length; i < n; i++) this._pending.add(messages[i]);
 
-    this.connect()
-      .then(function() {
-        if (aborted) {
-          throw new Error("Send aborted");
-        }
+    self._connectPromise.then(function() {
+      if (aborted) return;
 
-        return self._socket.send(messages);
-      });
+      var socket = self._socket;
+      if (!socket) return;
 
+      // Todo: deal with a timeout situation...
+      if(socket.readyState !== WS_OPEN) {
+        return;
+      }
+
+      socket.send(Faye.toJSON(messages));
+    });
+
+    /* Returns a request */
     return {
       abort: function() {
         /* If the message has not already been sent, abort the send */
@@ -209,11 +106,9 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     };
   },
 
+  // Connects and returns a promise that resolves when the connection is
+  // established
   connect: function() {
-    if(this._state.stateIs('CLOSED', 'NEVER_CONNECTED')) {
-      this._state.transition('connect');
-    }
-
     return this._state.waitFor({
       fulfilled: 'CONNECTED',
       rejected: 'CLOSED',
@@ -222,54 +117,97 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
   },
 
   _onEnterConnecting: function() {
-    var self = this;
-
     if (Faye_Transport_WebSocket._unloaded) {
-      self._state.transition('socketClosed', new Error('Sockets unloading'));
-      return;
+      this._state.transition('socketClosed', new Error('Sockets unloading'));
+        return;
     }
 
+    this._createConnectPromise();
+  },
+
+  _createConnectPromise: function() {
+    var self = this;
     debug('Entered connecting state, creating new WebSocket connection');
 
-    var url     = Faye_Transport_WebSocket.getSocketUrl(self.endpoint),
-        headers = Faye.copyObject(self._dispatcher.headers),
-        options = { headers: headers, ca: self._dispatcher.ca },
-        socket;
+    self._connectPromise = new Promise(function(resolve, reject) {
 
-    options.headers.Cookie = self._getCookies();
+      var url     = Faye_Transport_WebSocket.getSocketUrl(self.endpoint),
+          headers = Faye.copyObject(self._dispatcher.headers),
+          options = { headers: headers, ca: self._dispatcher.ca },
+          socket;
 
-    if (Faye.WebSocket) {
-      socket = new Faye.WebSocket.Client(url, [], options);
-    } else if (Faye.ENV.MozWebSocket) {
-      socket = new Faye.ENV.MozWebSocket(url);
-    } else if (Faye.ENV.WebSocket) {
-      socket = new Faye.ENV.WebSocket(url);
-    }
+      options.headers.Cookie = self._getCookies();
 
-    if (!socket) {
-      self._state.transition('socketClosed', new Error('Sockets not supported'));
-      return;
-    }
+      socket = self._socket = websocketFactory(url, options);
 
-    self._socket = new Socket_Promise(socket, self);
-    self._socket.connected()
-      .then(function(socket) {
-        self._state.transition('socketConnected');
-      }, function(err) {
-        self._state.transition('socketClosed', err);
-      });
-  },
-
-  _onEnterAwaitingRetry: function() {
-    var self = this;
-    setTimeout(function() {
-      if(self._state.stateIs('AWAITING_RETRY')) {
-        self._state.transition('connect');
+      if (!socket) {
+        throw new Error('Sockets not supported');
       }
-    }, this._dispatcher.retry * 1000 || 1000);
+
+      var connectTimeout;
+      socket.onopen = function() {
+        clearTimeout(connectTimeout);
+        resolve();
+      };
+
+      switch (socket.readyState) {
+        case WS_OPEN:
+          resolve();
+          break;
+
+        case WS_CONNECTING:
+          // Timeout if the connection doesn't become established
+          connectTimeout = setTimeout(function() {
+            reject(new Error('Timeout on connection'));
+          }, self._dispatcher.timeout * 1000 / 4);
+          break;
+
+        case WS_CLOSING:
+        case WS_CLOSED:
+          reject(new Error('Socket connection failed'));
+          return;
+      }
+
+      socket.onmessage = function(e) {
+        debug('Received message: %s', e.data);
+        self._onmessage(e);
+      };
+
+      socket.onerror = function() {
+        debug('WebSocket error');
+        socket.onclose = socket.onerror = socket.onmessage = null;
+
+        reject(new Error("Connection failed"));
+        self._state.transitionIfPossible('socketClosed');
+      };
+
+      socket.onclose = function() {
+        debug('Websocket closed');
+        socket.onclose = socket.onerror = socket.onmessage = null;
+
+        reject(new Error("Connection failed"));
+        self._state.transitionIfPossible('socketClosed');
+      };
+
+    }).then(function() {
+      self._state.transitionIfPossible('socketConnected');
+    }, function(err) {
+      self._state.transitionIfPossible('socketClosed');
+      throw err;
+    });
+
   },
 
-  _onEnterConnected: function(lastState) {
+  // _onEnterAwaitingRetry: function() {
+  //   var self = this;
+  //   setTimeout(function() {
+  //     if(self._state.stateIs('AWAITING_RETRY')) {
+  //       self._state.transition('connect');
+  //     }
+  //   }, this._dispatcher.retry * 1000 || 1000);
+  // },
+
+  _onEnterConnected: function() {
     debug('WebSocket entering connected state');
 
     var self = this;
@@ -296,23 +234,13 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
       }
       self._sleepDetectionLast = now;
     }, 30000);
-
-    if(lastState === 'RECONNECTING') {
-      setTimeout(function() {
-        self._dispatcher._client.connect(function() {}, self);
-
-      }, 0);
-    }
   },
 
   _onLeaveConnected: function() {
     debug('WebSocket leaving connected state');
 
-    var socket = this._socket;
-    if(socket) {
-      this._socket = null;
-      socket.close();
-    }
+    this._closeSocket();
+
     this.removeTimeout('ping');
     this.removeTimeout('pingTimeout');
 
@@ -330,40 +258,46 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     this._rejectPending();
   },
 
+  _onEnterClosed: function() {
+    debug('Websocket entering closed state');
+    var dispatcher = this._dispatcher;
+    var endpoint = this.endpoint;
+
+    var sockets = dispatcher.transports.websocket;
+    if (sockets) {
+      delete sockets[endpoint.href];
+    }
+
+    dispatcher.transportDown(this);
+  },
+
   close: function() {
-    debug('WebSocket close requested');
     this._state.transitionIfPossible('close');
   },
 
   _rejectPending: function() {
-    var pending = this._pending ? this._pending.toArray() : [];
+    var pending = this._pending ? this._pending.toArray() : null;
     delete this._pending;
 
-    this._handleError(pending);
-  },
-
-  _onNetworkEvent: function() {
-    if(this._state.stateIs('CONNECTED')) {
-      this._ping();
-    } else if(this._state.stateIs('AWAITING_RETRY')) {
-      this._state.transition('connect');
+    if (pending && pending.length) {
+      this._handleError(pending);
     }
   },
 
-  _onmessage: function(socket, e) {
+  _onNetworkEvent: function() {
+    this._ping();
+  },
+
+  _onmessage: function(e) {
     // Don't ignore messages from orphans
     var replies = JSON.parse(e.data);
     if (!replies) return;
 
     replies = [].concat(replies);
 
-    if(this._socket === socket) {
-      this.removeTimeout('pingTimeout');
-      this.removeTimeout('ping');
-      this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
-    } else {
-      debug('message received from incorrect socket');
-    }
+    this.removeTimeout('pingTimeout');
+    this.removeTimeout('ping');
+    this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
 
     if(this._pending) {
       for (var i = 0, n = replies.length; i < n; i++) {
@@ -376,17 +310,36 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     this._receive(replies);
   },
 
-  _socketClosed: function(socket) {
-    if(this._socket === socket) {
-      this._state.transitionIfPossible('socketClosed');
-    }
+  _closeSocket: function() {
+    if(!this._socket) return;
 
+    debug('Marking underlying websocket as failed');
+
+    var socket = this._socket;
+    this._socket = null;
+
+    var state = socket.readyState;
+    socket.onerror = socket.onclose = socket.onmessage = null;
+
+    if(state === WS_OPEN || state === WS_CONNECTING) {
+      socket.close();
+    }
   },
 
   _ping: function() {
     this.removeTimeout('ping');
+
+    var socket = this._socket;
+    if (!socket) return;
+
+    // Todo: deal with a timeout situation...
+    if(socket.readyState !== WS_OPEN) {
+      this._state.transitionIfPossible('socketClosed');
+      return;
+    }
+
     this.addTimeout('pingTimeout', this._dispatcher.timeout / 4, this._pingTimeout, this);
-    this._socket.send([]);
+    socket.send([]);
   },
 
   _pingTimeout: function() {
