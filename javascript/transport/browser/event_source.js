@@ -1,13 +1,13 @@
 'use strict';
 
-var Faye = require('../../faye');
-var Faye_Class = require('../../util/class');
-var Faye_Transport = require('../transport');
-var Faye_URI = require('../../util/uri');
-var Faye_Deferrable = require('../../mixins/deferrable');
+var Faye               = require('../../faye');
+var Faye_Transport     = require('../transport');
+var Faye_URI           = require('../../util/uri');
+var Faye_Deferrable    = require('../../mixins/deferrable');
 var Faye_Transport_XHR = require('./xhr');
+var classExtend        = require('../../util/class-extend');
 
-var Faye_Transport_EventSource = Faye.extend(Faye_Class(Faye_Transport, {
+var Faye_Transport_EventSource = classExtend(Faye_Transport, {
   initialize: function(dispatcher, endpoint) {
     Faye_Transport.prototype.initialize.call(this, dispatcher, endpoint);
     if (!Faye.ENV.EventSource) return this.setDeferredStatus('failed');
@@ -61,7 +61,7 @@ var Faye_Transport_EventSource = Faye.extend(Faye_Class(Faye_Transport, {
     return this._xhr.request(messages);
   }
 
-}), {
+}, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     var id = dispatcher.clientId;
     if (!id) return callback.call(context, false);
@@ -83,9 +83,10 @@ var Faye_Transport_EventSource = Faye.extend(Faye_Class(Faye_Transport, {
     sockets[url] = sockets[url] || new this(dispatcher, endpoint);
     return sockets[url];
   }
-});
+},[
+  Faye_Deferrable
+]);
 
-Faye.extend(Faye_Transport_EventSource.prototype, Faye_Deferrable);
 Faye_Transport.register('eventsource', Faye_Transport_EventSource);
 
 module.exports = Faye_Transport_EventSource;

@@ -1,10 +1,10 @@
 'use strict';
 
-var Faye = require('../../faye');
-var Faye_Class = require('../../util/class');
+var Faye           = require('../../faye');
 var Faye_Transport = require('./transport');
+var classExtend    = require('../../util/class-extend');
 
-var Faye_Transport_NodeLocal = Faye.extend(Faye_Class(Faye_Transport, {
+var Faye_Transport_NodeLocal = classExtend(Faye_Transport, {
   batching: false,
 
   request: function(messages) {
@@ -13,7 +13,7 @@ var Faye_Transport_NodeLocal = Faye.extend(Faye_Class(Faye_Transport, {
       this._receive(Faye.copyObject(replies));
     }, this);
   }
-}), {
+}, {
   isUsable: function(client, endpoint, callback, context) {
     /* TODO: come up with a better way of knowing that the endpoint is the Faye Server */
     callback.call(context, !!endpoint.process);

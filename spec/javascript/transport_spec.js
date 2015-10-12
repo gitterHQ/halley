@@ -4,7 +4,7 @@ var Faye_Transport_NodeLocal = require('../../javascript/transport/node_local');
 var Faye_Transport_NodeHttp = require('../../javascript/transport/node_local');
 var Faye_Transport_WebSocket = require('../../javascript/transport/web_socket');
 var Faye_Transport_XHR = require('../../javascript/transport/xhr');
-var Faye_Class = require('../../javascript/util/class')
+var classExtend   = require('../../javascript/util/class-extend');
 
 JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
   before(function() { with(this) {
@@ -106,7 +106,7 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
 
     describe("for batching transports", function() { with(this) {
       before(function() { with(this) {
-        this.Transport = Faye_Class(Faye_Transport, {batching: true})
+        this.Transport = classExtend(Faye_Transport, {batching: true})
         this.transport = new Transport(dispatcher, dispatcher.endpoint)
       }})
 
@@ -144,7 +144,7 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
 
     describe("for non-batching transports", function() { with(this) {
       before(function() { with(this) {
-        this.Transport = Faye_Class(Faye_Transport, {batching: false})
+        this.Transport = classExtend(Faye_Transport, { batching: false })
         this.transport = new Transport(dispatcher, dispatcher.endpoint)
       }})
 

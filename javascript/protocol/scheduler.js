@@ -1,6 +1,6 @@
 'use strict';
 
-var Faye = require('../faye');
+var extend = require('../util/extend');
 
 var Faye_Scheduler = function(message, options) {
   this.message  = message;
@@ -8,7 +8,7 @@ var Faye_Scheduler = function(message, options) {
   this.attempts = 0;
 };
 
-Faye.extend(Faye_Scheduler.prototype, {
+extend(Faye_Scheduler.prototype, {
   getTimeout: function() {
     return this.options.timeout;
   },

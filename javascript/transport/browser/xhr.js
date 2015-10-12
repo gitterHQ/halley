@@ -1,12 +1,12 @@
 'use strict';
 
-var Faye = require('../../faye');
-var Faye_Class = require('../../util/class');
+var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
-var Faye_URI = require('../../util/uri');
-var Faye_Event = require('../../util/browser/event');
+var Faye_URI       = require('../../util/uri');
+var Faye_Event     = require('../../util/browser/event');
+var classExtend    = require('../../util/class-extend');
 
-var Faye_Transport_XHR = Faye.extend(Faye_Class(Faye_Transport, {
+var Faye_Transport_XHR = classExtend(Faye_Transport, {
   encode: function(messages) {
     return Faye.toJSON(messages);
   },
@@ -27,7 +27,7 @@ var Faye_Transport_XHR = Faye.extend(Faye_Class(Faye_Transport, {
       xhr.setRequestHeader(key, headers[key]);
     }
 
-    var abort = function() { xhr.abort() };
+    var abort = function() { xhr.abort(); };
     if (Faye.ENV.onbeforeunload !== undefined) Faye_Event.on(Faye.ENV, 'beforeunload', abort);
 
     xhr.onreadystatechange = function() {
@@ -57,7 +57,7 @@ var Faye_Transport_XHR = Faye.extend(Faye_Class(Faye_Transport, {
     xhr.send(this.encode(messages));
     return xhr;
   }
-}), {
+}, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     callback.call(context, Faye_URI.isSameOrigin(endpoint));
   }

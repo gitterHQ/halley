@@ -3,6 +3,7 @@ var Faye_Client = require('../../javascript/protocol/client');
 var Faye = require('../../javascript/faye');
 var Faye_Promise = require('../../javascript/util/promise');
 var Faye_Subscription = require('../../javascript/protocol/subscription');
+var extend = require('../../javascript/utils/extend');
 
 JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
   before(function() { with(this) {
@@ -11,7 +12,7 @@ JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
     stub(dispatcher, "selectTransport")
     stub(dispatcher, "sendMessage")
 
-    Faye.extend(dispatcher, Faye_Publisher)
+    extend(dispatcher, Faye_Publisher)
     stub("new", Faye, "Dispatcher").returns(dispatcher)
 
     stub("setTimeout")

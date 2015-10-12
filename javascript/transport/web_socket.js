@@ -1,16 +1,16 @@
 'use strict';
 
-var Faye            = require('../faye');
-var Faye_Class      = require('../util/class');
-var Faye_Transport  = require('./transport');
-var Faye_Event      = require('../util/browser/event');
-var Faye_URI        = require('../util/uri');
-var Promise         = require('bluebird');
-var Faye_Deferrable = require('../mixins/deferrable');
-var Faye_Set        = require('../util/set');
-var Faye_FSM        = require('../util/fsm');
+var Faye             = require('../faye');
+var Faye_Transport   = require('./transport');
+var Faye_Event       = require('../util/browser/event');
+var Faye_URI         = require('../util/uri');
+var Promise          = require('bluebird');
+var Faye_Deferrable  = require('../mixins/deferrable');
+var Faye_Set         = require('../util/set');
+var Faye_FSM         = require('../util/fsm');
 var websocketFactory = require('./websocket-factory');
-var debug           = require('debug-proxy')('faye:websocket');
+var debug            = require('debug-proxy')('faye:websocket');
+var classExtend      = require('../util/class-extend');
 
 /* @const */
 var WS_CONNECTING  = 0;
@@ -48,7 +48,7 @@ var FSM = {
 
 var navigatorConnection = Faye.ENV.navigator && (Faye.ENV.navigator.connection || Faye.ENV.navigator.mozConnection || Faye.ENV.navigator.webkitConnection);
 
-var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
+var Faye_Transport_WebSocket = classExtend(Faye_Transport, {
   batching:     false,
   initialize: function(dispatcher, endpoint) {
     debug('Initialising websocket transport');
@@ -346,7 +346,7 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     this._state.transitionIfPossible('pingTimeout');
   }
 
-}), {
+}, {
 
   PROTOCOLS: {
     'http:':  'ws:',
@@ -379,9 +379,9 @@ var Faye_Transport_WebSocket = Faye.extend(Faye_Class(Faye_Transport, {
     this.create(dispatcher, endpoint).isUsable(callback, context);
   }
 
-});
-
-Faye.extend(Faye_Transport_WebSocket.prototype, Faye_Deferrable);
+},[
+  Faye_Deferrable
+]);
 
 Faye_Transport.register('websocket', Faye_Transport_WebSocket);
 
