@@ -2,11 +2,11 @@
 
 var extend = require('../util/extend');
 
-var Faye_Scheduler = function(message, options) {
+function Faye_Scheduler(message, options) {
   this.message  = message;
   this.options  = options;
   this.attempts = 0;
-};
+}
 
 extend(Faye_Scheduler.prototype, {
   getTimeout: function() {

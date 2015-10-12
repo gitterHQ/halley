@@ -3,15 +3,15 @@
 var Faye_EventEmitter = require('./event_emitter');
 var Promise           = require('bluebird');
 var debug             = require('debug-proxy')('faye:fsm');
-var classExtend       = require('./class-extend');
+var extend            = require('./extend');
 
-var Faye_FSM = classExtend({
-  initialize: function(config) {
-    this._config = config;
-    this._state = config.initial;
-    this._transitionQueue = [];
-  },
+function Faye_FSM(config) {
+  this._config = config;
+  this._state = config.initial;
+  this._transitionQueue = [];
+}
 
+Faye_FSM.prototype = {
   getState: function() {
     return this._state;
   },
@@ -120,10 +120,9 @@ var Faye_FSM = classExtend({
       self.on('transition', listener);
     });
   }
+};
 
-
-}, null, [
-  Faye_EventEmitter.prototype
-]);
+/* Mixins */
+extend(Faye_FSM.prototype, Faye_EventEmitter.prototype);
 
 module.exports = Faye_FSM;

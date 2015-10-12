@@ -7,29 +7,28 @@ var Promise       = require('bluebird');
 var Faye_Channel  = require('../protocol/channel');
 var debug         = require('debug-proxy')('faye:transport');
 var extend        = require('../util/extend');
-var classExtend   = require('../util/class-extend');
 
-var  registeredTransports = [];
+var registeredTransports = [];
 
-var Faye_Transport = classExtend({
+function Faye_Transport(dispatcher, endpoint) {
+  this._dispatcher = dispatcher;
+  this.endpoint    = endpoint;
+  this._outbox     = [];
+  this._proxy      = extend({}, this._dispatcher.proxy);
+
+  // if (!this._proxy.origin && Faye_NodeAdapter) {
+  //   this._proxy.origin = Faye.indexOf(this.SECURE_PROTOCOLS, this.endpoint.protocol) >= 0
+  //                      ? (process.env.HTTPS_PROXY || process.env.https_proxy)
+  //                      : (process.env.HTTP_PROXY  || process.env.http_proxy);
+  // }
+}
+
+Faye_Transport.prototype = {
   DEFAULT_PORTS:    {'http:': 80, 'https:': 443, 'ws:': 80, 'wss:': 443},
   SECURE_PROTOCOLS: ['https:', 'wss:'],
   MAX_DELAY:        0,
 
   batching:  true,
-
-  initialize: function(dispatcher, endpoint) {
-    this._dispatcher = dispatcher;
-    this.endpoint    = endpoint;
-    this._outbox     = [];
-    this._proxy      = extend({}, this._dispatcher.proxy);
-
-    // if (!this._proxy.origin && Faye_NodeAdapter) {
-    //   this._proxy.origin = Faye.indexOf(this.SECURE_PROTOCOLS, this.endpoint.protocol) >= 0
-    //                      ? (process.env.HTTPS_PROXY || process.env.https_proxy)
-    //                      : (process.env.HTTP_PROXY  || process.env.http_proxy);
-    // }
-  },
 
   close: function() {
   },
@@ -142,8 +141,10 @@ var Faye_Transport = classExtend({
       cookies.setCookieSync(cookie, url);
     }
   }
+}
 
-}, {
+/* Statics */
+extend(Faye_Transport, {
   get: function(dispatcher, allowed, disabled, callback, context) {
     var endpoint = dispatcher.endpoint;
 
@@ -178,8 +179,9 @@ var Faye_Transport = classExtend({
     return Faye.map(registeredTransports, function(t) { return t[0]; });
   },
 
-},[
-  Faye_Timeouts
-]);
+});
+
+/* Mixins */
+extend(Faye_Transport.prototype, Faye_Timeouts);
 
 module.exports = Faye_Transport;

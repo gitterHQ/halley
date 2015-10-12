@@ -3,18 +3,24 @@
 var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
 var Faye_URI       = require('../../util/uri');
-var classExtend    = require('../../util/class-extend');
+var inherits       = require('inherits');
+var extend         = require('../../util/extend');
 
-var windowXDomainRequest = window.XDomainRequest;
-var windowXMLHttpRequest = window.XMLHttpRequest;
+var WindowXDomainRequest = window.XDomainRequest;
+var WindowXMLHttpRequest = window.XMLHttpRequest;
 
-var Faye_Transport_CORS = classExtend(Faye_Transport, {
+function Faye_Transport_CORS(dispatcher, endpoint) {
+  Faye_Transport_CORS.super_.call(this, dispatcher, endpoint);
+}
+inherits(Faye_Transport_CORS, Faye_Transport);
+
+extend(Faye_Transport_CORS.prototype, {
   encode: function(messages) {
     return 'message=' + encodeURIComponent(Faye.toJSON(messages));
   },
 
   request: function(messages) {
-    var XHRClass = windowXDomainRequest ? windowXMLHttpRequest : windowXMLHttpRequest,
+    var XHRClass = WindowXDomainRequest ? WindowXMLHttpRequest : WindowXMLHttpRequest,
         xhr      = new XHRClass(),
         headers  = this._dispatcher.headers,
         self     = this,
@@ -59,18 +65,22 @@ var Faye_Transport_CORS = classExtend(Faye_Transport, {
     xhr.send(this.encode(messages));
     return xhr;
   }
-}, {
+});
+
+/* Statics */
+extend(Faye_Transport_CORS, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     if (Faye_URI.isSameOrigin(endpoint))
       return callback.call(context, false);
 
-    if (windowXDomainRequest)
+    if (WindowXDomainRequest)
       return callback.call(context, endpoint.protocol === Faye.ENV.location.protocol);
 
-    if (windowXMLHttpRequest) {
-      var xhr = new windowXMLHttpRequest();
+    if (WindowXMLHttpRequest) {
+      var xhr = new WindowXMLHttpRequest();
       return callback.call(context, xhr.withCredentials !== undefined);
     }
+
     return callback.call(context, false);
   }
 });

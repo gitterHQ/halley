@@ -1,17 +1,17 @@
 'use strict';
 
 var Faye_Deferrable = require('../mixins/deferrable');
-var classExtend     = require('../util/class-extend');
+var extend          = require('../util/extend');
 
-var Faye_Subscription = classExtend({
-  initialize: function(client, channels, callback, context) {
-    this._client    = client;
-    this._channels  = channels;
-    this._callback  = callback;
-    this._context     = context;
-    this._cancelled = false;
-  },
+function Faye_Subscription(client, channels, callback, context) {
+  this._client    = client;
+  this._channels  = channels;
+  this._callback  = callback;
+  this._context     = context;
+  this._cancelled = false;
+}
 
+Faye_Subscription.prototype = {
   cancel: function() {
     if (this._cancelled) return;
     this._client.unsubscribe(this._channels, this._callback, this._context);
@@ -21,8 +21,8 @@ var Faye_Subscription = classExtend({
   unsubscribe: function() {
     this.cancel();
   }
-}, null, [
-  Faye_Deferrable
-]);
+};
+
+extend(Faye_Subscription.prototype, Faye_Deferrable);
 
 module.exports = Faye_Subscription;

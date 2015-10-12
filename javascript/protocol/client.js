@@ -12,9 +12,9 @@ var Faye_URI          = require('../util/uri');
 var Promise           = require('bluebird');
 var Faye_Deferrable   = require('../mixins/deferrable');
 var extend            = require('../util/extend');
-var classExtend       = require('../util/class-extend');
 var debug             = require('debug-proxy')('faye:client');
 var Faye_FSM          = require('../util/fsm');
+var extend            = require('../util/extend');
 
 /**
  * TODO: make the states/transitions look more like the official client states
@@ -70,7 +70,51 @@ var FSM = {
   }
 };
 
-var Faye_Client = classExtend({
+function Faye_Client(endpoint, options) {
+  debug('New client created for %s', endpoint);
+  options = options || {};
+
+  Faye.validateOptions(options, ['interval', 'timeout', 'endpoints', 'proxy', 'retry', 'scheduler', 'websocketExtensions', 'tls', 'ca']);
+
+  this._endpoint   = endpoint || this.DEFAULT_ENDPOINT;
+  this._channels   = new Faye_Channel.Set();
+  this._dispatcher = new Faye_Dispatcher(this, this._endpoint, options);
+
+  this._messageId = 0;
+
+  this._state = new Faye_FSM(FSM);
+  this._state.on('enter:HANDSHAKING', this._onEnterHandshaking.bind(this));
+  this._state.on('enter:DISCONNECTING', this._onEnterDisconnecting.bind(this));
+  this._state.on('enter:UNCONNECTED', this._onEnterUnconnected.bind(this));
+  this._state.on('enter:RECONNECTING', this._onEnterReconnecting.bind(this));
+  this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
+
+  this._state.on('enter:RESETTING', this._onEnterDisconnecting.bind(this));
+  this._state.on('enter:RESELECT_TRANSPORT', this._onReselectTransport.bind(this));
+  this._state.on('enter:AWAITING_RECONNECT', this._onEnterAwaitingReconnect.bind(this));
+  this._state.on('leave:AWAITING_RECONNECT', this._onLeaveAwaitingReconnect.bind(this));
+
+  this._responseCallbacks = {};
+
+  this._advice = {
+    reconnect: this.RETRY,
+    interval:  1000 * (options.interval || this.INTERVAL),
+    timeout:   1000 * (options.timeout  || this.CONNECTION_TIMEOUT)
+  };
+  this._dispatcher.timeout = this._advice.timeout / 1000;
+
+  this._dispatcher.bind('message', this._receiveMessage, this);
+  this._dispatcher.bind('transportDown', this._transportDown, this);
+
+  if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
+    Faye_Event.on(Faye.ENV, 'beforeunload', function() {
+      if (Faye.indexOf(this._dispatcher._disabled, 'autodisconnect') < 0)
+        this.disconnect();
+    }, this);
+}
+
+
+Faye_Client.prototype = {
   UNCONNECTED:        1,
   CONNECTING:         2,
   CONNECTED:          3,
@@ -84,49 +128,6 @@ var Faye_Client = classExtend({
 
   DEFAULT_ENDPOINT:   '/bayeux',
   INTERVAL:           0,
-
-  initialize: function(endpoint, options) {
-    debug('New client created for %s', endpoint);
-    options = options || {};
-
-    Faye.validateOptions(options, ['interval', 'timeout', 'endpoints', 'proxy', 'retry', 'scheduler', 'websocketExtensions', 'tls', 'ca']);
-
-    this._endpoint   = endpoint || this.DEFAULT_ENDPOINT;
-    this._channels   = new Faye_Channel.Set();
-    this._dispatcher = new Faye_Dispatcher(this, this._endpoint, options);
-
-    this._messageId = 0;
-
-    this._state = new Faye_FSM(FSM);
-    this._state.on('enter:HANDSHAKING', this._onEnterHandshaking.bind(this));
-    this._state.on('enter:DISCONNECTING', this._onEnterDisconnecting.bind(this));
-    this._state.on('enter:UNCONNECTED', this._onEnterUnconnected.bind(this));
-    this._state.on('enter:RECONNECTING', this._onEnterReconnecting.bind(this));
-    this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
-
-    this._state.on('enter:RESETTING', this._onEnterDisconnecting.bind(this));
-    this._state.on('enter:RESELECT_TRANSPORT', this._onReselectTransport.bind(this));
-    this._state.on('enter:AWAITING_RECONNECT', this._onEnterAwaitingReconnect.bind(this));
-    this._state.on('leave:AWAITING_RECONNECT', this._onLeaveAwaitingReconnect.bind(this));
-
-    this._responseCallbacks = {};
-
-    this._advice = {
-      reconnect: this.RETRY,
-      interval:  1000 * (options.interval || this.INTERVAL),
-      timeout:   1000 * (options.timeout  || this.CONNECTION_TIMEOUT)
-    };
-    this._dispatcher.timeout = this._advice.timeout / 1000;
-
-    this._dispatcher.bind('message', this._receiveMessage, this);
-    this._dispatcher.bind('transportDown', this._transportDown, this);
-
-    if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
-      Faye_Event.on(Faye.ENV, 'beforeunload', function() {
-        if (Faye.indexOf(this._dispatcher._disabled, 'autodisconnect') < 0)
-          this.disconnect();
-      }, this);
-  },
 
   addWebsocketExtension: function(extension) {
     return this._dispatcher.addWebsocketExtension(extension);
@@ -554,10 +555,11 @@ var Faye_Client = classExtend({
   _onEnterConnected: function() {
     this.connect();
   },
-}, null, [
-  Faye_Deferrable,
-  Faye_Publisher,
-  Faye_Extensible
-]);
+};
+
+/* Mixins */
+extend(Faye_Client.prototype, Faye_Deferrable);
+extend(Faye_Client.prototype, Faye_Publisher);
+extend(Faye_Client.prototype, Faye_Extensible);
 
 module.exports = Faye_Client;

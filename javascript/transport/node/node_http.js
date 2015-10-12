@@ -1,50 +1,52 @@
 'use strict';
 
-var Faye = require('../../faye');
+var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
-var http = require('http');
-var https = require('https');
-var Faye_URI = require('../../util/uri');
-var url = require('url');
-var tunnel = require('tunnel-agent');
-var extend = require('../../utils/extend');
-var classExtend    = require('../../util/class-extend');
+var http           = require('http');
+var https          = require('https');
+var Faye_URI       = require('../../util/uri');
+var url            = require('url');
+var tunnel         = require('tunnel-agent');
+var extend         = require('../../utils/extend');
+var inherits       = require('inherits');
+var extend         = require('../../util/extend');
 
-var Faye_Transport_NodeHttp = classExtend(Faye_Transport, {
-  initialize: function() {
-    Faye_Transport.prototype.initialize.apply(this, arguments);
+function Faye_Transport_NodeHttp(dispatcher, endpoint) {
+  Faye_Transport_NodeHttp.super_.call(this, dispatcher, endpoint);
 
-    this._endpointSecure = (this.SECURE_PROTOCOLS.indexOf(this.endpoint.protocol) >= 0);
-    this._httpClient     = this._endpointSecure ? https : http;
+  this._endpointSecure = (this.SECURE_PROTOCOLS.indexOf(this.endpoint.protocol) >= 0);
+  this._httpClient     = this._endpointSecure ? https : http;
 
-    var proxy = this._proxy;
-    if (!proxy.origin) return;
+  var proxy = this._proxy;
+  if (!proxy.origin) return;
 
-    this._proxyUri    = url.parse(proxy.origin);
-    this._proxySecure = (this.SECURE_PROTOCOLS.indexOf(this._proxyUri.protocol) >= 0);
+  this._proxyUri    = url.parse(proxy.origin);
+  this._proxySecure = (this.SECURE_PROTOCOLS.indexOf(this._proxyUri.protocol) >= 0);
 
-    if (!this._endpointSecure) {
-      this._httpClient = this._proxySecure ? https : http;
-      return;
+  if (!this._endpointSecure) {
+    this._httpClient = this._proxySecure ? https : http;
+    return;
+  }
+
+  var options = extend({
+    proxy: {
+      host:       this._proxyUri.hostname,
+      port:       this._proxyUri.port || this.DEFAULT_PORTS[this._proxyUri.protocol],
+      proxyAuth:  this._proxyUri.auth,
+      headers:    extend({host: this.endpoint.host}, proxy.headers)
     }
+  }, this._dispatcher.tls);
 
-    var options = extend({
-      proxy: {
-        host:       this._proxyUri.hostname,
-        port:       this._proxyUri.port || this.DEFAULT_PORTS[this._proxyUri.protocol],
-        proxyAuth:  this._proxyUri.auth,
-        headers:    extend({host: this.endpoint.host}, proxy.headers)
-      }
-    }, this._dispatcher.tls);
+  if (this._proxySecure) {
+    extend(options.proxy, proxy.tls);
+    this._tunnel = tunnel.httpsOverHttps(options);
+  } else {
+    this._tunnel = tunnel.httpsOverHttp(options);
+  }
+}
+inherits(Faye_Transport_NodeHttp, Faye_Transport);
 
-    if (this._proxySecure) {
-      extend(options.proxy, proxy.tls);
-      this._tunnel = tunnel.httpsOverHttps(options);
-    } else {
-      this._tunnel = tunnel.httpsOverHttp(options);
-    }
-  },
-
+extend(Faye_Transport_NodeHttp.prototype, {
   encode: function(messages) {
     return Faye.toJSON(messages);
   },
@@ -122,7 +124,10 @@ var Faye_Transport_NodeHttp = classExtend(Faye_Transport, {
     });
   }
 
-}, {
+})
+
+/* Statics */
+extend(Faye_Transport_NodeHttp, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     callback.call(context, Faye_URI.isURI(endpoint));
   }

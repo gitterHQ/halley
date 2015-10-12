@@ -5,42 +5,47 @@ var Faye_Transport     = require('../transport');
 var Faye_URI           = require('../../util/uri');
 var Faye_Deferrable    = require('../../mixins/deferrable');
 var Faye_Transport_XHR = require('./xhr');
-var classExtend        = require('../../util/class-extend');
+var inherits           = require('inherits');
+var extend             = require('../../util/extend');
 
-var Faye_Transport_EventSource = classExtend(Faye_Transport, {
-  initialize: function(dispatcher, endpoint) {
-    Faye_Transport.prototype.initialize.call(this, dispatcher, endpoint);
-    if (!Faye.ENV.EventSource) return this.setDeferredStatus('failed');
+var WindowEventSource = window.EventSource;
 
-    this._xhr = new Faye_Transport_XHR(dispatcher, endpoint);
+function Faye_Transport_EventSource(dispatcher, endpoint) {
+  Faye_Transport_EventSource.super_.call(this, dispatcher, endpoint);
 
-    endpoint = Faye.copyObject(endpoint);
-    endpoint.pathname += '/' + dispatcher.clientId;
+  if (!WindowEventSource) return this.setDeferredStatus('failed');
 
-    var socket = new EventSource(Faye_URI.stringify(endpoint)),
-        self   = this;
+  this._xhr = new Faye_Transport_XHR(dispatcher, endpoint);
 
-    socket.onopen = function() {
-      self._everConnected = true;
-      self.setDeferredStatus('succeeded');
-    };
+  endpoint = Faye.copyObject(endpoint);
+  endpoint.pathname += '/' + dispatcher.clientId;
 
-    socket.onerror = function() {
-      if (self._everConnected) {
-        self._handleError([]);
-      } else {
-        self.setDeferredStatus('failed');
-        socket.close();
-      }
-    };
+  var socket = new WindowEventSource(Faye_URI.stringify(endpoint)),
+      self   = this;
 
-    socket.onmessage = function(event) {
-      self._receive(JSON.parse(event.data));
-    };
+  socket.onopen = function() {
+    self._everConnected = true;
+    self.setDeferredStatus('succeeded');
+  };
 
-    this._socket = socket;
-  },
+  socket.onerror = function() {
+    if (self._everConnected) {
+      self._handleError([]);
+    } else {
+      self.setDeferredStatus('failed');
+      socket.close();
+    }
+  };
 
+  socket.onmessage = function(event) {
+    self._receive(JSON.parse(event.data));
+  };
+
+  this._socket = socket;
+}
+inherits(Faye_Transport_EventSource, Faye_Transport);
+
+extend(Faye_Transport_EventSource.prototype, {
   close: function() {
     if (!this._socket) return;
     this._socket.onopen = this._socket.onerror = this._socket.onmessage = null;
@@ -49,8 +54,8 @@ var Faye_Transport_EventSource = classExtend(Faye_Transport, {
   },
 
   isUsable: function(callback, context) {
-    this.callback(function() { callback.call(context, true) });
-    this.errback(function() { callback.call(context, false) });
+    this.callback(function() { callback.call(context, true); });
+    this.errback(function() { callback.call(context, false); });
   },
 
   encode: function(messages) {
@@ -61,7 +66,10 @@ var Faye_Transport_EventSource = classExtend(Faye_Transport, {
     return this._xhr.request(messages);
   }
 
-}, {
+});
+
+/* Statics */
+extend(Faye_Transport_EventSource, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     var id = dispatcher.clientId;
     if (!id) return callback.call(context, false);
@@ -83,9 +91,10 @@ var Faye_Transport_EventSource = classExtend(Faye_Transport, {
     sockets[url] = sockets[url] || new this(dispatcher, endpoint);
     return sockets[url];
   }
-},[
-  Faye_Deferrable
-]);
+});
+
+/* Mixins */
+extend(Faye_Transport_EventSource.prototype, Faye_Deferrable);
 
 Faye_Transport.register('eventsource', Faye_Transport_EventSource);
 

@@ -4,16 +4,24 @@ var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
 var Faye_URI       = require('../../util/uri');
 var Faye_Event     = require('../../util/browser/event');
-var classExtend    = require('../../util/class-extend');
+var inherits       = require('inherits');
+var extend         = require('../../util/extend');
 
-var Faye_Transport_XHR = classExtend(Faye_Transport, {
+var WindowXMLHttpRequest = window.XMLHttpRequest;
+
+function Faye_Transport_XHR(dispatcher, endpoint) {
+  Faye_Transport_XHR.super_.call(this, dispatcher, endpoint);
+}
+inherits(Faye_Transport_XHR, Faye_Transport);
+
+extend(Faye_Transport_XHR.prototype, {
   encode: function(messages) {
     return Faye.toJSON(messages);
   },
 
   request: function(messages) {
     var href = this.endpoint.href,
-        xhr  = Faye.ENV.ActiveXObject ? new Faye.ENV.ActiveXObject('Microsoft.XMLHTTP') : new Faye.ENV.XMLHttpRequest(),
+        xhr  = new WindowXMLHttpRequest(),
         self = this;
 
     xhr.open('POST', href, true);
@@ -57,7 +65,10 @@ var Faye_Transport_XHR = classExtend(Faye_Transport, {
     xhr.send(this.encode(messages));
     return xhr;
   }
-}, {
+});
+
+/* Statics */
+extend(Faye_Transport_XHR, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     callback.call(context, Faye_URI.isSameOrigin(endpoint));
   }

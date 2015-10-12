@@ -1,7 +1,7 @@
 /* jshint browser:true */
 'use strict';
 
-module.exports = function(url, options) {
+module.exports = function(url/*, options*/) {
   if (window.MozWebSocket) {
     return new window.MozWebSocket(url);
   }

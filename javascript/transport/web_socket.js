@@ -10,7 +10,8 @@ var Faye_Set         = require('../util/set');
 var Faye_FSM         = require('../util/fsm');
 var websocketFactory = require('./websocket-factory');
 var debug            = require('debug-proxy')('faye:websocket');
-var classExtend      = require('../util/class-extend');
+var inherits         = require('inherits');
+var extend           = require('../util/extend');
 
 /* @const */
 var WS_CONNECTING  = 0;
@@ -48,22 +49,26 @@ var FSM = {
 
 var navigatorConnection = Faye.ENV.navigator && (Faye.ENV.navigator.connection || Faye.ENV.navigator.mozConnection || Faye.ENV.navigator.webkitConnection);
 
-var Faye_Transport_WebSocket = classExtend(Faye_Transport, {
+
+function Faye_Transport_WebSocket(dispatcher, endpoint) {
+  debug('Initialising websocket transport');
+
+  this._state = new Faye_FSM(FSM);
+  this._state.on('enter:CONNECTING', this._onEnterConnecting.bind(this));
+  this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
+  this._state.on('leave:CONNECTED', this._onLeaveConnected.bind(this));
+  this._state.on('enter:CLOSED', this._onEnterClosed.bind(this));
+
+  Faye_Transport_WebSocket.super_.call(this, dispatcher, endpoint);
+
+  // Connect immediately
+  this._state.transitionIfPossible('connect');
+
+}
+inherits(Faye_Transport_WebSocket, Faye_Transport);
+
+extend(Faye_Transport_WebSocket.prototype, {
   batching:     false,
-  initialize: function(dispatcher, endpoint) {
-    debug('Initialising websocket transport');
-
-    this._state = new Faye_FSM(FSM);
-    this._state.on('enter:CONNECTING', this._onEnterConnecting.bind(this));
-    this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
-    this._state.on('leave:CONNECTED', this._onLeaveConnected.bind(this));
-    this._state.on('enter:CLOSED', this._onEnterClosed.bind(this));
-
-    Faye_Transport.prototype.initialize.call(this, dispatcher, endpoint);
-
-    // Connect immediately
-    this._state.transitionIfPossible('connect');
-  },
 
   isUsable: function(callback, context) {
     return this.connect()
@@ -346,8 +351,10 @@ var Faye_Transport_WebSocket = classExtend(Faye_Transport, {
     this._state.transitionIfPossible('pingTimeout');
   }
 
-}, {
+});
 
+/* Statics */
+extend(Faye_Transport_WebSocket, {
   PROTOCOLS: {
     'http:':  'ws:',
     'https:': 'wss:'
@@ -379,9 +386,10 @@ var Faye_Transport_WebSocket = classExtend(Faye_Transport, {
     this.create(dispatcher, endpoint).isUsable(callback, context);
   }
 
-},[
-  Faye_Deferrable
-]);
+});
+
+/* Mixins */
+extend(Faye_Transport_WebSocket.protocol, Faye_Deferrable);
 
 Faye_Transport.register('websocket', Faye_Transport_WebSocket);
 

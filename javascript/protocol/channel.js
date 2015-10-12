@@ -1,14 +1,14 @@
 'use strict';
 
 var Faye_Publisher = require('../mixins/publisher');
-var classExtend = require('../util/class-extend');
+var extend = require('../util/extend');
 var Faye_Grammar = require('./grammar');
 
-var Faye_Channel = classExtend({
-  initialize: function(name) {
-    this.id = this.name = name;
-  },
+function Faye_Channel(name) {
+  this.id = this.name = name;
+}
 
+Faye_Channel.prototype = {
   push: function(message) {
     this.trigger('message', message);
   },
@@ -16,7 +16,10 @@ var Faye_Channel = classExtend({
   isUnused: function() {
     return this.countListeners('message') === 0;
   }
-}, {
+};
+
+/* Statics */
+extend(Faye_Channel, {
   HANDSHAKE:    '/meta/handshake',
   CONNECT:      '/meta/connect',
   SUBSCRIBE:    '/meta/subscribe',
@@ -72,9 +75,9 @@ var Faye_Channel = classExtend({
     return !this.isMeta(name) && !this.isService(name);
   },
 
-}, [
-  Faye_Publisher
-]);
+});
 
+/* Mixins */
+extend(Faye_Channel.prototype, Faye_Publisher);
 
 module.exports = Faye_Channel;

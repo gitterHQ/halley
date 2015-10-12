@@ -1,12 +1,10 @@
 'use strict';
 
-var classExtend = require('../util/class-extend');
+function Faye_Set() {
+  this._index = {};
+}
 
-var Faye_Set = classExtend({
-  initialize: function() {
-    this._index = {};
-  },
-
+Faye_Set.prototype = {
   add: function(item) {
     var key = (item.id !== undefined) ? item.id : item;
     if (this._index.hasOwnProperty(key)) return false;
@@ -15,6 +13,7 @@ var Faye_Set = classExtend({
   },
 
   forEach: function(block, context) {
+    /* todo: switch for Object.keys */
     for (var key in this._index) {
       if (this._index.hasOwnProperty(key))
         block.call(context, this._index[key]);
@@ -22,6 +21,7 @@ var Faye_Set = classExtend({
   },
 
   isEmpty: function() {
+    /* todo: switch for Object.keys */
     for (var key in this._index) {
       if (this._index.hasOwnProperty(key)) return false;
     }
@@ -44,9 +44,9 @@ var Faye_Set = classExtend({
 
   toArray: function() {
     var array = [];
-    this.forEach(function(item) { array.push(item) });
+    this.forEach(function(item) { array.push(item); });
     return array;
   }
-});
+};
 
 module.exports = Faye_Set;

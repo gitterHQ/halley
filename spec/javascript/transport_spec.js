@@ -4,7 +4,7 @@ var Faye_Transport_NodeLocal = require('../../javascript/transport/node_local');
 var Faye_Transport_NodeHttp = require('../../javascript/transport/node_local');
 var Faye_Transport_WebSocket = require('../../javascript/transport/web_socket');
 var Faye_Transport_XHR = require('../../javascript/transport/xhr');
-var classExtend   = require('../../javascript/util/class-extend');
+var inherits = require('inherits');
 
 JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
   before(function() { with(this) {
@@ -106,8 +106,12 @@ JS.ENV.TransportSpec = JS.Test.describe("Transport", function() { with(this) {
 
     describe("for batching transports", function() { with(this) {
       before(function() { with(this) {
-        this.Transport = classExtend(Faye_Transport, {batching: true})
-        this.transport = new Transport(dispatcher, dispatcher.endpoint)
+        function NonBatchedTransport() {
+          NonBatchedTransport.super_.call(this, dispatcher, endpoint);
+        }
+        inherits(NonBatchedTransport, Faye_Transport);
+        NonBatchedTransport.prototype = { batching: true };
+        this.transport = new NonBatchedTransport(dispatcher, dispatcher.endpoint)
       }})
 
       it("does not make an immediate request", function() { with(this) {

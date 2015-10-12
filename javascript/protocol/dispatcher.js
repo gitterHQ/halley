@@ -5,49 +5,49 @@ var Faye_Scheduler = require('./scheduler');
 var Faye_Transport = require('../transport/transport');
 var Faye_Publisher = require('../mixins/publisher');
 var Faye_URI       = require('../util/uri');
-var classExtend    = require('../util/class-extend');
+var extend         = require('../util/extend');
 var debug          = require('debug-proxy')('faye:dispatcher');
 
-var Faye_Dispatcher = classExtend({
+function Faye_Dispatcher(client, endpoint, options) {
+  this._client     = client;
+  this.endpoint    = Faye_URI.parse(endpoint);
+  this._alternates = options.endpoints || {};
+
+  this.cookies      = Faye.Cookies && new Faye.Cookies.CookieJar();
+  this._disabled    = [];
+  this._envelopes   = {};
+  this.headers      = {};
+  this.retry        = options.retry || this.DEFAULT_RETRY;
+  this._scheduler   = options.scheduler || Faye_Scheduler;
+  this._state       = 0;
+  this.transports   = {};
+  this.wsExtensions = [];
+
+  this.proxy = options.proxy || {};
+  if (typeof this._proxy === 'string') this._proxy = {origin: this._proxy};
+
+  var exts = options.websocketExtensions;
+  if (exts) {
+    exts = [].concat(exts);
+    for (var i = 0, n = exts.length; i < n; i++)
+      this.addWebsocketExtension(exts[i]);
+  }
+
+  this.tls = options.tls || {};
+  this.tls.ca = this.tls.ca || options.ca;
+
+  for (var type in this._alternates)
+    this._alternates[type] = Faye_URI.parse(this._alternates[type]);
+
+  this.maxRequestSize = this.MAX_REQUEST_SIZE;
+}
+
+Faye_Dispatcher.prototype = {
   MAX_REQUEST_SIZE: 2048,
   DEFAULT_RETRY:    5,
 
   UP:   1,
   DOWN: 2,
-
-  initialize: function(client, endpoint, options) {
-    this._client     = client;
-    this.endpoint    = Faye_URI.parse(endpoint);
-    this._alternates = options.endpoints || {};
-
-    this.cookies      = Faye.Cookies && new Faye.Cookies.CookieJar();
-    this._disabled    = [];
-    this._envelopes   = {};
-    this.headers      = {};
-    this.retry        = options.retry || this.DEFAULT_RETRY;
-    this._scheduler   = options.scheduler || Faye_Scheduler;
-    this._state       = 0;
-    this.transports   = {};
-    this.wsExtensions = [];
-
-    this.proxy = options.proxy || {};
-    if (typeof this._proxy === 'string') this._proxy = {origin: this._proxy};
-
-    var exts = options.websocketExtensions;
-    if (exts) {
-      exts = [].concat(exts);
-      for (var i = 0, n = exts.length; i < n; i++)
-        this.addWebsocketExtension(exts[i]);
-    }
-
-    this.tls = options.tls || {};
-    this.tls.ca = this.tls.ca || options.ca;
-
-    for (var type in this._alternates)
-      this._alternates[type] = Faye_URI.parse(this._alternates[type]);
-
-    this.maxRequestSize = this.MAX_REQUEST_SIZE;
-  },
 
   endpointFor: function(connectionType) {
     return this._alternates[connectionType] || this.endpoint;
@@ -193,8 +193,9 @@ var Faye_Dispatcher = classExtend({
     debug('Transport down');
     this.trigger('transportDown');
   }
-}, null, [
-  Faye_Publisher
-]);
+};
+
+/* Mixins */
+extend(Faye_Dispatcher.prototype, Faye_Publisher);
 
 module.exports = Faye_Dispatcher;

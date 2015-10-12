@@ -2,9 +2,15 @@
 
 var Faye           = require('../../faye');
 var Faye_Transport = require('./transport');
-var classExtend    = require('../../util/class-extend');
+var inherits       = require('inherits');
+var extend         = require('../../util/extend');
 
-var Faye_Transport_NodeLocal = classExtend(Faye_Transport, {
+function Faye_Transport_NodeLocal(dispatcher, endpoint) {
+  Faye_Transport_NodeLocal.super_.call(this, dispatcher, endpoint);
+}
+inherits(Faye_Transport_NodeLocal, Faye_Transport);
+
+extend(Faye_Transport_NodeLocal.prototype, {
   batching: false,
 
   request: function(messages) {
@@ -13,7 +19,10 @@ var Faye_Transport_NodeLocal = classExtend(Faye_Transport, {
       this._receive(Faye.copyObject(replies));
     }, this);
   }
-}, {
+});
+
+/* Statics */
+extend(Faye_Transport_NodeLocal, {
   isUsable: function(client, endpoint, callback, context) {
     /* TODO: come up with a better way of knowing that the endpoint is the Faye Server */
     callback.call(context, !!endpoint.process);

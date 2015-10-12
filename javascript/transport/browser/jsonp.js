@@ -3,9 +3,22 @@
 var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
 var Faye_URI       = require('../../util/uri');
-var classExtend    = require('../../util/class-extend');
+var inherits       = require('inherits');
+var extend         = require('../../util/extend');
 
-var Faye_Transport_JSONP = classExtend(Faye_Transport, {
+var cbCount = 0;
+
+function getCallbackName() {
+  cbCount += 1;
+  return '__jsonp' + cbCount + '__';
+}
+
+function Faye_Transport_JSONP(dispatcher, endpoint) {
+  Faye_Transport_JSONP.super_.call(this, dispatcher, endpoint);
+}
+inherits(Faye_Transport_JSONP, Faye_Transport);
+
+extend(Faye_Transport_JSONP.prototype, {
  encode: function(messages) {
     var url = Faye.copyObject(this.endpoint);
     url.query.message = Faye.toJSON(messages);
@@ -16,7 +29,7 @@ var Faye_Transport_JSONP = classExtend(Faye_Transport, {
   request: function(messages) {
     var head         = document.getElementsByTagName('head')[0],
         script       = document.createElement('script'),
-        callbackName = Faye_Transport_JSONP.getCallbackName(),
+        callbackName = getCallbackName(),
         endpoint     = Faye.copyObject(this.endpoint),
         self         = this;
 
@@ -26,7 +39,7 @@ var Faye_Transport_JSONP = classExtend(Faye_Transport, {
     var cleanup = function() {
       if (!Faye.ENV[callbackName]) return false;
       Faye.ENV[callbackName] = undefined;
-      try { delete Faye.ENV[callbackName] } catch (e) {}
+      try { delete Faye.ENV[callbackName]; } catch (e) {}
       script.parentNode.removeChild(script);
     };
 
@@ -44,16 +57,12 @@ var Faye_Transport_JSONP = classExtend(Faye_Transport, {
       self._handleError(messages);
     };
 
-    return {abort: cleanup};
+    return { abort: cleanup };
   }
-}, {
-  _cbCount: 0,
+});
 
-  getCallbackName: function() {
-    this._cbCount += 1;
-    return '__jsonp' + this._cbCount + '__';
-  },
-
+/* Statics */
+extend(Faye_Transport_JSONP, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     callback.call(context, true);
   }
