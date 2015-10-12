@@ -1,32 +1,52 @@
 'use strict';
 
-var Faye_Class = require('./util/class');
-var Faye_Grammar = require('./protocol/grammar');
+/* http://stackoverflow.com/questions/1382107/whats-a-good-way-to-extend-error-in-javascript/27925672#27925672 */
+function Faye_Error(code, params, message) {
+  this.name = 'FayeError';
 
-var Faye_Error = Faye_Class({
-  initialize: function(code, params, message) {
-    this.code    = code;
-    this.params  = Array.prototype.slice.call(params);
-    this.message = message;
-  },
+  if (!Error.captureStackTrace) {
+    Error.captureStackTrace(this, this.constructor);
+  } else {
+    var err = new Error();
+    var stack;
+    Object.defineProperty(this, 'stack', {
+      get: function() {
+        if (stack !== undefined) return stack;
+        stack = err.stack;
+        return stack;
+      },
+      set: function(value) {
+        stack = value;
+      }
+    });
 
-  toString: function() {
-    return this.code + ':' +
-           this.params.join(',') + ':' +
-           this.message;
+    this.stack = (new Error()).stack;
   }
-});
+  this.code    = code;
+  this.params  = Array.prototype.slice.call(params);
+  this.message = message;
+}
+
+Faye_Error.prototype = new Error();
+Faye_Error.prototype.name = Faye_Error;
+Faye_Error.prototype.constructor = Faye_Error;
+
+Faye_Error.prototype.toString = function() {
+  return this.code + ':' +
+         this.params.join(',') + ':' +
+         this.message;
+};
 
 Faye_Error.parse = function(message) {
   message = message || '';
-  if (!Faye_Grammar.ERROR.test(message)) return new this(null, [], message);
+  var match = /^([\d+]):([^:]*):(.*)$/.exec(message);
+  if (!match) return new Faye_Error(null, [], message);
 
-  var parts   = message.split(':'),
-      code    = parseInt(parts[0]),
-      params  = parts[1].split(','),
-      message = parts[2];
+  var code   = parseInt(match[1]);
+  var params = match[2].split(',');
+  var m      = match[3];
 
-  return new this(code, params, message);
+  return new Faye_Error(code, params, m);
 };
 
 // http://code.google.com/p/cometd/wiki/BayeuxCodes
