@@ -1,12 +1,11 @@
-/* jshint browser:true */
 'use strict';
 
-var Faye = require('../../faye');
-var Faye_Class = require('../../util/class');
+var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
-var Faye_URI = require('../../util/uri');
+var Faye_URI       = require('../../util/uri');
+var classExtend    = require('../../util/class-extend');
 
-var Faye_Transport_JSONP = Faye.extend(Faye_Class(Faye_Transport, {
+var Faye_Transport_JSONP = classExtend(Faye_Transport, {
  encode: function(messages) {
     var url = Faye.copyObject(this.endpoint);
     url.query.message = Faye.toJSON(messages);
@@ -47,7 +46,7 @@ var Faye_Transport_JSONP = Faye.extend(Faye_Class(Faye_Transport, {
 
     return {abort: cleanup};
   }
-}), {
+}, {
   _cbCount: 0,
 
   getCallbackName: function() {

@@ -1,7 +1,6 @@
 'use strict';
 
 var Faye              = require('../faye');
-var Faye_Class        = require('../util/class');
 var Faye_Extensible   = require('./extensible');
 var Faye_Publisher    = require('../mixins/publisher');
 var Faye_Error        = require('../error');
@@ -12,6 +11,8 @@ var Faye_Subscription = require('./subscription');
 var Faye_URI          = require('../util/uri');
 var Promise           = require('bluebird');
 var Faye_Deferrable   = require('../mixins/deferrable');
+var extend            = require('../util/extend');
+var classExtend       = require('../util/class-extend');
 var debug             = require('debug-proxy')('faye:client');
 var Faye_FSM          = require('../util/fsm');
 
@@ -69,7 +70,7 @@ var FSM = {
   }
 };
 
-var Faye_Client = Faye_Class({
+var Faye_Client = classExtend({
   UNCONNECTED:        1,
   CONNECTING:         2,
   CONNECTED:          3,
@@ -536,7 +537,7 @@ var Faye_Client = Faye_Class({
   },
 
   _handleAdvice: function(advice) {
-    Faye.extend(this._advice, advice);
+    extend(this._advice, advice);
     this._dispatcher.timeout = this._advice.timeout / 1000;
 
     if (this._advice.reconnect === this.HANDSHAKE) {
@@ -553,10 +554,10 @@ var Faye_Client = Faye_Class({
   _onEnterConnected: function() {
     this.connect();
   },
-});
-
-Faye.extend(Faye_Client.prototype, Faye_Deferrable);
-Faye.extend(Faye_Client.prototype, Faye_Publisher);
-Faye.extend(Faye_Client.prototype, Faye_Extensible);
+}, null, [
+  Faye_Deferrable,
+  Faye_Publisher,
+  Faye_Extensible
+]);
 
 module.exports = Faye_Client;

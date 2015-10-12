@@ -1,12 +1,11 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('./class');
 var Faye_EventEmitter = require('./event_emitter');
-var Promise = require('bluebird');
-var debug = require('debug-proxy')('faye:fsm');
+var Promise           = require('bluebird');
+var debug             = require('debug-proxy')('faye:fsm');
+var classExtend       = require('./class-extend');
 
-var Faye_FSM = Faye_Class({
+var Faye_FSM = classExtend({
   initialize: function(config) {
     this._config = config;
     this._state = config.initial;
@@ -123,7 +122,8 @@ var Faye_FSM = Faye_Class({
   }
 
 
-});
-Faye.extend(Faye_FSM.prototype, Faye_EventEmitter.prototype);
+}, null, [
+  Faye_EventEmitter.prototype
+]);
 
 module.exports = Faye_FSM;

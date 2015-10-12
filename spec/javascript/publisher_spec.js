@@ -1,9 +1,10 @@
 var Faye = require('../../javascript/faye');
 var Faye_Publisher = require('../../javascript/mixins/publisher');
+var extend = require('../../javascript/util/extend');
 
 JS.ENV.PublisherSpec = JS.Test.describe("Publisher", function() { with(this) {
   before(function() { with(this) {
-    this.publisher = Faye.extend({}, Faye_Publisher)
+    this.publisher = extend({}, Faye_Publisher)
   }})
 
   describe("with subscribers that remove themselves", function() { with(this) {

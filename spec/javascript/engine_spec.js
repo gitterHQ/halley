@@ -1,6 +1,7 @@
 var Faye_random = require('../../javascript/util/random');
 var Faye = require('../../javascript/faye');
 var Faye_Engine_Proxy = require('../../javascript/engines/proxy');
+var extend = require('../../javascript/util/extend');
 
 JS.ENV.EngineSteps = JS.Test.asyncSteps({
   disconnect_engine: function(resume) {
@@ -65,14 +66,14 @@ JS.ENV.EngineSteps = JS.Test.asyncSteps({
   publish: function(messages, resume) {
     messages = [].concat(messages)
     for (var i = 0, n = messages.length; i < n; i++) {
-      var message = Faye.extend({id: Faye_random()}, messages[i])
+      var message = extend({id: Faye_random()}, messages[i])
       this.engine.publish(message)
     }
     setTimeout(resume, 20)
   },
 
   publish_by: function(name, message, resume) {
-    message = Faye.extend({clientId: this._clients[name], id: Faye_random()}, message)
+    message = extend({clientId: this._clients[name], id: Faye_random()}, message)
     this.engine.publish(message)
     setTimeout(resume, 10)
   },
@@ -142,7 +143,7 @@ JS.ENV.EngineSpec = JS.Test.describe("Pub/sub engines", function() { with(this) 
     include(EngineSteps)
 
     define("create_engine", function() { with(this) {
-      var opts = Faye.extend(options(), engineOpts)
+      var opts = extend(options(), engineOpts)
       return new Faye_Engine_Proxy(opts)
     }})
 
@@ -417,7 +418,7 @@ JS.ENV.EngineSpec = JS.Test.describe("Pub/sub engines", function() { with(this) 
     include(EngineSteps)
 
     define("create_engine", function() { with(this) {
-      var opts = Faye.extend(options(), engineOpts)
+      var opts = extend(options(), engineOpts)
       return new Faye_Engine_Proxy(opts)
     }})
 

@@ -1,14 +1,17 @@
 'use strict';
 
 var Faye          = require('../faye');
-var Faye_Class    = require('../util/class');
 var Faye_Timeouts = require('../mixins/timeouts');
 var Faye_URI      = require('../util/uri');
 var Promise       = require('bluebird');
 var Faye_Channel  = require('../protocol/channel');
 var debug         = require('debug-proxy')('faye:transport');
+var extend        = require('../util/extend');
+var classExtend   = require('../util/class-extend');
 
-var Faye_Transport = Faye.extend(Faye_Class({
+var  registeredTransports = [];
+
+var Faye_Transport = classExtend({
   DEFAULT_PORTS:    {'http:': 80, 'https:': 443, 'ws:': 80, 'wss:': 443},
   SECURE_PROTOCOLS: ['https:', 'wss:'],
   MAX_DELAY:        0,
@@ -19,7 +22,7 @@ var Faye_Transport = Faye.extend(Faye_Class({
     this._dispatcher = dispatcher;
     this.endpoint    = endpoint;
     this._outbox     = [];
-    this._proxy      = Faye.extend({}, this._dispatcher.proxy);
+    this._proxy      = extend({}, this._dispatcher.proxy);
 
     // if (!this._proxy.origin && Faye_NodeAdapter) {
     //   this._proxy.origin = Faye.indexOf(this.SECURE_PROTOCOLS, this.endpoint.protocol) >= 0
@@ -140,11 +143,11 @@ var Faye_Transport = Faye.extend(Faye_Class({
     }
   }
 
-}), {
+}, {
   get: function(dispatcher, allowed, disabled, callback, context) {
     var endpoint = dispatcher.endpoint;
 
-    Faye.asyncEach(this._transports, function(pair, resume) {
+    Faye.asyncEach(registeredTransports, function(pair, resume) {
       var connType     = pair[0], Klass = pair[1],
           connEndpoint = dispatcher.endpointFor(connType);
 
@@ -167,17 +170,16 @@ var Faye_Transport = Faye.extend(Faye_Class({
   },
 
   register: function(type, klass) {
-    this._transports.push([type, klass]);
+    registeredTransports.push([type, klass]);
     klass.prototype.connectionType = type;
   },
 
   getConnectionTypes: function() {
-    return Faye.map(this._transports, function(t) { return t[0]; });
+    return Faye.map(registeredTransports, function(t) { return t[0]; });
   },
 
-  _transports: []
-});
-
-Faye.extend(Faye_Transport.prototype, Faye_Timeouts);
+},[
+  Faye_Timeouts
+]);
 
 module.exports = Faye_Transport;

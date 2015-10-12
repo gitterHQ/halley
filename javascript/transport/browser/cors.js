@@ -1,18 +1,21 @@
 'use strict';
 
-var Faye = require('../../faye');
-var Faye_Class = require('../../util/class');
+var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
-var Faye_URI = require('../../util/uri');
+var Faye_URI       = require('../../util/uri');
+var classExtend    = require('../../util/class-extend');
 
-var Faye_Transport_CORS = Faye.extend(Faye_Class(Faye_Transport, {
+var windowXDomainRequest = window.XDomainRequest;
+var windowXMLHttpRequest = window.XMLHttpRequest;
+
+var Faye_Transport_CORS = classExtend(Faye_Transport, {
   encode: function(messages) {
     return 'message=' + encodeURIComponent(Faye.toJSON(messages));
   },
 
   request: function(messages) {
-    var xhrClass = Faye.ENV.XDomainRequest ? XDomainRequest : XMLHttpRequest,
-        xhr      = new xhrClass(),
+    var XHRClass = windowXDomainRequest ? windowXMLHttpRequest : windowXMLHttpRequest,
+        xhr      = new XHRClass(),
         headers  = this._dispatcher.headers,
         self     = this,
         key;
@@ -56,16 +59,16 @@ var Faye_Transport_CORS = Faye.extend(Faye_Class(Faye_Transport, {
     xhr.send(this.encode(messages));
     return xhr;
   }
-}), {
+}, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     if (Faye_URI.isSameOrigin(endpoint))
       return callback.call(context, false);
 
-    if (Faye.ENV.XDomainRequest)
+    if (windowXDomainRequest)
       return callback.call(context, endpoint.protocol === Faye.ENV.location.protocol);
 
-    if (Faye.ENV.XMLHttpRequest) {
-      var xhr = new Faye.ENV.XMLHttpRequest();
+    if (windowXMLHttpRequest) {
+      var xhr = new windowXMLHttpRequest();
       return callback.call(context, xhr.withCredentials !== undefined);
     }
     return callback.call(context, false);

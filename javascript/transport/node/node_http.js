@@ -1,15 +1,16 @@
 'use strict';
 
 var Faye = require('../../faye');
-var Faye_Class = require('../../util/class');
 var Faye_Transport = require('../transport');
 var http = require('http');
 var https = require('https');
 var Faye_URI = require('../../util/uri');
 var url = require('url');
 var tunnel = require('tunnel-agent');
+var extend = require('../../utils/extend');
+var classExtend    = require('../../util/class-extend');
 
-var Faye_Transport_NodeHttp = Faye.extend(Faye_Class(Faye_Transport, {
+var Faye_Transport_NodeHttp = classExtend(Faye_Transport, {
   initialize: function() {
     Faye_Transport.prototype.initialize.apply(this, arguments);
 
@@ -27,17 +28,17 @@ var Faye_Transport_NodeHttp = Faye.extend(Faye_Class(Faye_Transport, {
       return;
     }
 
-    var options = Faye.extend({
+    var options = extend({
       proxy: {
         host:       this._proxyUri.hostname,
         port:       this._proxyUri.port || this.DEFAULT_PORTS[this._proxyUri.protocol],
         proxyAuth:  this._proxyUri.auth,
-        headers:    Faye.extend({host: this.endpoint.host}, proxy.headers)
+        headers:    extend({host: this.endpoint.host}, proxy.headers)
       }
     }, this._dispatcher.tls);
 
     if (this._proxySecure) {
-      Faye.extend(options.proxy, proxy.tls);
+      extend(options.proxy, proxy.tls);
       this._tunnel = tunnel.httpsOverHttps(options);
     } else {
       this._tunnel = tunnel.httpsOverHttp(options);
@@ -77,7 +78,7 @@ var Faye_Transport_NodeHttp = Faye.extend(Faye_Class(Faye_Transport, {
       host:     target.hostname,
       port:     target.port || this.DEFAULT_PORTS[target.protocol],
       path:     uri.path,
-      headers:  Faye.extend({
+      headers:  extend({
         'Content-Length': content.length,
         'Content-Type':   'application/json',
         'Host':           uri.host
@@ -90,10 +91,10 @@ var Faye_Transport_NodeHttp = Faye.extend(Faye_Class(Faye_Transport, {
     if (this._tunnel) {
       params.agent = this._tunnel;
     } else if (this._endpointSecure) {
-      Faye.extend(params, this._dispatcher.tls);
+      extend(params, this._dispatcher.tls);
     } else if (proxy) {
       params.path = this.endpoint.href;
-      Faye.extend(params, this._proxy.tls);
+      extend(params, this._proxy.tls);
       if (proxy.auth)
         params.headers['Proxy-Authorization'] = new Buffer(proxy.auth, 'utf8').toString('base64');
     }
@@ -121,7 +122,7 @@ var Faye_Transport_NodeHttp = Faye.extend(Faye_Class(Faye_Transport, {
     });
   }
 
-}), {
+}, {
   isUsable: function(dispatcher, endpoint, callback, context) {
     callback.call(context, Faye_URI.isURI(endpoint));
   }

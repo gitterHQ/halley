@@ -1,7 +1,7 @@
 'use strict';
 
-var Faye = require('../faye');
 var Faye_EventEmitter = require('../util/event_emitter');
+var extend            = require('../util/extend');
 
 var Faye_Publisher = {
   countListeners: function(eventType) {
@@ -10,7 +10,7 @@ var Faye_Publisher = {
 
   bind: function(eventType, listener, context) {
     var slice   = Array.prototype.slice,
-        handler = function() { listener.apply(context, slice.call(arguments)) };
+        handler = function() { listener.apply(context, slice.call(arguments)); };
 
     this._listeners = this._listeners || [];
     this._listeners.push([eventType, listener, context, handler]);
@@ -31,7 +31,7 @@ var Faye_Publisher = {
   }
 };
 
-Faye.extend(Faye_Publisher, Faye_EventEmitter.prototype);
+extend(Faye_Publisher, Faye_EventEmitter.prototype);
 Faye_Publisher.trigger = Faye_Publisher.emit;
 
 module.exports = Faye_Publisher;

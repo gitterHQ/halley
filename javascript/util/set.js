@@ -1,8 +1,8 @@
 'use strict';
 
-var Faye_Class = require('./class');
+var classExtend = require('../util/class-extend');
 
-var Faye_Set = Faye_Class({
+var Faye_Set = classExtend({
   initialize: function() {
     this._index = {};
   },

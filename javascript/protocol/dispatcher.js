@@ -2,13 +2,13 @@
 
 var Faye           = require('../faye');
 var Faye_Scheduler = require('./scheduler');
-var Faye_Class     = require('../util/class');
 var Faye_Transport = require('../transport/transport');
 var Faye_Publisher = require('../mixins/publisher');
 var Faye_URI       = require('../util/uri');
+var classExtend    = require('../util/class-extend');
 var debug          = require('debug-proxy')('faye:dispatcher');
 
-var Faye_Dispatcher = Faye_Class({
+var Faye_Dispatcher = classExtend({
   MAX_REQUEST_SIZE: 2048,
   DEFAULT_RETRY:    5,
 
@@ -193,8 +193,8 @@ var Faye_Dispatcher = Faye_Class({
     debug('Transport down');
     this.trigger('transportDown');
   }
-});
-
-Faye.extend(Faye_Dispatcher.prototype, Faye_Publisher);
+}, null, [
+  Faye_Publisher
+]);
 
 module.exports = Faye_Dispatcher;

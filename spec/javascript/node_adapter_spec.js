@@ -2,6 +2,7 @@ var http = require("http");
 var querystring = require("querystring");
 var Faye_NodeAdapter = require('../../javascript/adapters/node_adapter');
 var Faye = require('../../javascript/faye');
+var extend = require('../../javascript/util/extend');
 
 JS.ENV.NodeAdapterSteps = JS.Test.asyncSteps({
   start_server: function(port, resume) {
@@ -49,7 +50,7 @@ JS.ENV.NodeAdapterSteps = JS.Test.asyncSteps({
     var self = this,
         body = (typeof params === "string") ? params : querystring.stringify(params),
 
-        headers = Faye.extend({
+        headers = extend({
           "Host":           "localhost",
           "Content-Length": body.length
         }, this._headers || {}),
