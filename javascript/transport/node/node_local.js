@@ -1,9 +1,8 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
+var Faye = require('../../faye');
+var Faye_Class = require('../../util/class');
 var Faye_Transport = require('./transport');
-var Faye_Server = require('../protocol/server');
 
 var Faye_Transport_NodeLocal = Faye.extend(Faye_Class(Faye_Transport, {
   batching: false,
@@ -16,7 +15,8 @@ var Faye_Transport_NodeLocal = Faye.extend(Faye_Class(Faye_Transport, {
   }
 }), {
   isUsable: function(client, endpoint, callback, context) {
-    callback.call(context, endpoint instanceof Faye_Server);
+    /* TODO: come up with a better way of knowing that the endpoint is the Faye Server */
+    callback.call(context, !!endpoint.process);
   }
 });
 

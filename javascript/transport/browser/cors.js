@@ -1,9 +1,9 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
-var Faye_Transport = require('./transport');
-var Faye_URI = require('../util/uri');
+var Faye = require('../../faye');
+var Faye_Class = require('../../util/class');
+var Faye_Transport = require('../transport');
+var Faye_URI = require('../../util/uri');
 
 var Faye_Transport_CORS = Faye.extend(Faye_Class(Faye_Transport, {
   encode: function(messages) {

@@ -1,10 +1,10 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
-var Faye_Transport = require('./transport');
-var Faye_URI = require('../util/uri');
-var Faye_Deferrable = require('../mixins/deferrable');
+var Faye = require('../../faye');
+var Faye_Class = require('../../util/class');
+var Faye_Transport = require('../transport');
+var Faye_URI = require('../../util/uri');
+var Faye_Deferrable = require('../../mixins/deferrable');
 var Faye_Transport_XHR = require('./xhr');
 
 var Faye_Transport_EventSource = Faye.extend(Faye_Class(Faye_Transport, {

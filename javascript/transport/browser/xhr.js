@@ -1,10 +1,10 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
-var Faye_Transport = require('./transport');
-var Faye_URI = require('../util/uri');
-var Faye_Event = require('../util/browser/event');
+var Faye = require('../../faye');
+var Faye_Class = require('../../util/class');
+var Faye_Transport = require('../transport');
+var Faye_URI = require('../../util/uri');
+var Faye_Event = require('../../util/browser/event');
 
 var Faye_Transport_XHR = Faye.extend(Faye_Class(Faye_Transport, {
   encode: function(messages) {

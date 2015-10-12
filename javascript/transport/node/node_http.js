@@ -1,11 +1,11 @@
 'use strict';
 
-var Faye = require('../faye');
-var Faye_Class = require('../util/class');
-var Faye_Transport = require('./transport');
+var Faye = require('../../faye');
+var Faye_Class = require('../../util/class');
+var Faye_Transport = require('../transport');
 var http = require('http');
 var https = require('https');
-var Faye_URI = require('../util/uri');
+var Faye_URI = require('../../util/uri');
 var url = require('url');
 var tunnel = require('tunnel-agent');
 
