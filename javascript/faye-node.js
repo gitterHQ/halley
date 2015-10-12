@@ -10,6 +10,4 @@ Faye.Transport = {
   NodeHttp: require('./transport/node_http')
 };
 
-Faye.NodeAdapter = require('./adapters/node_adapter');
-
 module.exports = Faye;

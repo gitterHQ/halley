@@ -1,3 +1,4 @@
+/* jshint browser:true */
 'use strict';
 
 var Faye = require('../faye');

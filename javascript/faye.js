@@ -29,13 +29,6 @@ var Faye = {
     }
   },
 
-  clientIdFromMessages: function(messages) {
-    var connect = this.filter([].concat(messages), function(message) {
-      return message.channel === '/meta/connect';
-    });
-    return connect[0] && connect[0].clientId;
-  },
-
   copyObject: function(object) {
     var clone, i, key;
     if (object instanceof Array) {
@@ -52,14 +45,7 @@ var Faye = {
     }
   },
 
-  commonElement: function(lista, listb) {
-    for (var i = 0, n = lista.length; i < n; i++) {
-      if (this.indexOf(listb, lista[i]) !== -1)
-        return lista[i];
-    }
-    return null;
-  },
-
+  /* TODO: remove */
   indexOf: function(list, needle) {
     if (list.indexOf) return list.indexOf(needle);
 
@@ -69,6 +55,7 @@ var Faye = {
     return -1;
   },
 
+  /* TODO: remove */
   map: function(object, callback, context) {
     if (object.map) return object.map(callback, context);
     var result = [];
@@ -86,6 +73,7 @@ var Faye = {
     return result;
   },
 
+  /* TODO: remove */
   filter: function(array, callback, context) {
     if (array.filter) return array.filter(callback, context);
     var result = [];
@@ -96,6 +84,7 @@ var Faye = {
     return result;
   },
 
+  /* TODO: make transport.isUsable return a promise and drop this function */
   asyncEach: function(list, iterator, callback, context) {
     var n       = list.length,
         i       = -1,
@@ -124,6 +113,7 @@ var Faye = {
   },
 
   // http://assanka.net/content/tech/2009/09/02/json2-js-vs-prototype/
+  // This link is broken
   toJSON: function(object) {
     if (!this.stringify) return JSON.stringify(object);
 
