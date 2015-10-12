@@ -1,4 +1,5 @@
 var Faye_Channel = require('../../javascript/protocol/channel');
+var Faye_Channel_Set = require('../../javascript/protocol/channel-set');
 
 JS.ENV.ChannelSpec = JS.Test.describe("Channel", function() { with(this) {
   describe("expand", function() { with(this) {
@@ -18,7 +19,7 @@ JS.ENV.ChannelSpec = JS.Test.describe("Channel", function() { with(this) {
   describe("Set", function() { with(this) {
     describe("subscribe", function() { with(this) {
       it("subscribes and unsubscribes without callback", function() { with(this) {
-        var channels = new Faye_Channel.Set()
+        var channels = new Faye_Channel_Set()
         channels.subscribe(["/foo/**"], null)
         assertEqual( ["/foo/**"], channels.getKeys() )
         assert( channels.unsubscribe("/foo/**", null) )

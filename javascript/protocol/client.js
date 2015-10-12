@@ -5,6 +5,7 @@ var Faye_Extensible   = require('./extensible');
 var Faye_Publisher    = require('../mixins/publisher');
 var Faye_Error        = require('../error');
 var Faye_Channel      = require('./channel');
+var Faye_Channel_Set  = require('./channel-set');
 var Faye_Dispatcher   = require('./dispatcher');
 var Faye_Event        = require('../util/browser/event');
 var Faye_Subscription = require('./subscription');
@@ -77,7 +78,7 @@ function Faye_Client(endpoint, options) {
   Faye.validateOptions(options, ['interval', 'timeout', 'endpoints', 'proxy', 'retry', 'scheduler', 'websocketExtensions', 'tls', 'ca']);
 
   this._endpoint   = endpoint || this.DEFAULT_ENDPOINT;
-  this._channels   = new Faye_Channel.Set();
+  this._channels   = new Faye_Channel_Set();
   this._dispatcher = new Faye_Dispatcher(this, this._endpoint, options);
 
   this._messageId = 0;
@@ -348,7 +349,7 @@ Faye_Client.prototype = {
     this._dispatcher.clientId = null;
     this._dispatcher.close();
     debug('Clearing channel listeners for %s', this._dispatcher.clientId);
-    this._channels = new Faye_Channel.Set();
+    this._channels = new Faye_Channel_Set();
   },
 
   // Request                              Response

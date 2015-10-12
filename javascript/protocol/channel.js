@@ -29,23 +29,6 @@ extend(Faye_Channel, {
   META:         'meta',
   SERVICE:      'service',
 
-  expand: function(name) {
-    var segments = this.parse(name),
-        channels = ['/**', name];
-
-    var copy = segments.slice();
-    copy[copy.length - 1] = '*';
-    channels.push(this.unparse(copy));
-
-    for (var i = 1, n = segments.length; i < n; i++) {
-      copy = segments.slice(0, i);
-      copy.push('**');
-      channels.push(this.unparse(copy));
-    }
-
-    return channels;
-  },
-
   isValid: function(name) {
     return Faye_Grammar.CHANNEL_NAME.test(name) ||
            Faye_Grammar.CHANNEL_PATTERN.test(name);
@@ -74,6 +57,24 @@ extend(Faye_Channel, {
     if (!this.isValid(name)) return null;
     return !this.isMeta(name) && !this.isService(name);
   },
+
+  expand: function(name) {
+    var segments = this.parse(name),
+        channels = ['/**', name];
+
+    var copy = segments.slice();
+    copy[copy.length - 1] = '*';
+    channels.push(this.unparse(copy));
+
+    for (var i = 1, n = segments.length; i < n; i++) {
+      copy = segments.slice(0, i);
+      copy.push('**');
+      channels.push(this.unparse(copy));
+    }
+
+    return channels;
+  },
+
 
 });
 

@@ -389,7 +389,7 @@ extend(Faye_Transport_WebSocket, {
 });
 
 /* Mixins */
-extend(Faye_Transport_WebSocket.protocol, Faye_Deferrable);
+extend(Faye_Transport_WebSocket.prototype, Faye_Deferrable);
 
 Faye_Transport.register('websocket', Faye_Transport_WebSocket);
 

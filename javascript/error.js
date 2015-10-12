@@ -10,6 +10,8 @@ function Faye_Error(code, params, message) {
     var err = new Error();
     var stack;
     Object.defineProperty(this, 'stack', {
+      configurable: true,
+      enumerable: false,
       get: function() {
         if (stack !== undefined) return stack;
         stack = err.stack;
