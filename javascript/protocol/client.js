@@ -1,7 +1,7 @@
 'use strict';
 
 var Faye              = require('../faye');
-var Faye_Extensible   = require('./extensible');
+var Faye_Extensions   = require('./extensions');
 var Faye_Publisher    = require('../mixins/publisher');
 var Faye_Error        = require('../error');
 var Faye_Channel      = require('./channel');
@@ -11,7 +11,6 @@ var Faye_Event        = require('../util/browser/event');
 var Faye_Subscription = require('./subscription');
 var Faye_URI          = require('../util/uri');
 var Promise           = require('bluebird');
-var Faye_Deferrable   = require('../mixins/deferrable');
 var extend            = require('../util/extend');
 var debug             = require('debug-proxy')('faye:client');
 var Faye_FSM          = require('../util/fsm');
@@ -77,6 +76,7 @@ function Faye_Client(endpoint, options) {
 
   Faye.validateOptions(options, ['interval', 'timeout', 'endpoints', 'proxy', 'retry', 'scheduler', 'websocketExtensions', 'tls', 'ca']);
 
+  this._extensions = new Faye_Extensions();
   this._endpoint   = endpoint || this.DEFAULT_ENDPOINT;
   this._channels   = new Faye_Channel_Set();
   this._dispatcher = new Faye_Dispatcher(this, this._endpoint, options);
@@ -140,6 +140,14 @@ Faye_Client.prototype = {
 
   setHeader: function(name, value) {
     return this._dispatcher.setHeader(name, value);
+  },
+
+  addExtension: function(extension) {
+    this._extensions.add(extension);
+  },
+
+  removeExtension: function(extension) {
+    this._extensions.remove(extension);
   },
 
   // Request
@@ -507,7 +515,7 @@ Faye_Client.prototype = {
     var timeout = this._advice.timeout ? 1.2 * this._advice.timeout / 1000 : 1.2 * this._dispatcher.retry;
 
     return new Promise(function(fulfill, reject) {
-      self.pipeThroughExtensions('outgoing', message, null, function(message) {
+      self._extensions.pipe('outgoing', message, function(message) {
         if (!message) return;
         self._responseCallbacks[message.id] = [fulfill, null];
         self._dispatcher.sendMessage(message, timeout, options || {});
@@ -528,14 +536,14 @@ Faye_Client.prototype = {
       callback = this._responseCallbacks[id];
       delete this._responseCallbacks[id];
     }
-
-    this.pipeThroughExtensions('incoming', message, null, function(message) {
+    var self = this;
+    this._extensions.pipe('incoming', message, function(message) {
       if (!message) return;
-      if (message.advice) this._handleAdvice(message.advice);
-      this._deliverMessage(message);
+      if (message.advice) self._handleAdvice(message.advice);
+      self._deliverMessage(message);
 
       if (callback) callback[0].call(callback[1], message);
-    }, this);
+    });
   },
 
   _handleAdvice: function(advice) {
@@ -559,8 +567,6 @@ Faye_Client.prototype = {
 };
 
 /* Mixins */
-extend(Faye_Client.prototype, Faye_Deferrable);
 extend(Faye_Client.prototype, Faye_Publisher);
-extend(Faye_Client.prototype, Faye_Extensible);
 
 module.exports = Faye_Client;

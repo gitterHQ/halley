@@ -217,7 +217,7 @@ extend(Faye_Transport_WebSocket.prototype, {
 
     var self = this;
 
-    this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
+    this.timeouts.add('ping', this._dispatcher.timeout / 2, this._ping);
     if(!this._onNetworkEventBound) {
       this._onNetworkEventBound = this._onNetworkEvent.bind(this);
     }
@@ -246,8 +246,8 @@ extend(Faye_Transport_WebSocket.prototype, {
 
     this._closeSocket();
 
-    this.removeTimeout('ping');
-    this.removeTimeout('pingTimeout');
+    this.timeouts.remove('ping');
+    this.timeouts.remove('pingTimeout');
 
     if(navigatorConnection) {
       navigatorConnection.removeEventListener('typechange', this._onNetworkEventBound, false);
@@ -300,9 +300,9 @@ extend(Faye_Transport_WebSocket.prototype, {
 
     replies = [].concat(replies);
 
-    this.removeTimeout('pingTimeout');
-    this.removeTimeout('ping');
-    this.addTimeout('ping', this._dispatcher.timeout / 2, this._ping, this);
+    this.timeouts.remove('pingTimeout');
+    this.timeouts.remove('ping');
+    this.timeouts.add('ping', this._dispatcher.timeout / 2, this._ping);
 
     if(this._pending) {
       for (var i = 0, n = replies.length; i < n; i++) {
@@ -332,7 +332,7 @@ extend(Faye_Transport_WebSocket.prototype, {
   },
 
   _ping: function() {
-    this.removeTimeout('ping');
+    this.timeouts.remove('ping');
 
     var socket = this._socket;
     if (!socket) return;
@@ -343,7 +343,7 @@ extend(Faye_Transport_WebSocket.prototype, {
       return;
     }
 
-    this.addTimeout('pingTimeout', this._dispatcher.timeout / 4, this._pingTimeout, this);
+    this.timeouts.add('pingTimeout', this._dispatcher.timeout / 4, this._pingTimeout);
     socket.send([]);
   },
 

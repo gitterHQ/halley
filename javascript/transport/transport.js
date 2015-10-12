@@ -1,7 +1,7 @@
 'use strict';
 
 var Faye          = require('../faye');
-var Faye_Timeouts = require('../mixins/timeouts');
+var Faye_Timeouts = require('../util/timeouts');
 var Faye_URI      = require('../util/uri');
 var Promise       = require('bluebird');
 var Faye_Channel  = require('../protocol/channel');
@@ -15,6 +15,8 @@ function Faye_Transport(dispatcher, endpoint) {
   this.endpoint    = endpoint;
   this._outbox     = [];
   this._proxy      = extend({}, this._dispatcher.proxy);
+
+  this.timeouts    = new Faye_Timeouts(this);
 
   // if (!this._proxy.origin && Faye_NodeAdapter) {
   //   this._proxy.origin = Faye.indexOf(this.SECURE_PROTOCOLS, this.endpoint.protocol) >= 0
@@ -56,7 +58,7 @@ Faye_Transport.prototype = {
 
     // For a handshake, flush almost immediately
     if (message.channel === Faye_Channel.HANDSHAKE) {
-      this.addTimeout('publish', 0.01, this._flush, this);
+      this.timeouts.add('publish', 0.01, this._flush);
       return this._promise;
     }
 
@@ -65,12 +67,12 @@ Faye_Transport.prototype = {
       this._connectMessage = message;
     }
 
-    this.addTimeout('publish', this.MAX_DELAY, this._flush, this);
+    this.timeouts.add('publish', this.MAX_DELAY, this._flush);
     return this._promise;
   },
 
   _flush: function() {
-    this.removeTimeout('publish');
+    this.timeouts.remove('publish');
 
     // TODO: figure out what this is about
     if (this._outbox.length > 1 && this._connectMessage)
@@ -180,8 +182,5 @@ extend(Faye_Transport, {
   },
 
 });
-
-/* Mixins */
-extend(Faye_Transport.prototype, Faye_Timeouts);
 
 module.exports = Faye_Transport;
