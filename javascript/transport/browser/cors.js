@@ -73,8 +73,9 @@ extend(Faye_Transport_CORS, {
     if (Faye_URI.isSameOrigin(endpoint))
       return callback.call(context, false);
 
-    if (WindowXDomainRequest)
+    if (WindowXDomainRequest) {
       return callback.call(context, endpoint.protocol === Faye.ENV.location.protocol);
+    }
 
     if (WindowXMLHttpRequest) {
       var xhr = new WindowXMLHttpRequest();

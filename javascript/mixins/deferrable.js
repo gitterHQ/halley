@@ -27,17 +27,7 @@ var Faye_Deferrable = {
     return this.then(null, function(reason) { callback.call(context, reason); });
   }, 'Faye_Deferrable.errback() is deprecated'),
 
-  // timeout: function(seconds, message) {
-  //   this.then();
-  //   var self = this;
-  //   this._timer = Faye.ENV.setTimeout(function() {
-  //     self._reject(message);
-  //   }, seconds * 1000);
-  // },
-
   setDeferredStatus: deprecate(function(status, value) {
-    // if (this._timer) Faye.ENV.clearTimeout(this._timer);
-
     this.then();
 
     if (status === 'succeeded')

@@ -76,8 +76,8 @@ extend(Faye_Transport_EventSource, {
 
     Faye_Transport_XHR.isUsable(dispatcher, endpoint, function(usable) {
       if (!usable) return callback.call(context, false);
-      this.create(dispatcher, endpoint).isUsable(callback, context);
-    }, this);
+      Faye_Transport_EventSource.create(dispatcher, endpoint).isUsable(callback, context);
+    });
   },
 
   create: function(dispatcher, endpoint) {
@@ -88,7 +88,7 @@ extend(Faye_Transport_EventSource, {
     endpoint.pathname += '/' + (id || '');
     var url = Faye_URI.stringify(endpoint);
 
-    sockets[url] = sockets[url] || new this(dispatcher, endpoint);
+    sockets[url] = sockets[url] || new Faye_Transport_EventSource(dispatcher, endpoint);
     return sockets[url];
   }
 });
