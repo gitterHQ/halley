@@ -6,6 +6,10 @@ var Faye_URI       = require('../../util/uri');
 var inherits       = require('inherits');
 var extend         = require('../../util/extend');
 
+/**
+ * NOT CURRENTLY USED. XHR does the trick
+ */
+
 var WindowXDomainRequest = window.XDomainRequest;
 var WindowXMLHttpRequest = window.XMLHttpRequest;
 
@@ -22,22 +26,12 @@ extend(Faye_Transport_CORS.prototype, {
   request: function(messages) {
     var XHRClass = WindowXDomainRequest ? WindowXMLHttpRequest : WindowXMLHttpRequest,
         xhr      = new XHRClass(),
-        headers  = this._dispatcher.headers,
-        self     = this,
-        key;
+        self     = this;
 
     xhr.open('POST', Faye_URI.stringify(this.endpoint), true);
 
-    if (xhr.setRequestHeader) {
-      xhr.setRequestHeader('Pragma', 'no-cache');
-      for (key in headers) {
-        if (!headers.hasOwnProperty(key)) continue;
-        xhr.setRequestHeader(key, headers[key]);
-      }
-    }
-
     var cleanUp = function() {
-      if (!xhr) return false;
+      if (!xhr) return;
       xhr.onload = xhr.onerror = xhr.ontimeout = xhr.onprogress = null;
       xhr = null;
     };
@@ -46,14 +40,16 @@ extend(Faye_Transport_CORS.prototype, {
       var replies = null;
       try {
         replies = JSON.parse(xhr.responseText);
-      } catch (e) {}
+      } catch (e) {
+      }
 
       cleanUp();
 
-      if (replies)
+      if (replies) {
         self._receive(replies);
-      else
+      } else {
         self._handleError(messages);
+      }
     };
 
     xhr.onerror = xhr.ontimeout = function() {
@@ -69,23 +65,22 @@ extend(Faye_Transport_CORS.prototype, {
 
 /* Statics */
 extend(Faye_Transport_CORS, {
-  isUsable: function(dispatcher, endpoint, callback, context) {
-    if (Faye_URI.isSameOrigin(endpoint))
-      return callback.call(context, false);
+  isUsable: function(dispatcher, endpoint, callback) {
+    if (Faye_URI.isSameOrigin(endpoint)) {
+      return callback(false);
+    }
 
     if (WindowXDomainRequest) {
-      return callback.call(context, endpoint.protocol === Faye.ENV.location.protocol);
+      return callback(endpoint.protocol === Faye.ENV.location.protocol);
     }
 
     if (WindowXMLHttpRequest) {
       var xhr = new WindowXMLHttpRequest();
-      return callback.call(context, xhr.withCredentials !== undefined);
+      return callback(xhr.withCredentials !== undefined);
     }
 
-    return callback.call(context, false);
+    return callback(false);
   }
 });
-
-Faye_Transport.register('cross-origin-long-polling', Faye_Transport_CORS);
 
 module.exports = Faye_Transport_CORS;

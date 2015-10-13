@@ -3,46 +3,53 @@
 var Faye               = require('../../faye');
 var Faye_Transport     = require('../transport');
 var Faye_URI           = require('../../util/uri');
-var Faye_Deferrable    = require('../../mixins/deferrable');
+var Promise            = require('bluebird');
 var Faye_Transport_XHR = require('./xhr');
 var inherits           = require('inherits');
 var extend             = require('../../util/extend');
 
 var WindowEventSource = window.EventSource;
+var EVENTSOURCE_OPEN = 1;
 
 function Faye_Transport_EventSource(dispatcher, endpoint) {
   Faye_Transport_EventSource.super_.call(this, dispatcher, endpoint);
+  var self = this;
 
-  if (!WindowEventSource) return this.setDeferredStatus('failed');
+  this._connectPromise = new Promise(function(resolve, reject) {
+    if (!WindowEventSource) return reject(new Error('EventSource not supported'));
 
-  this._xhr = new Faye_Transport_XHR(dispatcher, endpoint);
+    self._xhr = new Faye_Transport_XHR(dispatcher, endpoint);
 
-  endpoint = Faye.copyObject(endpoint);
-  endpoint.pathname += '/' + dispatcher.clientId;
+    var eventSourceEndpoint = Faye.copyObject(endpoint);
+    eventSourceEndpoint.pathname += '/' + dispatcher.clientId;
 
-  var socket = new WindowEventSource(Faye_URI.stringify(endpoint)),
-      self   = this;
+    var socket = new WindowEventSource(Faye_URI.stringify(eventSourceEndpoint));
 
-  socket.onopen = function() {
-    self._everConnected = true;
-    self.setDeferredStatus('succeeded');
-  };
+    socket.onopen = function() {
+      self._everConnected = true;
+      resolve(socket);
+    };
 
-  socket.onerror = function() {
-    if (self._everConnected) {
-      self._handleError([]);
-    } else {
-      self.setDeferredStatus('failed');
-      socket.close();
-    }
-  };
+    socket.onerror = function() {
+      if (self._everConnected) {
+        self._handleError([]);
+      }
 
-  socket.onmessage = function(event) {
-    self._receive(JSON.parse(event.data));
-  };
+      if (socket.readyState === EVENTSOURCE_OPEN) {
+        socket.close();
+      }
 
-  this._socket = socket;
+      reject(new Error('EventSource connect failed'));
+    };
+
+    socket.onmessage = function(event) {
+      self._receive(JSON.parse(event.data));
+    };
+
+    self._socket = socket;
+  });
 }
+
 inherits(Faye_Transport_EventSource, Faye_Transport);
 
 extend(Faye_Transport_EventSource.prototype, {
@@ -50,12 +57,16 @@ extend(Faye_Transport_EventSource.prototype, {
     if (!this._socket) return;
     this._socket.onopen = this._socket.onerror = this._socket.onmessage = null;
     this._socket.close();
-    delete this._socket;
+    this._socket = null;
   },
 
-  isUsable: function(callback, context) {
-    this.callback(function() { callback.call(context, true); });
-    this.errback(function() { callback.call(context, false); });
+  isUsable: function(callback) {
+    this._connectPromise
+      .then(function() {
+        callback(true);
+      }, function() {
+        callback(false);
+      });
   },
 
   encode: function(messages) {
@@ -70,32 +81,35 @@ extend(Faye_Transport_EventSource.prototype, {
 
 /* Statics */
 extend(Faye_Transport_EventSource, {
-  isUsable: function(dispatcher, endpoint, callback, context) {
+  isUsable: function(dispatcher, endpoint, callback) {
     var id = dispatcher.clientId;
-    if (!id) return callback.call(context, false);
+    if (!id) return callback(false);
 
     Faye_Transport_XHR.isUsable(dispatcher, endpoint, function(usable) {
-      if (!usable) return callback.call(context, false);
-      Faye_Transport_EventSource.create(dispatcher, endpoint).isUsable(callback, context);
+      if (!usable) return callback(false);
+      Faye_Transport_EventSource.create(dispatcher, endpoint).isUsable(callback);
     });
   },
 
   create: function(dispatcher, endpoint) {
-    var sockets = dispatcher.transports.eventsource = dispatcher.transports.eventsource || {},
-        id      = dispatcher.clientId;
+    var id = dispatcher.clientId;
+
+    var sockets = dispatcher.transports.eventsource;
+    if (!sockets) {
+      sockets = dispatcher.transports.eventsource = {};
+    }
 
     endpoint = Faye.copyObject(endpoint);
     endpoint.pathname += '/' + (id || '');
     var url = Faye_URI.stringify(endpoint);
 
-    sockets[url] = sockets[url] || new Faye_Transport_EventSource(dispatcher, endpoint);
-    return sockets[url];
+    var eventSource = sockets[url];
+    if (!eventSource) {
+      eventSource = sockets[url] = new Faye_Transport_EventSource(dispatcher, endpoint);
+    }
+
+    return eventSource;
   }
 });
-
-/* Mixins */
-extend(Faye_Transport_EventSource.prototype, Faye_Deferrable);
-
-Faye_Transport.register('eventsource', Faye_Transport_EventSource);
 
 module.exports = Faye_Transport_EventSource;

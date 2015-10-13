@@ -22,7 +22,7 @@ extend(Faye_Transport_JSONP.prototype, {
  encode: function(messages) {
     var url = Faye.copyObject(this.endpoint);
     url.query.message = Faye.toJSON(messages);
-    url.query.jsonp   = '__jsonp' + Faye_Transport_JSONP._cbCount + '__';
+    url.query.jsonp   = '__jsonp' + cbCount + '__';
     return Faye_URI.stringify(url);
   },
 
@@ -63,11 +63,9 @@ extend(Faye_Transport_JSONP.prototype, {
 
 /* Statics */
 extend(Faye_Transport_JSONP, {
-  isUsable: function(dispatcher, endpoint, callback, context) {
-    callback.call(context, true);
+  isUsable: function(dispatcher, endpoint, callback) {
+    callback(true);
   }
 });
-
-Faye_Transport.register('callback-polling', Faye_Transport_JSONP);
 
 module.exports = Faye_Transport_JSONP;

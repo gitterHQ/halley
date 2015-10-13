@@ -370,6 +370,7 @@ Faye_Client.prototype = {
   //                                                     * ext
   //                                                     * id
   //                                                     * timestamp
+  // TODO: make this into a real promise
   subscribe: function(channel, callback, context) {
     var self = this;
     if (channel instanceof Array)

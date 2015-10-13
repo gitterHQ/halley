@@ -1,13 +1,11 @@
 'use strict';
 
 var Faye = require('./faye');
+var Faye_Transport = require('./transport/transport');
 Faye.Client = require('./protocol/client');
 
-/* Register protocols */
-Faye.Transport = {
-  NodeLocal: require('./transport/node/node_local'),
-  WebSocket: require('./transport/web_socket'),
-  NodeHttp: require('./transport/node/node_http')
-};
+Faye_Transport.register('in-process'  , require('./transport/node/node_local'));
+Faye_Transport.register('websocket'   , require('./transport/web_socket'));
+Faye_Transport.register('long-polling', require('./transport/node/node_http'));
 
 module.exports = Faye;

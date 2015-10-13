@@ -119,35 +119,11 @@ Faye_Transport.prototype = {
     }
   },
 
-  _getCookies: function() {
-    var cookies = this._dispatcher.cookies,
-        url     = Faye_URI.stringify(this.endpoint);
-
-    if (!cookies) return '';
-
-    return Faye.map(cookies.getCookiesSync(url), function(cookie) {
-      return cookie.cookieString();
-    }).join('; ');
-  },
-
-  _storeCookies: function(setCookie) {
-    var cookies = this._dispatcher.cookies,
-        url     = Faye_URI.stringify(this.endpoint),
-        cookie;
-
-    if (!setCookie || !cookies) return;
-    setCookie = [].concat(setCookie);
-
-    for (var i = 0, n = setCookie.length; i < n; i++) {
-      cookie = Faye.Cookies.Cookie.parse(setCookie[i]);
-      cookies.setCookieSync(cookie, url);
-    }
-  }
-}
+};
 
 /* Statics */
 extend(Faye_Transport, {
-  get: function(dispatcher, allowed, disabled, callback, context) {
+  get: function(dispatcher, allowed, disabled, callback) {
     var endpoint = dispatcher.endpoint;
 
     Faye.asyncEach(registeredTransports, function(pair, resume) {
@@ -165,7 +141,7 @@ extend(Faye_Transport, {
       Klass.isUsable(dispatcher, connEndpoint, function(isUsable) {
         if (!isUsable) return resume();
         var transport = Klass.hasOwnProperty('create') ? Klass.create(dispatcher, connEndpoint) : new Klass(dispatcher, connEndpoint);
-        callback.call(context, transport);
+        callback(transport);
       });
     }, function() {
       throw new Error('Could not find a usable connection type for ' + Faye_URI.stringify(endpoint));

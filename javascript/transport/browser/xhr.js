@@ -11,12 +11,18 @@ var WindowXMLHttpRequest = window.XMLHttpRequest;
 
 function Faye_Transport_XHR(dispatcher, endpoint) {
   Faye_Transport_XHR.super_.call(this, dispatcher, endpoint);
+  this._sameOrigin = Faye_URI.isSameOrigin(endpoint);
 }
 inherits(Faye_Transport_XHR, Faye_Transport);
 
 extend(Faye_Transport_XHR.prototype, {
   encode: function(messages) {
-    return Faye.toJSON(messages);
+    // Same origin requests have proper content-type set
+    if (this._sameOrigin) {
+      return Faye.toJSON(messages);
+    } else {
+      return 'message=' + encodeURIComponent(Faye.toJSON(messages));
+    }
   },
 
   request: function(messages) {
@@ -25,14 +31,11 @@ extend(Faye_Transport_XHR.prototype, {
         self = this;
 
     xhr.open('POST', href, true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.setRequestHeader('Pragma', 'no-cache');
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-    var headers = this._dispatcher.headers;
-    for (var key in headers) {
-      if (!headers.hasOwnProperty(key)) continue;
-      xhr.setRequestHeader(key, headers[key]);
+    // Don't set headers for CORS requests
+    if (this._sameOrigin) {
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Pragma', 'no-cache');
     }
 
     var abort = function() { xhr.abort(); };
@@ -70,10 +73,8 @@ extend(Faye_Transport_XHR.prototype, {
 /* Statics */
 extend(Faye_Transport_XHR, {
   isUsable: function(dispatcher, endpoint, callback, context) {
-    callback.call(context, Faye_URI.isSameOrigin(endpoint));
+    callback.call(context, true);
   }
 });
-
-Faye_Transport.register('long-polling', Faye_Transport_XHR);
 
 module.exports = Faye_Transport_XHR;

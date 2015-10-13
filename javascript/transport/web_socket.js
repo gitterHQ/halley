@@ -136,14 +136,8 @@ extend(Faye_Transport_WebSocket.prototype, {
 
     self._connectPromise = new Promise(function(resolve, reject) {
 
-      var url     = Faye_Transport_WebSocket.getSocketUrl(self.endpoint),
-          headers = Faye.copyObject(self._dispatcher.headers),
-          options = { headers: headers, ca: self._dispatcher.ca },
-          socket;
-
-      options.headers.Cookie = self._getCookies();
-
-      socket = self._socket = websocketFactory(url, options);
+      var url = Faye_Transport_WebSocket.getSocketUrl(self.endpoint);
+      var socket = self._socket = websocketFactory(url);
 
       if (!socket) {
         throw new Error('Sockets not supported');
@@ -391,11 +385,9 @@ extend(Faye_Transport_WebSocket, {
 /* Mixins */
 extend(Faye_Transport_WebSocket.prototype, Faye_Deferrable);
 
-Faye_Transport.register('websocket', Faye_Transport_WebSocket);
-
 if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
   Faye_Event.on(Faye.ENV, 'beforeunload', function() {
     Faye_Transport_WebSocket._unloaded = true;
   });
 
-module.exports = Faye_Transport;
+module.exports = Faye_Transport_WebSocket;

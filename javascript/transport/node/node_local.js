@@ -15,20 +15,19 @@ extend(Faye_Transport_NodeLocal.prototype, {
 
   request: function(messages) {
     messages = Faye.copyObject(messages);
+    var self = this;
     this.endpoint.process(messages, null, function(replies) {
-      this._receive(Faye.copyObject(replies));
-    }, this);
+      self._receive(Faye.copyObject(replies));
+    });
   }
 });
 
 /* Statics */
 extend(Faye_Transport_NodeLocal, {
-  isUsable: function(client, endpoint, callback, context) {
+  isUsable: function(client, endpoint, callback) {
     /* TODO: come up with a better way of knowing that the endpoint is the Faye Server */
-    callback.call(context, !!endpoint.process);
+    callback(!!endpoint.process);
   }
 });
-
-Faye_Transport.register('in-process', Faye_Transport_NodeLocal);
 
 module.exports = Faye_Transport_NodeLocal;

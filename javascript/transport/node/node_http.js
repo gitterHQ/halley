@@ -33,7 +33,7 @@ function Faye_Transport_NodeHttp(dispatcher, endpoint) {
       host:       this._proxyUri.hostname,
       port:       this._proxyUri.port || this.DEFAULT_PORTS[this._proxyUri.protocol],
       proxyAuth:  this._proxyUri.auth,
-      headers:    extend({host: this.endpoint.host}, proxy.headers)
+      headers:    /*extend(*/{ host: this.endpoint.host }/*, proxy.headers)*/
     }
   }, this._dispatcher.tls);
 
@@ -59,7 +59,7 @@ extend(Faye_Transport_NodeHttp.prototype, {
 
     request.on('response', function(response) {
       self._handleResponse(messages, response);
-      self._storeCookies(response.headers['set-cookie']);
+      // self._storeCookies(response.headers['set-cookie']);
     });
 
     request.on('error', function(error) {
@@ -80,15 +80,12 @@ extend(Faye_Transport_NodeHttp.prototype, {
       host:     target.hostname,
       port:     target.port || this.DEFAULT_PORTS[target.protocol],
       path:     uri.path,
-      headers:  extend({
+      headers:  /*extend(*/{
         'Content-Length': content.length,
         'Content-Type':   'application/json',
         'Host':           uri.host
-      }, this._dispatcher.headers)
+      }/*, this._dispatcher.headers)*/
     };
-
-    var cookie = this._getCookies();
-    if (cookie !== '') params.headers['Cookie'] = cookie;
 
     if (this._tunnel) {
       params.agent = this._tunnel;
@@ -132,7 +129,5 @@ extend(Faye_Transport_NodeHttp, {
     callback.call(context, Faye_URI.isURI(endpoint));
   }
 });
-
-Faye_Transport.register('long-polling', Faye_Transport_NodeHttp);
 
 module.exports = Faye_Transport_NodeHttp;

@@ -13,10 +13,8 @@ function Faye_Dispatcher(client, endpoint, options) {
   this.endpoint    = Faye_URI.parse(endpoint);
   this._alternates = options.endpoints || {};
 
-  this.cookies      = Faye.Cookies && new Faye.Cookies.CookieJar();
   this._disabled    = [];
   this._envelopes   = {};
-  this.headers      = {};
   this.retry        = options.retry || this.DEFAULT_RETRY;
   this._scheduler   = options.scheduler || Faye_Scheduler;
   this._state       = 0;
@@ -61,9 +59,9 @@ Faye_Dispatcher.prototype = {
     this._disabled.push(feature);
   },
 
-  setHeader: function(name, value) {
-    this.headers[name] = value;
-  },
+  // setHeader: function(name, value) {
+  //   this.headers[name] = value;
+  // },
 
   close: function() {
     debug('Dispatcher close requested');
@@ -76,7 +74,7 @@ Faye_Dispatcher.prototype = {
     return Faye_Transport.getConnectionTypes();
   },
 
-  selectTransport: function(transportTypes, callback, context) {
+  selectTransport: function(transportTypes, callback) {
     var self = this;
     debug('Selecting transport');
 
@@ -88,7 +86,7 @@ Faye_Dispatcher.prototype = {
 
       self._transport = transport;
       self.connectionType = transport.connectionType;
-      if (callback) callback.call(context, transport);
+      if (callback) callback(transport);
     });
   },
 
