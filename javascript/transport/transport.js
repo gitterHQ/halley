@@ -42,8 +42,9 @@ Faye_Transport.prototype = {
   /* Returns a promise of a request */
   sendMessage: function(message) {
     var self = this;
-    debug('Client %s sending message to %s: %j',
-               this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), message);
+
+    debug('Client %s sending message to %j: %j',
+      this._dispatcher.clientId, this.endpoint, message);
 
     if (!this.batching) return Promise.resolve(this.request([message]));
 
@@ -100,8 +101,8 @@ Faye_Transport.prototype = {
     if (!replies) return;
     replies = [].concat(replies);
 
-    debug('Client %s received from %s via %s: %j',
-               this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), this.connectionType, replies);
+    debug('Client %s received from %j via %s: %j',
+               this._dispatcher.clientId, this.endpoint, this.connectionType, replies);
 
     for (var i = 0, n = replies.length; i < n; i++) {
       this._dispatcher.handleResponse(replies[i]);
@@ -111,8 +112,8 @@ Faye_Transport.prototype = {
   _handleError: function(messages) {
     messages = [].concat(messages);
 
-    debug('Client %s failed to send to %s via %s: %j',
-               this._dispatcher.clientId, Faye_URI.stringify(this.endpoint), this.connectionType, messages);
+    debug('Client %s failed to send to %j via %s: %j',
+               this._dispatcher.clientId, this.endpoint, this.connectionType, messages);
 
     for (var i = 0, n = messages.length; i < n; i++) {
       this._dispatcher.handleError(messages[i]);

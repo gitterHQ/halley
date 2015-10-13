@@ -5,7 +5,6 @@ var Faye_Transport   = require('./transport');
 var Faye_Event       = require('../util/browser/event');
 var Faye_URI         = require('../util/uri');
 var Promise          = require('bluebird');
-var Faye_Deferrable  = require('../mixins/deferrable');
 var Faye_Set         = require('../util/set');
 var Faye_FSM         = require('../util/fsm');
 var websocketFactory = require('./websocket-factory');
@@ -381,9 +380,6 @@ extend(Faye_Transport_WebSocket, {
   }
 
 });
-
-/* Mixins */
-extend(Faye_Transport_WebSocket.prototype, Faye_Deferrable);
 
 if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
   Faye_Event.on(Faye.ENV, 'beforeunload', function() {

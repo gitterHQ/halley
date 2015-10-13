@@ -8,9 +8,7 @@ function Faye_Channel_Set() {
 
 Faye_Channel_Set.prototype = {
   getKeys: function() {
-    var keys = [];
-    for (var key in this._channels) keys.push(key);
-    return keys;
+    return Object.keys(this._channels);
   },
 
   remove: function(name) {
@@ -21,13 +19,13 @@ Faye_Channel_Set.prototype = {
     return this._channels.hasOwnProperty(name);
   },
 
-  subscribe: function(names, callback, context) {
-    var name;
-    for (var i = 0, n = names.length; i < n; i++) {
-      name = names[i];
-      var channel = this._channels[name] = this._channels[name] || new Faye_Channel(name);
-      if (callback) channel.bind('message', callback, context);
+  subscribe: function(name, callback, context) {
+    var channel = this._channels[name];
+    if (!channel) {
+      channel = this._channels[name] = new Faye_Channel(name);
     }
+
+    if (callback) channel.bind('message', callback, context);
   },
 
   unsubscribe: function(name, callback, context) {

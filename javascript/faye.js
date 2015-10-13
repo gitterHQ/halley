@@ -74,7 +74,7 @@ var Faye = {
   },
 
   /* TODO: make transport.isUsable return a promise and drop this function */
-  asyncEach: function(list, iterator, callback, context) {
+  asyncEach: function(list, iterator, callback) {
     var n       = list.length,
         i       = -1,
         calls   = 0,
@@ -83,7 +83,7 @@ var Faye = {
     var iterate = function() {
       calls -= 1;
       i += 1;
-      if (i === n) return callback && callback.call(context);
+      if (i === n) return callback && callback();
       iterator(list[i], resume);
     };
 

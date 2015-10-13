@@ -25,8 +25,7 @@
     "faye-websocket": "~0.9.4",
     "inherits": "^2.0.1",
     "tough-cookie": "",
-    "tunnel-agent": "",
-    "util-deprecate": "^1.0.2"
+    "tunnel-agent": ""
   },
   "devDependencies": {
     "express": "^4.13.3",

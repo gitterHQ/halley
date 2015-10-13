@@ -196,8 +196,7 @@ Faye_Client.prototype = {
 
         self._dispatcher.selectTransport(supportedConnectionTypes, function() {
           debug('Post handshake reselect transport');
-
-          self.subscribe(self._channels.getKeys(), true);
+          self._resubscribeAll();
           self._state.transition('handshake');
         });
       })
@@ -360,6 +359,44 @@ Faye_Client.prototype = {
     this._channels = new Faye_Channel_Set();
   },
 
+  /**
+   * Use to resubscribe all previously subscribed channels
+   * after re-handshaking
+   */
+  _resubscribeAll: function() {
+    var self = this;
+    var channels = this._channels.getKeys();
+    if (!channels || !channels.length) return;
+
+    this._state.transitionIfPossible('connect');
+
+    return this._state.waitFor({
+        fulfilled: 'CONNECTED',
+        rejected: 'UNCONNECTED'
+      })
+      .then(function() {
+        return Promise.all(channels.map(function(channel) {
+          debug('Client %s attempting to resubscribe to %s', self._dispatcher.clientId, channel);
+
+          return self._sendMessage({
+            channel:      Faye_Channel.SUBSCRIBE,
+            clientId:     self._dispatcher.clientId,
+            subscription: channel
+
+          }, {})
+          .then(function(response) {
+            if (!response.successful) {
+              // TODO: better error-handling of this situation
+              // We should warn the client that we have been unable to resubscribe
+              // to the channel
+              debug('Subscription rejected for %s to %s', self._dispatcher.clientId, response.subscription);
+            }
+          });
+        }));
+      });
+
+  },
+
   // Request                              Response
   // MUST include:  * channel             MUST include:  * channel
   //                * clientId                           * successful
@@ -370,21 +407,20 @@ Faye_Client.prototype = {
   //                                                     * ext
   //                                                     * id
   //                                                     * timestamp
-  // TODO: make this into a real promise
   subscribe: function(channel, callback, context) {
     var self = this;
-    if (channel instanceof Array)
-      return Faye.map(channel, function(c) {
-        return this.subscribe(c, callback, context);
-      }, this);
 
-    var subscription = new Faye_Subscription(this, channel, callback, context),
-        force        = (callback === true),
-        hasSubscribe = this._channels.hasSubscription(channel);
+    var deferredSub   = Faye_Subscription.createDeferred(this, channel, callback, context);
+    var defer         = deferredSub.defer;
+    var subscription  = deferredSub.subscription;
 
-    if (hasSubscribe && !force) {
-      this._channels.subscribe([channel], callback, context);
-      subscription.setDeferredStatus('succeeded');
+    var hasSubscribe = this._channels.hasSubscription(channel);
+
+    // If the client is resubscribing to an existing channel
+    // there is no need to re-issue to message to the server
+    if (hasSubscribe) {
+      this._channels.subscribe(channel, callback, context);
+      defer.resolve(subscription);
       return subscription;
     }
 
@@ -397,7 +433,7 @@ Faye_Client.prototype = {
       })
       .then(function() {
         debug('Client %s attempting to subscribe to %s', self._dispatcher.clientId, channel);
-        if (!force) self._channels.subscribe([channel], callback, context);
+        self._channels.subscribe(channel, callback, context);
 
         return self._sendMessage({
           channel:      Faye_Channel.SUBSCRIBE,
@@ -408,12 +444,16 @@ Faye_Client.prototype = {
       })
       .then(function(response) {
         if (!response.successful) {
-          subscription.setDeferredStatus('failed', Faye_Error.parse(response.error));
-          self._channels.unsubscribe(channel, callback, context);
-        } else {
-          debug('Subscription acknowledged for %s to %s', self._dispatcher.clientId, response.subscription);
-          subscription.setDeferredStatus('succeeded');
+          debug('Subscription rejected for %s to %s', self._dispatcher.clientId, response.subscription);
+          defer.reject(Faye_Error.parse(response.error));
+          return;
         }
+
+        debug('Subscription acknowledged for %s to %s', self._dispatcher.clientId, response.subscription);
+        
+        // Note that it may be tempting to return the subscription in the promise
+        // but this causes problems since subscription is a `thenable`
+        defer.resolve();
       });
 
     return subscription;
@@ -474,10 +514,9 @@ Faye_Client.prototype = {
     var self = this;
 
     Faye.validateOptions(options || {}, ['attempts', 'deadline']);
-    // var publication = new Faye_Publication();
 
     this._state.transitionIfPossible('connect');
-    // Not part of the promise chain, yet
+
     return this._state.waitFor({
         fulfilled: 'CONNECTED',
         rejected: 'UNCONNECTED'
@@ -499,8 +538,6 @@ Faye_Client.prototype = {
 
       return response;
     });
-
-    // return publication;
   },
 
   reset: function() {
@@ -515,7 +552,7 @@ Faye_Client.prototype = {
 
     var timeout = this._advice.timeout ? 1.2 * this._advice.timeout / 1000 : 1.2 * this._dispatcher.retry;
 
-    return new Promise(function(fulfill, reject) {
+    return new Promise(function(fulfill/*, reject*/) {
       self._extensions.pipe('outgoing', message, function(message) {
         if (!message) return;
         self._responseCallbacks[message.id] = [fulfill, null];

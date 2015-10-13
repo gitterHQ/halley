@@ -39,7 +39,7 @@ extend(Faye_Transport_XHR.prototype, {
     }
 
     var abort = function() { xhr.abort(); };
-    if (Faye.ENV.onbeforeunload !== undefined) Faye_Event.on(Faye.ENV, 'beforeunload', abort);
+    Faye_Event.on(window, 'beforeunload', abort);
 
     xhr.onreadystatechange = function() {
       if (!xhr || xhr.readyState !== 4) return;
@@ -49,7 +49,7 @@ extend(Faye_Transport_XHR.prototype, {
           text       = xhr.responseText,
           successful = (status >= 200 && status < 300) || status === 304 || status === 1223;
 
-      if (Faye.ENV.onbeforeunload !== undefined) Faye_Event.detach(Faye.ENV, 'beforeunload', abort);
+      Faye_Event.detach(window, 'beforeunload', abort);
       xhr.onreadystatechange = function() {};
       xhr = null;
 
@@ -73,7 +73,10 @@ extend(Faye_Transport_XHR.prototype, {
 /* Statics */
 extend(Faye_Transport_XHR, {
   isUsable: function(dispatcher, endpoint, callback, context) {
-    callback.call(context, true);
+    var isXhr2 = WindowXMLHttpRequest && WindowXMLHttpRequest.prototype.hasOwnProperty('withCredentials');
+    var sameOrigin = Faye_URI.isSameOrigin(endpoint);
+
+    callback.call(context, sameOrigin || isXhr2);
   }
 });
 
