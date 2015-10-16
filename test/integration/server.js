@@ -25,7 +25,7 @@ var proxyServer = new ProxyServer(8001);
 
 var bayeux = new faye.NodeAdapter({
   mount: '/bayeux',
-  timeout: 10,
+  timeout: 3,
   ping: 2,
   engine: {
     interval: 1

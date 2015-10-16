@@ -1,6 +1,7 @@
 'use strict';
 
-var Faye = require('../faye');
+/* node-safe reference to the window */
+var win = typeof window === 'object' && window; // jshint ignore:line
 
 var Faye_URI = {
   isURI: function(uri) {
@@ -8,7 +9,7 @@ var Faye_URI = {
   },
 
   isSameOrigin: function(uri) {
-    var location = Faye.ENV.location;
+    var location = win.location;
     if (!location) return false;
     return uri.protocol === location.protocol &&
            uri.hostname === location.hostname &&
@@ -31,13 +32,13 @@ var Faye_URI = {
     consume('host',     /^\/\/[^\/\?#]+/);
 
     if (!/^\//.test(url) && !uri.host)
-      url = Faye.ENV.location.pathname.replace(/[^\/]*$/, '') + url;
+      url = win.location.pathname.replace(/[^\/]*$/, '') + url;
 
     consume('pathname', /^[^\?#]*/);
     consume('search',   /^\?[^#]*/);
     consume('hash',     /^#.*/);
 
-    uri.protocol = uri.protocol || Faye.ENV.location.protocol;
+    uri.protocol = uri.protocol || win.location.protocol;
 
     if (uri.host) {
       uri.host     = uri.host.substr(2);
@@ -45,9 +46,9 @@ var Faye_URI = {
       uri.hostname = parts[0];
       uri.port     = parts[1] || '';
     } else {
-      uri.host     = Faye.ENV.location.host;
-      uri.hostname = Faye.ENV.location.hostname;
-      uri.port     = Faye.ENV.location.port;
+      uri.host     = win.location.host;
+      uri.hostname = win.location.hostname;
+      uri.port     = win.location.port;
     }
 
     uri.pathname = uri.pathname || '/';

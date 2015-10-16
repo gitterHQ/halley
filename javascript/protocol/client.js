@@ -1,6 +1,5 @@
 'use strict';
 
-var Faye              = require('../faye');
 var Faye_Extensions   = require('./extensions');
 var Faye_Publisher    = require('../mixins/publisher');
 var Faye_Error        = require('../error');
@@ -15,6 +14,18 @@ var extend            = require('../util/extend');
 var debug             = require('debug-proxy')('faye:client');
 var Faye_FSM          = require('../util/fsm');
 var extend            = require('../util/extend');
+
+var MANDATORY_CONNECTION_TYPES = ['long-polling', 'callback-polling', 'in-process'];
+var BAYEUX_VERSION = '1.0';
+var DEFAULT_ENDPOINT = '/bayeux';
+
+var HANDSHAKE = 'handshake';
+var RETRY = 'retry';
+var NONE = 'none'; // TODO: handle none
+
+
+var CONNECTION_TIMEOUT = 60;
+var INTERVAL = 0;
 
 /**
  * TODO: make the states/transitions look more like the official client states
@@ -72,73 +83,47 @@ var FSM = {
 
 function Faye_Client(endpoint, options) {
   debug('New client created for %s', endpoint);
-  options = options || {};
-
-  Faye.validateOptions(options, ['interval', 'timeout', 'endpoints', 'proxy', 'retry', 'scheduler', 'websocketExtensions', 'tls', 'ca']);
+  if (!options) options = {};
 
   this._extensions = new Faye_Extensions();
-  this._endpoint   = endpoint || this.DEFAULT_ENDPOINT;
+  this._endpoint   = endpoint || DEFAULT_ENDPOINT;
   this._channels   = new Faye_Channel_Set();
   this._dispatcher = new Faye_Dispatcher(this, this._endpoint, options);
 
   this._messageId = 0;
 
-  this._state = new Faye_FSM(FSM);
+  this._state = new Faye_FSM(FSM, this);
 
-  this.listenTo(this._state, 'enter:HANDSHAKING', this._onEnterHandshaking);
-  this.listenTo(this._state, 'enter:DISCONNECTING', this._onEnterDisconnecting);
-  this.listenTo(this._state, 'enter:UNCONNECTED', this._onEnterUnconnected);
-  this.listenTo(this._state, 'enter:RECONNECTING', this._onEnterReconnecting);
-  this.listenTo(this._state, 'enter:CONNECTED', this._onEnterConnected);
-  this.listenTo(this._state, 'enter:RESETTING', this._onEnterDisconnecting);
+  this.listenTo(this._state, 'enter:HANDSHAKING'       , this._onEnterHandshaking);
+  this.listenTo(this._state, 'enter:DISCONNECTING'     , this._onEnterDisconnecting);
+  this.listenTo(this._state, 'enter:UNCONNECTED'       , this._onEnterUnconnected);
+  this.listenTo(this._state, 'enter:RECONNECTING'      , this._onEnterReconnecting);
+  this.listenTo(this._state, 'enter:CONNECTED'         , this._onEnterConnected);
+  this.listenTo(this._state, 'enter:RESETTING'         , this._onEnterDisconnecting);
   this.listenTo(this._state, 'enter:RESELECT_TRANSPORT', this._onReselectTransport);
   this.listenTo(this._state, 'enter:AWAITING_RECONNECT', this._onEnterAwaitingReconnect);
   this.listenTo(this._state, 'leave:AWAITING_RECONNECT', this._onLeaveAwaitingReconnect);
 
-  this._responseCallbacks = {};
-
   this._advice = {
-    reconnect: this.RETRY,
-    interval:  1000 * (options.interval || this.INTERVAL),
-    timeout:   1000 * (options.timeout  || this.CONNECTION_TIMEOUT)
+    reconnect: RETRY,
+    interval:  1000 * (options.interval || INTERVAL),
+    timeout:   1000 * (options.timeout  || CONNECTION_TIMEOUT)
   };
   this._dispatcher.timeout = this._advice.timeout / 1000;
 
   this.listenTo(this._dispatcher, 'message', this._receiveMessage);
+
+  // TODO: sort this out
   this.listenTo(this._dispatcher, 'transportDown', this._transportDown);
-
-  this.listenTo(globalEvents, 'beforeunload', function() {
-    if (Faye.indexOf(this._dispatcher._disabled, 'autodisconnect') >= 0) return;
-    this.disconnect();
-  });
-
 }
 
 Faye_Client.prototype = {
-  UNCONNECTED:        1,
-  CONNECTING:         2,
-  CONNECTED:          3,
-  DISCONNECTED:       4,
-
-  HANDSHAKE:          'handshake',
-  RETRY:              'retry',
-  NONE:               'none',
-
-  CONNECTION_TIMEOUT: 60,
-
-  DEFAULT_ENDPOINT:   '/bayeux',
-  INTERVAL:           0,
-
   addWebsocketExtension: function(extension) {
     return this._dispatcher.addWebsocketExtension(extension);
   },
 
   disable: function(feature) {
     return this._dispatcher.disable(feature);
-  },
-
-  setHeader: function(name, value) {
-    return this._dispatcher.setHeader(name, value);
   },
 
   addExtension: function(extension) {
@@ -149,34 +134,15 @@ Faye_Client.prototype = {
     this._extensions.remove(extension);
   },
 
-  // Request
-  // MUST include:  * channel
-  //                * version
-  //                * supportedConnectionTypes
-  // MAY include:   * minimumVersion
-  //                * ext
-  //                * id
-  //
-  // Success Response                             Failed Response
-  // MUST include:  * channel                     MUST include:  * channel
-  //                * version                                    * successful
-  //                * supportedConnectionTypes                   * error
-  //                * clientId                    MAY include:   * supportedConnectionTypes
-  //                * successful                                 * advice
-  // MAY include:   * minimumVersion                             * version
-  //                * advice                                     * minimumVersion
-  //                * ext                                        * ext
-  //                * id                                         * id
-  //                * authSuccessful
   _onEnterHandshaking: function() {
     var self = this;
 
-    debug('Initiating handshake with %s', Faye_URI.stringify(this._endpoint));
-    this._dispatcher.selectTransport(Faye.MANDATORY_CONNECTION_TYPES);
+    debug('Initiating handshake with %j', this._endpoint);
+    this._dispatcher.selectTransport(MANDATORY_CONNECTION_TYPES);
 
     return this._sendMessage({
         channel:                  Faye_Channel.HANDSHAKE,
-        version:                  Faye.BAYEUX_VERSION,
+        version:                  BAYEUX_VERSION,
         supportedConnectionTypes: this._dispatcher.getConnectionTypes()
 
       }, {})
@@ -200,7 +166,7 @@ Faye_Client.prototype = {
         });
       })
       .then(null, function(err) {
-        debug('Handshake failed: %s', err.message);
+        debug('Handshake failed: %s', err, err.stack);
         // TODO: make sure that advice is uphelp
         self._state.transitionIfPossible('rehandshake');
       });
@@ -209,13 +175,13 @@ Faye_Client.prototype = {
   _onEnterReconnecting: function() {
     var self = this;
 
-    self._handshakeTimer = Faye.ENV.setTimeout(function() {
+    self._handshakeTimer = setTimeout(function() {
       self._state.transitionIfPossible('interval');
     }, this._advice.interval);
   },
 
   _onLeaveReconnecting: function() {
-    Faye.ENV.clearTimeout(this._handshakeTimer);
+    clearTimeout(this._handshakeTimer);
     this._handshakeTimer = null;
   },
 
@@ -255,60 +221,16 @@ Faye_Client.prototype = {
 
   _onEnterAwaitingReconnect: function() {
     var self = this;
-    this._intervalTimer = Faye.ENV.setTimeout(function() {
+    this._intervalTimer = setTimeout(function() {
       self._state.transitionIfPossible('reconnect');
     }, self._advice.interval);
   },
 
   _onLeaveAwaitingReconnect: function() {
-    Faye.ENV.clearTimeout(this._intervalTimer);
+    clearTimeout(this._intervalTimer);
     this._intervalTimer = null;
   },
 
-
-  // Request                              Response
-  // MUST include:  * channel             MUST include:  * channel
-  //                * clientId                           * successful
-  //                * connectionType                     * clientId
-  // MAY include:   * ext                 MAY include:   * error
-  //                * id                                 * advice
-  //                                                     * ext
-  //                                                     * id
-  //                                                     * timestamp
-  // connect: function(callback, context) {
-  //   if (this._advice.reconnect === this.NONE) return;
-  //   if (this._state === this.DISCONNECTED) return;
-  //
-  //   if (this._state === this.UNCONNECTED)
-  //     return this.handshake(function() { this.connect(callback, context) }, this);
-  //
-  //   this.callback(callback, context);
-  //   if (this._state !== this.CONNECTED) return;
-  //
-  //   debug('Calling deferred actions for %s', this._dispatcher.clientId);
-  //   this.setDeferredStatus('succeeded');
-  //   this.setDeferredStatus('unknown');
-  //
-  //   if (this._connectRequest) return;
-  //   this._connectRequest = true;
-  //
-  //   debug('Initiating connection for %s', this._dispatcher.clientId);
-  //
-  //   this._sendMessage({
-  //     channel:        Faye_Channel.CONNECT,
-  //     clientId:       this._dispatcher.clientId,
-  //     connectionType: this._dispatcher.connectionType
-  //
-  //   }, {}, this._cycleConnection, this);
-  // },
-
-  // Request                              Response
-  // MUST include:  * channel             MUST include:  * channel
-  //                * clientId                           * successful
-  // MAY include:   * ext                                * clientId
-  //                * id                  MAY include:   * error
-  //                                                     * ext
-  //                                                     * id
   disconnect: function() {
     this._state.transitionIfPossible('disconnect');
 
@@ -342,8 +264,9 @@ Faye_Client.prototype = {
   },
 
   _onReselectTransport: function() {
+    console.trace();
     var self = this;
-    var types = this._supportedTypes || Faye.MANDATORY_CONNECTION_TYPES;
+    var types = this._supportedTypes || MANDATORY_CONNECTION_TYPES;
     this._dispatcher.selectTransport(types, function(transport) {
         debug('Transport reselected %s', transport.connectionType);
         self._state.transitionIfPossible('transportReselected');
@@ -396,20 +319,10 @@ Faye_Client.prototype = {
 
   },
 
-  // Request                              Response
-  // MUST include:  * channel             MUST include:  * channel
-  //                * clientId                           * successful
-  //                * subscription                       * clientId
-  // MAY include:   * ext                                * subscription
-  //                * id                  MAY include:   * error
-  //                                                     * advice
-  //                                                     * ext
-  //                                                     * id
-  //                                                     * timestamp
-  subscribe: function(channel, callback, context) {
+  subscribe: function(channel, onMessage, context) {
     var self = this;
 
-    var deferredSub   = Faye_Subscription.createDeferred(this, channel, callback, context);
+    var deferredSub   = Faye_Subscription.createDeferred(this, channel, onMessage, context);
     var defer         = deferredSub.defer;
     var subscription  = deferredSub.subscription;
 
@@ -418,7 +331,7 @@ Faye_Client.prototype = {
     // If the client is resubscribing to an existing channel
     // there is no need to re-issue to message to the server
     if (hasSubscribe) {
-      this._channels.subscribe(channel, callback, context);
+      this._channels.subscribe(channel, onMessage, context);
       defer.resolve(subscription);
       return subscription;
     }
@@ -432,7 +345,7 @@ Faye_Client.prototype = {
       })
       .then(function() {
         debug('Client %s attempting to subscribe to %s', self._dispatcher.clientId, channel);
-        self._channels.subscribe(channel, callback, context);
+        self._channels.subscribe(channel, onMessage, context);
 
         return self._sendMessage({
           channel:      Faye_Channel.SUBSCRIBE,
@@ -458,24 +371,8 @@ Faye_Client.prototype = {
     return subscription;
   },
 
-  // Request                              Response
-  // MUST include:  * channel             MUST include:  * channel
-  //                * clientId                           * successful
-  //                * subscription                       * clientId
-  // MAY include:   * ext                                * subscription
-  //                * id                  MAY include:   * error
-  //                                                     * advice
-  //                                                     * ext
-  //                                                     * id
-  //                                                     * timestamp
   unsubscribe: function(channel, callback, context) {
     var self = this;
-
-    if (channel instanceof Array) {
-      return Faye.map(channel, function(c) {
-        return self.unsubscribe(c, callback, context);
-      });
-    }
 
     var dead = this._channels.unsubscribe(channel, callback, context);
     if (!dead) return; // TODO: return a promise
@@ -503,16 +400,8 @@ Faye_Client.prototype = {
       });
   },
 
-  // Request                              Response
-  // MUST include:  * channel             MUST include:  * channel
-  //                * data                               * successful
-  // MAY include:   * clientId            MAY include:   * id
-  //                * id                                 * error
-  //                * ext                                * ext
   publish: function(channel, data, options) {
     var self = this;
-
-    Faye.validateOptions(options || {}, ['attempts', 'deadline']);
 
     this._state.transitionIfPossible('connect');
 
@@ -551,13 +440,22 @@ Faye_Client.prototype = {
 
     var timeout = this._advice.timeout ? 1.2 * this._advice.timeout / 1000 : 1.2 * this._dispatcher.retry;
 
-    return new Promise(function(fulfill/*, reject*/) {
-      self._extensions.pipe('outgoing', message, function(message) {
+    return self._extensions.pipe('outgoing', message)
+      .then(function(message) {
         if (!message) return;
-        self._responseCallbacks[message.id] = [fulfill, null];
-        self._dispatcher.sendMessage(message, timeout, options || {});
+
+        return self._dispatcher.sendMessage(message, timeout, options || {})
+          .then(function(reply) {
+            return self._transformIncomingMessage(reply);
+          });
+          // .then(function(reply) {
+          //   // Also pass the message to any channels
+          //   // because replies don't fire the `message` event
+          //   self._deliverMessage(reply);
+          //   return reply;
+          // });
       });
-    });
+
   },
 
   _generateMessageId: function() {
@@ -566,28 +464,32 @@ Faye_Client.prototype = {
     return this._messageId.toString(36);
   },
 
-  _receiveMessage: function(message) {
-    var id = message.id, callback;
-
-    if (message.successful !== undefined) {
-      callback = this._responseCallbacks[id];
-      delete this._responseCallbacks[id];
-    }
+  _transformIncomingMessage: function(message) {
     var self = this;
-    this._extensions.pipe('incoming', message, function(message) {
-      if (!message) return;
-      if (message.advice) self._handleAdvice(message.advice);
-      self._deliverMessage(message);
 
-      if (callback) callback[0].call(callback[1], message);
-    });
+    return this._extensions.pipe('incoming', message)
+      .then(function(message) {
+        if (message && message.advice) self._handleAdvice(message.advice);
+        return message;
+      });
+  },
+
+  /* Event handler for a channel message */
+  _receiveMessage: function(message) {
+    var self = this;
+
+    this._transformIncomingMessage(message)
+      .then(function(message) {
+        if (!message) return;
+        self._deliverMessage(message);
+      });
   },
 
   _handleAdvice: function(advice) {
     extend(this._advice, advice);
-    this._dispatcher.timeout = this._advice.timeout / 1000;
+    this._dispatcher.timeout = this._advice.timeout / 1000; // TODO: switch to ms
 
-    if (this._advice.reconnect === this.HANDSHAKE) {
+    if (this._advice.reconnect === HANDSHAKE) {
       this._state.transitionIfPossible('rehandshake');
     }
   },

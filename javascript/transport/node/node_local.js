@@ -1,6 +1,5 @@
 'use strict';
 
-var Faye           = require('../../faye');
 var Faye_Transport = require('./transport');
 var inherits       = require('inherits');
 var extend         = require('../../util/extend');
@@ -14,10 +13,9 @@ extend(Faye_Transport_NodeLocal.prototype, {
   batching: false,
 
   request: function(messages) {
-    messages = Faye.copyObject(messages);
     var self = this;
     this.endpoint.process(messages, null, function(replies) {
-      self._receive(Faye.copyObject(replies));
+      self._receive(replies);
     });
   }
 });

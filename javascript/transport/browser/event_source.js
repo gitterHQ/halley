@@ -1,6 +1,5 @@
 'use strict';
 
-var Faye               = require('../../faye');
 var Faye_Transport     = require('../transport');
 var Faye_URI           = require('../../util/uri');
 var Promise            = require('bluebird');
@@ -20,7 +19,7 @@ function Faye_Transport_EventSource(dispatcher, endpoint) {
 
     self._xhr = new Faye_Transport_XHR(dispatcher, endpoint);
 
-    var eventSourceEndpoint = Faye.copyObject(endpoint);
+    var eventSourceEndpoint = extend({ }, endpoint); // Copy endpoint
     eventSourceEndpoint.pathname += '/' + dispatcher.clientId;
 
     var socket = new WindowEventSource(Faye_URI.stringify(eventSourceEndpoint));
@@ -80,36 +79,34 @@ extend(Faye_Transport_EventSource.prototype, {
 });
 
 /* Statics */
-extend(Faye_Transport_EventSource, {
-  isUsable: function(dispatcher, endpoint, callback) {
-    var id = dispatcher.clientId;
-    if (!id) return callback(false);
+Faye_Transport_EventSource.isUsable = function(dispatcher, endpoint, callback) {
+  var id = dispatcher.clientId;
+  if (!id) return callback(false);
 
-    Faye_Transport_XHR.isUsable(dispatcher, endpoint, function(usable) {
-      if (!usable) return callback(false);
-      Faye_Transport_EventSource.create(dispatcher, endpoint).isUsable(callback);
-    });
-  },
+  Faye_Transport_XHR.isUsable(dispatcher, endpoint, function(usable) {
+    if (!usable) return callback(false);
+    Faye_Transport_EventSource.create(dispatcher, endpoint).isUsable(callback);
+  });
+};
 
-  create: function(dispatcher, endpoint) {
-    var id = dispatcher.clientId;
+Faye_Transport_EventSource.create = function(dispatcher, endpoint) {
+  var id = dispatcher.clientId;
 
-    var sockets = dispatcher.transports.eventsource;
-    if (!sockets) {
-      sockets = dispatcher.transports.eventsource = {};
-    }
-
-    endpoint = Faye.copyObject(endpoint);
-    endpoint.pathname += '/' + (id || '');
-    var url = Faye_URI.stringify(endpoint);
-
-    var eventSource = sockets[url];
-    if (!eventSource) {
-      eventSource = sockets[url] = new Faye_Transport_EventSource(dispatcher, endpoint);
-    }
-
-    return eventSource;
+  var sockets = dispatcher.transports.eventsource;
+  if (!sockets) {
+    sockets = dispatcher.transports.eventsource = {};
   }
-});
+
+  endpoint = extend({ }, endpoint);
+  endpoint.pathname += '/' + (id || '');
+  var url = Faye_URI.stringify(endpoint);
+
+  var eventSource = sockets[url];
+  if (!eventSource) {
+    eventSource = sockets[url] = new Faye_Transport_EventSource(dispatcher, endpoint);
+  }
+
+  return eventSource;
+};
 
 module.exports = Faye_Transport_EventSource;

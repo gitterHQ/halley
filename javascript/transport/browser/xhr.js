@@ -1,9 +1,9 @@
 'use strict';
 
-var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
 var Faye_URI       = require('../../util/uri');
 var globalEvents   = require('../../util/global-events');
+var debug          = require('debug-proxy')('faye:xhr');
 var inherits       = require('inherits');
 var extend         = require('../../util/extend');
 
@@ -17,18 +17,21 @@ inherits(Faye_Transport_XHR, Faye_Transport);
 
 extend(Faye_Transport_XHR.prototype, {
   encode: function(messages) {
-    // Same origin requests have proper content-type set
+    var stringified = JSON.stringify(messages);
     if (this._sameOrigin) {
-      return Faye.toJSON(messages);
+      // Same origin requests have proper content-type set, so they
+      // can use application/json
+      return stringified;
     } else {
-      return 'message=' + encodeURIComponent(Faye.toJSON(messages));
+      // CORS requests are posted as plain text
+      return 'message=' + encodeURIComponent(stringified);
     }
   },
 
   request: function(messages) {
-    var href = this.endpoint.href,
-        xhr  = new WindowXMLHttpRequest(),
-        self = this;
+    var href = this.endpoint.href;
+    var xhr = new WindowXMLHttpRequest();
+    var self = this;
 
     xhr.open('POST', href, true);
 
@@ -38,46 +41,56 @@ extend(Faye_Transport_XHR.prototype, {
       xhr.setRequestHeader('Pragma', 'no-cache');
     }
 
-    var abort = function() { xhr.abort(); };
-    globalEvents.on('beforeunload', abort, this);
+    function abort() {
+      if (!xhr) return;
+      xhr.abort();
+      cleanup();
+    }
+
+    function cleanup() {
+      globalEvents.off('beforeunload', cleanup, xhr);
+      xhr.onreadystatechange = null;
+      xhr = null;
+    }
+
+    globalEvents.on('beforeunload', cleanup, xhr);
 
     xhr.onreadystatechange = function() {
       if (!xhr || xhr.readyState !== 4) return;
 
-      var replies    = null,
-          status     = xhr.status,
-          text       = xhr.responseText,
-          successful = (status >= 200 && status < 300) || status === 304 || status === 1223;
+      var status = xhr.status;
+      var text = xhr.responseText;
 
-      globalEvents.off('beforeunload', abort, this);
-      xhr.onreadystatechange = function() {};
-      xhr = null;
+      cleanup();
 
+      var successful = (status >= 200 && status < 300) || status === 304 || status === 1223;
       if (!successful) return self._handleError(messages);
 
+      var replies;
       try {
         replies = JSON.parse(text);
-      } catch (e) {}
+      } catch (e) {
+        debug('Unable to parse XHR response: %s', e)
+      }
 
-      if (replies)
+      if (replies) {
         self._receive(replies);
-      else
+      } else {
         self._handleError(messages);
+      }
     };
 
     xhr.send(this.encode(messages));
-    return xhr;
+    return { abort: abort };
   }
 });
 
 /* Statics */
-extend(Faye_Transport_XHR, {
-  isUsable: function(dispatcher, endpoint, callback, context) {
-    var isXhr2 = WindowXMLHttpRequest && WindowXMLHttpRequest.prototype.hasOwnProperty('withCredentials');
-    var sameOrigin = Faye_URI.isSameOrigin(endpoint);
+Faye_Transport_XHR.isUsable = function(dispatcher, endpoint, callback) {
+  var isXhr2 = WindowXMLHttpRequest && WindowXMLHttpRequest.prototype.hasOwnProperty('withCredentials');
+  var sameOrigin = Faye_URI.isSameOrigin(endpoint);
 
-    callback.call(context, sameOrigin || isXhr2);
-  }
-});
+  callback(sameOrigin || isXhr2);
+};
 
 module.exports = Faye_Transport_XHR;

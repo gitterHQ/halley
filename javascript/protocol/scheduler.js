@@ -1,14 +1,17 @@
 'use strict';
 
-var extend = require('../util/extend');
-
+/**
+ * Handles the scheduling of a single message
+ */
 function Faye_Scheduler(message, options) {
   this.message  = message;
-  this.options  = options;
+  this.options = options;
   this.attempts = 0;
+  this.failures = 0;
+  this.finished = false;
 }
 
-extend(Faye_Scheduler.prototype, {
+Faye_Scheduler.prototype = {
   getTimeout: function() {
     return this.options.timeout;
   },
@@ -18,29 +21,44 @@ extend(Faye_Scheduler.prototype, {
   },
 
   isDeliverable: function() {
-    var attempts = this.options.attempts,
-        made     = this.attempts,
-        deadline = this.options.deadline,
-        now      = new Date().getTime();
+    if (this.finished) return false;
+    var allowedAttempts = this.options.attempts;
 
-    if (attempts !== undefined && made >= attempts)
-      return false;
+    if (!allowedAttempts) return true;
 
-    if (deadline !== undefined && now > deadline)
-      return false;
-
-    return true;
+    // Say we have 3 attempts...
+    // On the 3rd failure, it's not deliverable
+    // On the 3rd attempts, it's deliverable
+    return this.attempts <= allowedAttempts && this.failures < allowedAttempts;
   },
 
+  /**
+   * Called immediately prior to resending
+   */
   send: function() {
-    this.attempts += 1;
+    this.attempts++;
   },
 
-  succeed: function() {},
+  /**
+   * Called when an attempt to send has failed
+   */
+  fail: function() {
+    this.failures++;
+  },
 
-  fail: function() {},
+  /**
+   * Called when the message has been sent successfully
+   */
+  succeed: function() {
+    this.finished = true;
+  },
 
-  abort: function() {}
-});
+  /**
+   * Called when the message is aborted
+   */
+  abort: function() {
+    this.finished = true;
+  }
+};
 
 module.exports = Faye_Scheduler;

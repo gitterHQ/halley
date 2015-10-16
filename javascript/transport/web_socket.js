@@ -1,6 +1,5 @@
 'use strict';
 
-var Faye             = require('../faye');
 var Faye_Transport   = require('./transport');
 var globalEvents     = require('../util/global-events');
 var Faye_URI         = require('../util/uri');
@@ -47,9 +46,21 @@ var FSM = {
   }
 };
 
+var PROTOCOLS = {
+  'http:':  'ws:',
+  'https:': 'wss:'
+};
+
+function getSocketUrl(endpoint) {
+  endpoint = extend({ }, endpoint);
+  endpoint.protocol = PROTOCOLS[endpoint.protocol];
+  return Faye_URI.stringify(endpoint);
+}
+
+var _unloaded = false;
+
 function Faye_Transport_WebSocket(dispatcher, endpoint) {
   debug('Initialising websocket transport');
-  this._onNetworkEventBound = this._onNetworkEvent.bind(this);
 
   this._state = new Faye_FSM(FSM);
 
@@ -68,12 +79,12 @@ inherits(Faye_Transport_WebSocket, Faye_Transport);
 extend(Faye_Transport_WebSocket.prototype, {
   batching:     false,
 
-  isUsable: function(callback, context) {
+  isUsable: function(callback) {
     return this.connect()
       .then(function() {
-        callback.call(context, true);
+        callback(true);
       }, function() {
-        callback.call(context, false);
+        callback(false);
       });
   },
 
@@ -97,7 +108,7 @@ extend(Faye_Transport_WebSocket.prototype, {
         return;
       }
 
-      socket.send(Faye.toJSON(messages));
+      socket.send(JSON.stringify(messages));
     });
 
     /* Returns a request */
@@ -120,25 +131,22 @@ extend(Faye_Transport_WebSocket.prototype, {
   },
 
   _onEnterConnecting: function() {
-    if (Faye_Transport_WebSocket._unloaded) {
+    var self = this;
+
+    if (_unloaded) {
       this._state.transition('socketClosed', new Error('Sockets unloading'));
-        return;
+      return;
     }
 
-    this._createConnectPromise();
-  },
-
-  _createConnectPromise: function() {
-    var self = this;
     debug('Entered connecting state, creating new WebSocket connection');
 
     self._connectPromise = new Promise(function(resolve, reject) {
 
-      var url = Faye_Transport_WebSocket.getSocketUrl(self.endpoint);
+      var url = getSocketUrl(self.endpoint);
       var socket = self._socket = websocketFactory(url);
 
       if (!socket) {
-        throw new Error('Sockets not supported');
+        return reject(new Error('Sockets not supported'));
       }
 
       var connectTimeout;
@@ -186,23 +194,16 @@ extend(Faye_Transport_WebSocket.prototype, {
         self._state.transitionIfPossible('socketClosed');
       };
 
-    }).then(function() {
+    });
+
+    // Don't chain 
+    self._connectPromise.then(function() {
       self._state.transitionIfPossible('socketConnected');
-    }, function(err) {
+    }, function(/*err*/) {
       self._state.transitionIfPossible('socketClosed');
-      throw err;
     });
 
   },
-
-  // _onEnterAwaitingRetry: function() {
-  //   var self = this;
-  //   setTimeout(function() {
-  //     if(self._state.stateIs('AWAITING_RETRY')) {
-  //       self._state.transition('connect');
-  //     }
-  //   }, this._dispatcher.retry * 1000 || 1000);
-  // },
 
   _onEnterConnected: function() {
     debug('WebSocket entering connected state');
@@ -223,7 +224,7 @@ extend(Faye_Transport_WebSocket.prototype, {
 
     globalEvents.off('network', this._onNetworkEvent, this);
     globalEvents.off('sleep', this._onNetworkEvent, this);
-    
+
     this._rejectPending();
   },
 
@@ -317,46 +318,32 @@ extend(Faye_Transport_WebSocket.prototype, {
 
 });
 
-/* Statics */
-extend(Faye_Transport_WebSocket, {
-  PROTOCOLS: {
-    'http:':  'ws:',
-    'https:': 'wss:'
-  },
-
-  create: function(dispatcher, endpoint) {
-    var sockets = dispatcher.transports.websocket;
-    if(!sockets) {
-      sockets = {};
-      dispatcher.transports.websocket = sockets;
-    }
-
-    if(sockets[endpoint.href]) {
-      return sockets[endpoint.href];
-    }
-
-    var socket =  new Faye_Transport_WebSocket(dispatcher, endpoint);
-    sockets[endpoint.href] = socket;
-    return socket;
-  },
-
-  getSocketUrl: function(endpoint) {
-    endpoint = Faye.copyObject(endpoint);
-    endpoint.protocol = this.PROTOCOLS[endpoint.protocol];
-    return Faye_URI.stringify(endpoint);
-  },
-
-  isUsable: function(dispatcher, endpoint, callback, context) {
-    this.create(dispatcher, endpoint).isUsable(callback, context);
-  }
-
-});
-
 /* Mixins */
 extend(Faye_Transport_WebSocket.prototype, Events);
 
+/* Statics */
+Faye_Transport_WebSocket.create = function(dispatcher, endpoint) {
+  var sockets = dispatcher.transports.websocket;
+  if(!sockets) {
+    sockets = {};
+    dispatcher.transports.websocket = sockets;
+  }
+
+  if(sockets[endpoint.href]) {
+    return sockets[endpoint.href];
+  }
+
+  var socket =  new Faye_Transport_WebSocket(dispatcher, endpoint);
+  sockets[endpoint.href] = socket;
+  return socket;
+};
+
+Faye_Transport_WebSocket.isUsable = function(dispatcher, endpoint, callback) {
+  this.create(dispatcher, endpoint).isUsable(callback);
+};
+
 globalEvents.on('beforeunload', function() {
-  Faye_Transport_WebSocket._unloaded = true;
+  _unloaded = true;
 });
 
 module.exports = Faye_Transport_WebSocket;

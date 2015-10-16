@@ -1,6 +1,5 @@
 'use strict';
 
-var Faye          = require('../faye');
 var Faye_Timeouts = require('../util/timeouts');
 var Faye_URI      = require('../util/uri');
 var Promise       = require('bluebird');
@@ -17,12 +16,6 @@ function Faye_Transport(dispatcher, endpoint) {
   this._proxy      = extend({}, this._dispatcher.proxy);
 
   this.timeouts    = new Faye_Timeouts(this);
-
-  // if (!this._proxy.origin && Faye_NodeAdapter) {
-  //   this._proxy.origin = Faye.indexOf(this.SECURE_PROTOCOLS, this.endpoint.protocol) >= 0
-  //                      ? (process.env.HTTPS_PROXY || process.env.https_proxy)
-  //                      : (process.env.HTTP_PROXY  || process.env.http_proxy);
-  // }
 }
 
 Faye_Transport.prototype = {
@@ -127,14 +120,14 @@ extend(Faye_Transport, {
   get: function(dispatcher, allowed, disabled, callback) {
     var endpoint = dispatcher.endpoint;
 
-    Faye.asyncEach(registeredTransports, function(pair, resume) {
+    asyncEach(registeredTransports, function(pair, resume) {
       var connType     = pair[0], Klass = pair[1],
           connEndpoint = dispatcher.endpointFor(connType);
 
-      if (Faye.indexOf(disabled, connType) >= 0)
+      if (disabled && disabled.indexOf(connType) >= 0)
         return resume();
 
-      if (Faye.indexOf(allowed, connType) < 0) {
+      if (allowed && allowed.indexOf(connType) < 0) {
         Klass.isUsable(dispatcher, connEndpoint, function() {});
         return resume();
       }
@@ -155,9 +148,37 @@ extend(Faye_Transport, {
   },
 
   getConnectionTypes: function() {
-    return Faye.map(registeredTransports, function(t) { return t[0]; });
+    return registeredTransports.map(function(t) { return t[0]; });
   },
 
 });
+
+function asyncEach(list, iterator, callback) {
+  var n       = list.length,
+      i       = -1,
+      calls   = 0,
+      looping = false;
+
+  var iterate = function() {
+    calls -= 1;
+    i += 1;
+    if (i === n) return callback && callback();
+    iterator(list[i], resume);
+  };
+
+  var loop = function() {
+    if (looping) return;
+    looping = true;
+    while (calls > 0) iterate();
+    looping = false;
+  };
+
+  var resume = function() {
+    calls += 1;
+    loop();
+  };
+  resume();
+}
+
 
 module.exports = Faye_Transport;

@@ -1,6 +1,6 @@
 'use strict';
 
-var Faye = require('./faye');
+var Faye = { };
 var Faye_Transport = require('./transport/transport');
 Faye.Client = require('./protocol/client');
 

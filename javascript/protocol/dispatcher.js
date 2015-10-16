@@ -1,12 +1,19 @@
 'use strict';
 
-var Faye           = require('../faye');
 var Faye_Scheduler = require('./scheduler');
 var Faye_Transport = require('../transport/transport');
 var Faye_Publisher = require('../mixins/publisher');
 var Faye_URI       = require('../util/uri');
+var Envelope       = require('./envelope');
 var extend         = require('../util/extend');
 var debug          = require('debug-proxy')('faye:dispatcher');
+
+/**
+ * The dispatcher sits between the client and the transport.
+ *
+ * It's responsible for tracking sending messages to the transport,
+ * tracking in-flight messages
+ */
 
 function Faye_Dispatcher(client, endpoint, options) {
   this._client     = client;
@@ -59,10 +66,6 @@ Faye_Dispatcher.prototype = {
     this._disabled.push(feature);
   },
 
-  // setHeader: function(name, value) {
-  //   this.headers[name] = value;
-  // },
-
   close: function() {
     debug('Dispatcher close requested');
     var transport = this._transport;
@@ -93,91 +96,75 @@ Faye_Dispatcher.prototype = {
   sendMessage: function(message, timeout, options) {
     options = options || {};
 
-    var id       = message.id,
-        attempts = options.attempts,
-        deadline = options.deadline && new Date().getTime() + (options.deadline * 1000),
-        envelope = this._envelopes[id],
-        scheduler;
+    var self = this;
+    var id = message.id;
+    var attempts = options.attempts;
+    var envelope = this._envelopes[id];
+
+    function removeEnvelope() {
+      delete self._envelopes[id];
+    }
 
     if (!envelope) {
-      scheduler = new this._scheduler(message, { timeout: timeout, interval: this.retry, attempts: attempts, deadline: deadline });
-      envelope  = this._envelopes[id] = {message: message, scheduler: scheduler};
+      var scheduler = new this._scheduler(message, { timeout: timeout, interval: this.retry, attempts: attempts });
+      envelope = this._envelopes[id] = new Envelope(message, scheduler, { deadline: options.deadline });
+
+      // Remove the envelope on resolve or reject
+      envelope.promise.then(removeEnvelope, removeEnvelope);
     }
 
     this._sendEnvelope(envelope);
+    return envelope.promise;
   },
 
   _sendEnvelope: function(envelope) {
     if (!this._transport) return;
-    if (envelope.request || envelope.timer) return;
+    var self = this;
 
-    var message   = envelope.message,
-        scheduler = envelope.scheduler,
-        self      = this;
-
-    if (!scheduler.isDeliverable()) {
-      scheduler.abort();
-      delete this._envelopes[message.id];
-      return;
+    function onTimeout() {
+      debug('Envelope timeout %j', envelope);
+      self.handleError(envelope.message);
     }
 
-    envelope.timer = Faye.ENV.setTimeout(function() {
-      debug('Envelope timeout %j', envelope);
-      self.handleError(message);
-    }, scheduler.getTimeout() * 1000);
+    function onSend() {
+      return self._transport.sendMessage(envelope.message);
+    }
 
-    scheduler.send();
-    envelope.request = this._transport.sendMessage(message);
+    envelope.scheduleSend(onSend, onTimeout);
   },
 
   handleResponse: function(reply) {
+    debug('handleResponse %j', reply);
+
     var envelope = this._envelopes[reply.id];
 
     if (reply.successful !== undefined && envelope) {
-      envelope.scheduler.succeed();
-      delete this._envelopes[reply.id];
-      Faye.ENV.clearTimeout(envelope.timer);
+      // This is a response to a message we fired.
+      envelope.resolve(reply);
+    } else {
+      // Distribe this message through channels
+      // Don't trigger a message if this is a reply
+      // to a request, otherwise it'll pass
+      // through the extensions twice
+      this.trigger('message', reply);
     }
-
-    this.trigger('message', reply);
 
     if (this._state === this.UP) return;
     this._state = this.UP;
     this._client.trigger('transport:up');
   },
 
-  handleError: function(message, immediate) {
-    var envelope = this._envelopes[message.id],
-        request  = envelope && envelope.request,
-        self     = this;
+  handleError: function(message) {
+    debug('handleError %j', message);
+    var envelope = this._envelopes[message.id];
 
-    if (!request) return;
+    if (!envelope) return;
 
-    request.then(function(req) {
-      if (req && req.abort) req.abort();
+    var self = this;
+
+    envelope.failScheduleRetry(function() {
+      self._sendEnvelope(envelope);
     });
-
-    var scheduler = envelope.scheduler;
-    scheduler.fail();
-
-    Faye.ENV.clearTimeout(envelope.timer);
-    envelope.request = envelope.timer = null;
-
-    if (!scheduler.isDeliverable()) {
-      scheduler.abort();
-      debug('Ignoring error on envelope %j', envelope);
-      delete this._envelopes[message.id];
-    } else {
-      if (immediate) {
-        this._sendEnvelope(envelope);
-      } else {
-        envelope.timer = Faye.ENV.setTimeout(function() {
-          envelope.timer = null;
-          self._sendEnvelope(envelope);
-        }, scheduler.getInterval() * 1000);
-      }
-    }
-
 
     if (this._state === this.DOWN) return;
     this._state = this.DOWN;

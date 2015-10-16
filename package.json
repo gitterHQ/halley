@@ -20,13 +20,10 @@
   "dependencies": {
     "backbone-events-standalone": "suprememoocow/backbone-events-standalone#backbone-1.2.3",
     "bluebird": "^2.10.2",
-    "csprng": "",
     "debug": "^2.2.0",
     "debug-proxy": "^0.1.2",
     "faye-websocket": "~0.9.4",
-    "inherits": "^2.0.1",
-    "tough-cookie": "",
-    "tunnel-agent": ""
+    "inherits": "^2.0.1"
   },
   "devDependencies": {
     "express": "^4.13.3",
