@@ -1,37 +1,29 @@
 'use strict';
 
-var Faye_EventEmitter = require('../util/event_emitter');
-var extend            = require('../util/extend');
+var Events = require('backbone-events-standalone');
+var extend = require('../util/extend');
 
 var Faye_Publisher = {
   countListeners: function(eventType) {
-    return this.listeners(eventType).length;
-  },
+    // This is a dirty implementation which relies on the underlying implementatio
+    // of Backbone.Events to remain the same.
+    // Consider an alternative
+    var events = this._events;
+    if (!events) return 0;
 
-  bind: function(eventType, listener, context) {
-    var slice   = Array.prototype.slice,
-        handler = function() { listener.apply(context, slice.call(arguments)); };
+    var handler = events[eventType];
+    if (!handler) return 0;
 
-    this._listeners = this._listeners || [];
-    this._listeners.push([eventType, listener, context, handler]);
-    return this.on(eventType, handler);
-  },
-
-  unbind: function(eventType, listener, context) {
-    this._listeners = this._listeners || [];
-    var n = this._listeners.length, tuple;
-
-    while (n--) {
-      tuple = this._listeners[n];
-      if (tuple[0] !== eventType) continue;
-      if (listener && (tuple[1] !== listener || tuple[2] !== context)) continue;
-      this._listeners.splice(n, 1);
-      this.removeListener(eventType, tuple[3]);
+    if (Array.isArray(handler)) {
+      // If we've already got an array, just append.
+      return handler.length;
+    } else {
+      // Optimize the case of one listener. Don't need the extra array object.
+      return 1;
     }
-  }
+  },
 };
 
-extend(Faye_Publisher, Faye_EventEmitter.prototype);
-Faye_Publisher.trigger = Faye_Publisher.emit;
+extend(Faye_Publisher, Events);
 
 module.exports = Faye_Publisher;

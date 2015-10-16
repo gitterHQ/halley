@@ -7,7 +7,7 @@ var Faye_Error        = require('../error');
 var Faye_Channel      = require('./channel');
 var Faye_Channel_Set  = require('./channel-set');
 var Faye_Dispatcher   = require('./dispatcher');
-var Faye_Event        = require('../util/browser/event');
+var globalEvents      = require('../util/global-events');
 var Faye_Subscription = require('./subscription');
 var Faye_URI          = require('../util/uri');
 var Promise           = require('bluebird');
@@ -84,16 +84,16 @@ function Faye_Client(endpoint, options) {
   this._messageId = 0;
 
   this._state = new Faye_FSM(FSM);
-  this._state.on('enter:HANDSHAKING', this._onEnterHandshaking.bind(this));
-  this._state.on('enter:DISCONNECTING', this._onEnterDisconnecting.bind(this));
-  this._state.on('enter:UNCONNECTED', this._onEnterUnconnected.bind(this));
-  this._state.on('enter:RECONNECTING', this._onEnterReconnecting.bind(this));
-  this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
 
-  this._state.on('enter:RESETTING', this._onEnterDisconnecting.bind(this));
-  this._state.on('enter:RESELECT_TRANSPORT', this._onReselectTransport.bind(this));
-  this._state.on('enter:AWAITING_RECONNECT', this._onEnterAwaitingReconnect.bind(this));
-  this._state.on('leave:AWAITING_RECONNECT', this._onLeaveAwaitingReconnect.bind(this));
+  this.listenTo(this._state, 'enter:HANDSHAKING', this._onEnterHandshaking);
+  this.listenTo(this._state, 'enter:DISCONNECTING', this._onEnterDisconnecting);
+  this.listenTo(this._state, 'enter:UNCONNECTED', this._onEnterUnconnected);
+  this.listenTo(this._state, 'enter:RECONNECTING', this._onEnterReconnecting);
+  this.listenTo(this._state, 'enter:CONNECTED', this._onEnterConnected);
+  this.listenTo(this._state, 'enter:RESETTING', this._onEnterDisconnecting);
+  this.listenTo(this._state, 'enter:RESELECT_TRANSPORT', this._onReselectTransport);
+  this.listenTo(this._state, 'enter:AWAITING_RECONNECT', this._onEnterAwaitingReconnect);
+  this.listenTo(this._state, 'leave:AWAITING_RECONNECT', this._onLeaveAwaitingReconnect);
 
   this._responseCallbacks = {};
 
@@ -104,16 +104,15 @@ function Faye_Client(endpoint, options) {
   };
   this._dispatcher.timeout = this._advice.timeout / 1000;
 
-  this._dispatcher.bind('message', this._receiveMessage, this);
-  this._dispatcher.bind('transportDown', this._transportDown, this);
+  this.listenTo(this._dispatcher, 'message', this._receiveMessage);
+  this.listenTo(this._dispatcher, 'transportDown', this._transportDown);
 
-  if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
-    Faye_Event.on(Faye.ENV, 'beforeunload', function() {
-      if (Faye.indexOf(this._dispatcher._disabled, 'autodisconnect') < 0)
-        this.disconnect();
-    }, this);
+  this.listenTo(globalEvents, 'beforeunload', function() {
+    if (Faye.indexOf(this._dispatcher._disabled, 'autodisconnect') >= 0) return;
+    this.disconnect();
+  });
+
 }
-
 
 Faye_Client.prototype = {
   UNCONNECTED:        1,
@@ -450,7 +449,7 @@ Faye_Client.prototype = {
         }
 
         debug('Subscription acknowledged for %s to %s', self._dispatcher.clientId, response.subscription);
-        
+
         // Note that it may be tempting to return the subscription in the promise
         // but this causes problems since subscription is a `thenable`
         defer.resolve();

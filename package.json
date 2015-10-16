@@ -18,6 +18,7 @@
   "main": "./javascript/faye-node",
   "browserify": "./javascript/faye-browser",
   "dependencies": {
+    "backbone-events-standalone": "suprememoocow/backbone-events-standalone#backbone-1.2.3",
     "bluebird": "^2.10.2",
     "csprng": "",
     "debug": "^2.2.0",

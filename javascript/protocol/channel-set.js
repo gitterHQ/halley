@@ -25,13 +25,13 @@ Faye_Channel_Set.prototype = {
       channel = this._channels[name] = new Faye_Channel(name);
     }
 
-    if (callback) channel.bind('message', callback, context);
+    if (callback) channel.on('message', callback, context);
   },
 
   unsubscribe: function(name, callback, context) {
     var channel = this._channels[name];
     if (!channel) return false;
-    channel.unbind('message', callback, context);
+    channel.off('message', callback, context);
 
     if (channel.isUnused()) {
       this.remove(name);

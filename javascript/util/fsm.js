@@ -1,6 +1,6 @@
 'use strict';
 
-var Faye_EventEmitter = require('./event_emitter');
+var Events            = require('backbone-events-standalone');
 var Promise           = require('bluebird');
 var debug             = require('debug-proxy')('faye:fsm');
 var extend            = require('./extend');
@@ -49,7 +49,7 @@ Faye_FSM.prototype = {
 
       if (!newState) {
         if(!optional) {
-          this.emit('error', new Error('Unable to perform transition ' + transition + ' from state ' + this._state));
+          this.trigger('error', new Error('Unable to perform transition ' + transition + ' from state ' + this._state));
         }
 
         return;
@@ -57,17 +57,17 @@ Faye_FSM.prototype = {
 
       if (newState === this._state) return;
 
-      this.emit('transition', transition, this._state, newState);
+      this.trigger('transition', transition, this._state, newState);
       debug('%s: leave: %s', this._config.name, this._state);
-      this.emit('leave:' + this._state, newState);
+      this.trigger('leave:' + this._state, newState);
 
       var oldState = this._state;
       this._state = newState;
 
       debug('%s enter:%s', this._config.name, this._state);
-      this.emit('enter:' + this._state, oldState);
+      this.trigger('enter:' + this._state, oldState);
     } catch(e) {
-      this.emit('error', e);
+      this.trigger('error', e);
     } finally {
       var self = this;
       this._transitionQueue.shift();
@@ -98,7 +98,7 @@ Faye_FSM.prototype = {
 
       var listener = function(transition, oldState, newState) {
         if(newState === fulfilled || newState === rejected) {
-          this.removeListener('transition', listener);
+          self.stopListening(self, 'transition', listener);
           clearTimeout(timeoutId);
 
           if(newState === fulfilled) {
@@ -108,21 +108,21 @@ Faye_FSM.prototype = {
           }
         }
 
-      }.bind(self);
+      };
 
       if(timeout) {
         timeoutId = setTimeout(function() {
-          self.removeListener('transition', listener);
+          self.stopListening(self, 'transition', listener);
           reject(new Error('Timeout waiting for ' + fulfilled));
         }, timeout);
       }
 
-      self.on('transition', listener);
+      self.listenTo(self, 'transition', listener);
     });
   }
 };
 
 /* Mixins */
-extend(Faye_FSM.prototype, Faye_EventEmitter.prototype);
+extend(Faye_FSM.prototype, Events);
 
 module.exports = Faye_FSM;

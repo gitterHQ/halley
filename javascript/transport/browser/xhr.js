@@ -3,7 +3,7 @@
 var Faye           = require('../../faye');
 var Faye_Transport = require('../transport');
 var Faye_URI       = require('../../util/uri');
-var Faye_Event     = require('../../util/browser/event');
+var globalEvents   = require('../../util/global-events');
 var inherits       = require('inherits');
 var extend         = require('../../util/extend');
 
@@ -39,7 +39,7 @@ extend(Faye_Transport_XHR.prototype, {
     }
 
     var abort = function() { xhr.abort(); };
-    Faye_Event.on(window, 'beforeunload', abort);
+    globalEvents.on('beforeunload', abort, this);
 
     xhr.onreadystatechange = function() {
       if (!xhr || xhr.readyState !== 4) return;
@@ -49,7 +49,7 @@ extend(Faye_Transport_XHR.prototype, {
           text       = xhr.responseText,
           successful = (status >= 200 && status < 300) || status === 304 || status === 1223;
 
-      Faye_Event.detach(window, 'beforeunload', abort);
+      globalEvents.off('beforeunload', abort, this);
       xhr.onreadystatechange = function() {};
       xhr = null;
 

@@ -2,12 +2,13 @@
 
 var Faye             = require('../faye');
 var Faye_Transport   = require('./transport');
-var Faye_Event       = require('../util/browser/event');
+var globalEvents     = require('../util/global-events');
 var Faye_URI         = require('../util/uri');
 var Promise          = require('bluebird');
 var Faye_Set         = require('../util/set');
 var Faye_FSM         = require('../util/fsm');
 var websocketFactory = require('./websocket-factory');
+var Events           = require('backbone-events-standalone');
 var debug            = require('debug-proxy')('faye:websocket');
 var inherits         = require('inherits');
 var extend           = require('../util/extend');
@@ -46,20 +47,18 @@ var FSM = {
   }
 };
 
-var navigatorConnection = Faye.ENV.navigator && (Faye.ENV.navigator.connection || Faye.ENV.navigator.mozConnection || Faye.ENV.navigator.webkitConnection);
-
-
 function Faye_Transport_WebSocket(dispatcher, endpoint) {
   debug('Initialising websocket transport');
+  this._onNetworkEventBound = this._onNetworkEvent.bind(this);
 
   this._state = new Faye_FSM(FSM);
-  this._state.on('enter:CONNECTING', this._onEnterConnecting.bind(this));
-  this._state.on('enter:CONNECTED', this._onEnterConnected.bind(this));
-  this._state.on('leave:CONNECTED', this._onLeaveConnected.bind(this));
-  this._state.on('enter:CLOSED', this._onEnterClosed.bind(this));
+
+  this.listenTo(this._state, 'enter:CONNECTING', this._onEnterConnecting);
+  this.listenTo(this._state, 'enter:CONNECTED', this._onEnterConnected);
+  this.listenTo(this._state, 'leave:CONNECTED', this._onLeaveConnected);
+  this.listenTo(this._state, 'enter:CLOSED', this._onEnterClosed);
 
   Faye_Transport_WebSocket.super_.call(this, dispatcher, endpoint);
-
   // Connect immediately
   this._state.transitionIfPossible('connect');
 
@@ -208,30 +207,10 @@ extend(Faye_Transport_WebSocket.prototype, {
   _onEnterConnected: function() {
     debug('WebSocket entering connected state');
 
-    var self = this;
-
     this.timeouts.add('ping', this._dispatcher.timeout / 2, this._ping);
-    if(!this._onNetworkEventBound) {
-      this._onNetworkEventBound = this._onNetworkEvent.bind(this);
-    }
 
-    if (navigatorConnection) {
-      navigatorConnection.addEventListener('typechange', this._onNetworkEventBound, false);
-    }
-
-    if (Faye.ENV.addEventListener) {
-      Faye.ENV.addEventListener('online', this._onNetworkEventBound, false);
-      Faye.ENV.addEventListener('offline', this._onNetworkEventBound, false);
-    }
-
-    this._sleepDetectionLast = Date.now();
-    this._sleepDetectionTimer = setInterval(function() {
-      var now = Date.now();
-      if(self._sleepDetectionLast - now > 60000) {
-        self._onNetworkEvent();
-      }
-      self._sleepDetectionLast = now;
-    }, 30000);
+    globalEvents.on('network', this._onNetworkEvent, this);
+    globalEvents.on('sleep', this._onNetworkEvent, this);
   },
 
   _onLeaveConnected: function() {
@@ -242,17 +221,9 @@ extend(Faye_Transport_WebSocket.prototype, {
     this.timeouts.remove('ping');
     this.timeouts.remove('pingTimeout');
 
-    if(navigatorConnection) {
-      navigatorConnection.removeEventListener('typechange', this._onNetworkEventBound, false);
-    }
-
-    if (Faye.ENV.removeEventListener) {
-      Faye.ENV.removeEventListener('online', this._onNetworkEventBound, false);
-      Faye.ENV.removeEventListener('offline', this._onNetworkEventBound, false);
-    }
-
-    clearTimeout(this._sleepDetectionTimer);
-
+    globalEvents.off('network', this._onNetworkEvent, this);
+    globalEvents.off('sleep', this._onNetworkEvent, this);
+    
     this._rejectPending();
   },
 
@@ -381,9 +352,11 @@ extend(Faye_Transport_WebSocket, {
 
 });
 
-if (Faye_Event && Faye.ENV.onbeforeunload !== undefined)
-  Faye_Event.on(Faye.ENV, 'beforeunload', function() {
-    Faye_Transport_WebSocket._unloaded = true;
-  });
+/* Mixins */
+extend(Faye_Transport_WebSocket.prototype, Events);
+
+globalEvents.on('beforeunload', function() {
+  Faye_Transport_WebSocket._unloaded = true;
+});
 
 module.exports = Faye_Transport_WebSocket;
