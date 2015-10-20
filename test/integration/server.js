@@ -14,7 +14,7 @@ var debug = require('debug')('faye:test-server');
 var ProxyServer = require('./proxy-server');
 var PUBLIC_DIR = __dirname + '/public';
 
-function main(callback) {
+function main(options, callback) {
   var app = express();
   var server = http.createServer(app);
   var fayeServer = http.createServer();
@@ -30,28 +30,31 @@ function main(callback) {
   });
   bayeux.attach(fayeServer);
 
-  app.use(webpackMiddleware(webpack({
-    context: __dirname + "/public",
-    entry: "mocha!./test-suite",
-    output: {
-      path: __dirname + "/",
-      filename: "test-suite.js"
-    },
-    devtool: "#eval"
+  if (options.webpack) {
+    app.use(webpackMiddleware(webpack({
+      context: __dirname + "/public",
+      entry: "mocha!./test-suite",
+      output: {
+        path: __dirname + "/",
+        filename: "test-suite.js"
+      },
+      devtool: "#eval"
 
-  }), {
-    noInfo: false,
-    quiet: false,
+    }), {
+      noInfo: false,
+      quiet: false,
 
-    watchOptions: {
-        aggregateTimeout: 300,
-        poll: true
-    },
+      watchOptions: {
+          aggregateTimeout: 300,
+          poll: true
+      },
 
-    publicPath: "/",
-    stats: { colors: true }
-  }));
-  app.use(express.static(PUBLIC_DIR));
+      publicPath: "/",
+      stats: { colors: true }
+    }));
+    
+    app.use(express.static(PUBLIC_DIR));
+  }
 
   app.post('/delete/:clientId', function(req, res) {
     var clientId = req.params.clientId;
@@ -153,7 +156,7 @@ if (require.main === module) {
     process.exit(1);
   });
 
-  main(function() {
+  main({ webpack: true }, function() {
     console.log('Listening');
   });
 }

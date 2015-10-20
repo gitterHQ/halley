@@ -41,6 +41,25 @@ describe('subscriptions', function() {
     subscription.catch(done);
   });
 
+
+  it('should handle subscriptions that are cancelled before establishment', function(done) {
+    var count = 0;
+    var subscription = client.subscribe('/datetime', function(message) {
+        // assert.ok(false);
+        count++;
+      });
+
+    subscription.then(function() {
+        assert.ok(false);
+      }, function(err) {
+        assert.strictEqual(count, 0);
+        done();
+      });
+
+    // Cancel immediately
+    subscription.cancel();
+  });
+
   it('should handle subscription failure correctly', function(done) {
     var count = 0;
     var subscription = client.subscribe('/banned', function(message) {
