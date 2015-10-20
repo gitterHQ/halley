@@ -6,9 +6,7 @@ var Faye_Error        = require('../error');
 var Faye_Channel      = require('./channel');
 var Faye_Channel_Set  = require('./channel-set');
 var Faye_Dispatcher   = require('./dispatcher');
-var globalEvents      = require('../util/global-events');
 var Faye_Subscription = require('./subscription');
-var Faye_URI          = require('../util/uri');
 var Promise           = require('bluebird');
 var extend            = require('../util/extend');
 var debug             = require('debug-proxy')('faye:client');
@@ -23,6 +21,7 @@ var HANDSHAKE = 'handshake';
 var RETRY = 'retry';
 var NONE = 'none'; // TODO: handle none
 
+var NETWORK_DELAY_FACTOR = 1.2;
 
 var CONNECTION_TIMEOUT = 60;
 var INTERVAL = 0;
@@ -65,6 +64,7 @@ var FSM = {
       reconnect: "CONNECTED"
     },
     RESELECT_TRANSPORT: {
+      rehandshake: "RECONNECTING",
       transportReselected: "AWAITING_RECONNECT",
       reset: "RESETTING"
     },
@@ -104,12 +104,13 @@ function Faye_Client(endpoint, options) {
   this.listenTo(this._state, 'enter:AWAITING_RECONNECT', this._onEnterAwaitingReconnect);
   this.listenTo(this._state, 'leave:AWAITING_RECONNECT', this._onLeaveAwaitingReconnect);
 
+  // TODO: change advice values to ms
   this._advice = {
     reconnect: RETRY,
     interval:  1000 * (options.interval || INTERVAL),
     timeout:   1000 * (options.timeout  || CONNECTION_TIMEOUT)
   };
-  this._dispatcher.timeout = this._advice.timeout / 1000;
+  this._dispatcher.timeout = this._advice.timeout;
 
   this.listenTo(this._dispatcher, 'message', this._receiveMessage);
 
@@ -165,7 +166,7 @@ Faye_Client.prototype = {
           self._state.transition('handshake');
         });
       })
-      .then(null, function(err) {
+      .catch(function(err) {
         debug('Handshake failed: %s', err, err.stack);
         // TODO: make sure that advice is uphelp
         self._state.transitionIfPossible('rehandshake');
@@ -199,7 +200,7 @@ Faye_Client.prototype = {
         connectionType: self._dispatcher.connectionType
       }, {
         // TODO: consider whether to do this or not
-        // attempts: 1 // Only try once
+        attempts: 1 // Only try once
       });
     })
     .then(function(response) {
@@ -212,8 +213,8 @@ Faye_Client.prototype = {
 
       throw Faye_Error.parse(response.error);
     })
-    .then(null, function(err) {
-      debug('Connect failed: %s', err.message);
+    .catch(function(err) {
+      debug('Connect failed: %s', err && err.message);
       // TODO: make sure that advice is uphelp
       self._state.transitionIfPossible('rehandshake');
     });
@@ -264,7 +265,6 @@ Faye_Client.prototype = {
   },
 
   _onReselectTransport: function() {
-    console.trace();
     var self = this;
     var types = this._supportedTypes || MANDATORY_CONNECTION_TYPES;
     this._dispatcher.selectTransport(types, function(transport) {
@@ -437,8 +437,9 @@ Faye_Client.prototype = {
     var self = this;
 
     message.id = this._generateMessageId();
-
-    var timeout = this._advice.timeout ? 1.2 * this._advice.timeout / 1000 : 1.2 * this._dispatcher.retry;
+    var timeout = this._advice.timeout ?
+                    NETWORK_DELAY_FACTOR * this._advice.timeout :
+                    NETWORK_DELAY_FACTOR * this._dispatcher.retry;
 
     return self._extensions.pipe('outgoing', message)
       .then(function(message) {
@@ -482,12 +483,13 @@ Faye_Client.prototype = {
       .then(function(message) {
         if (!message) return;
         self._deliverMessage(message);
-      });
+      })
+      .done();
   },
 
   _handleAdvice: function(advice) {
     extend(this._advice, advice);
-    this._dispatcher.timeout = this._advice.timeout / 1000; // TODO: switch to ms
+    this._dispatcher.timeout = this._advice.timeout; // TODO: switch to ms
 
     if (this._advice.reconnect === HANDSHAKE) {
       this._state.transitionIfPossible('rehandshake');
@@ -503,6 +505,10 @@ Faye_Client.prototype = {
   _onEnterConnected: function() {
     this.connect();
   },
+
+  getClientId: function() {
+    return this._dispatcher.clientId;
+  }
 };
 
 /* Mixins */

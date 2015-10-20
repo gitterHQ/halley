@@ -1,7 +1,9 @@
 var Faye = require('../../..');
+var assert = require('assert');
+require('whatwg-fetch');
 
 describe('bad-connection', function() {
-  this.timeout(60000);
+  this.timeout(800000);
   var client;
 
   beforeEach(function() {
@@ -14,27 +16,36 @@ describe('bad-connection', function() {
 
   it('should deal with a network outage', function(done) {
     var count = 0;
-    var outageOccurred = false;
+    var postOutageCount = 0;
+    var outageTime;
 
     var subscription = client.subscribe('/datetime', function(message) {
-      console.log('MESSAGE', message);
-      if (!outageOccurred) {
-        outageOccurred = true;
-        var subscription = client.publish('/simulate-network-outage', { data: 1 })
-          .then(function() {
-          }, done);
+      count++;
 
-        return;
+      if (count === 1) {
+        return fetch('/network-outage?timeout=5000', {
+          method: 'post',
+          body: ""
+        })
+        .then(function() {
+          outageTime = Date.now();
+          outageOccurred = true;
+          console.log('Outage');
+        })
+        .catch(done);
       }
 
-      count++;
-      if (count >= 3) {
+      if (!outageTime) return;
+
+      console.log('Receiving messages again');
+
+      postOutageCount++;
+
+      if (postOutageCount >= 3) {
+        assert(Date.now() - outageTime >= 5000);
         done();
       }
     });
-
-    // subscription.then(function() {
-    // }, done);
   });
 
 

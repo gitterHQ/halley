@@ -54,7 +54,30 @@ app.use(webpackMiddleware(webpack({
   publicPath: "/",
   stats: { colors: true }
 }));
-app.use(express.static('public'));
+app.use(express.static(PUBLIC_DIR));
+
+app.post('/delete/:clientId', function(req, res) {
+  var clientId = req.params.clientId;
+  console.log('Deleting client', clientId);
+  bayeux._server._engine.destroyClient(clientId, function() {
+    res.status(200).send('OK');
+  });
+
+});
+
+app.post('/network-outage', function(req, res) {
+  var timeout = parseInt(req.query.timeout) || 15000;
+
+  proxyServer.disableTraffic();
+  console.log('disable traffic');
+  setTimeout(function() {
+    console.log('enabling traffic');
+    proxyServer.enableTraffic();
+  }, timeout);
+
+  res.status(200).send('OK');
+});
+
 
 app.use(function(req, res) {
   res.sendStatus(404);
@@ -74,28 +97,14 @@ bayeux.addExtension({
       message.error = 'Invalid subscription';
     }
 
-    if (message.channel === '/delete-client-10ms') {
-      setTimeout(function() {
-        /* Disconnect the client */
-        bayeux._server._engine.destroyClient(message.clientId, function() {
-          console.log('disconnected client');
-        });
-      }, 10);
-    }
-
-    if (message.channel === '/simulate-network-outage') {
-      setTimeout(function() {
-        console.log('disabling traffic');
-        proxyServer.disableTraffic();
-        setTimeout(function() {
-          console.log('enabling traffic');
-          proxyServer.enableTraffic();
-        }, 20000);
-      }, 1);
-    }
-
     if (message.channel === '/devnull') {
       return;
+    }
+
+    if (message.channel === '/meta/handshake') {
+      if (message.ext && message.ext.failHandshake) {
+        message.error = 'Unable to handshake';
+      }
     }
 
     callback(message);

@@ -12,7 +12,7 @@ Faye_Timeouts.prototype = {
     this._timeouts[name] = setTimeout(function() {
       delete self._timeouts[name];
       callback.call(self._context);
-    }, 1000 * delay);
+    }, delay);
   },
 
   remove: function(name) {

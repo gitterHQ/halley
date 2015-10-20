@@ -52,7 +52,7 @@ Faye_Transport.prototype = {
 
     // For a handshake, flush almost immediately
     if (message.channel === Faye_Channel.HANDSHAKE) {
-      this.timeouts.add('publish', 0.01, this._flush);
+      this.timeouts.add('publish', 10, this._flush);
       return this._promise;
     }
 

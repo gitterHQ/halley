@@ -24,9 +24,8 @@ function Envelope(message, scheduler, options) {
   // Absolute timeout for message send
   if (options && options.deadline) {
     this._deadLineTimeout = setTimeout(function() {
-      console.log('TIMEOUT');
       self.reject(new Error('Timeout'));
-    }, options.deadline * 1000);
+    }, options.deadline);
   }
 }
 
@@ -51,13 +50,11 @@ Envelope.prototype = {
       this.reject(new Error('Delivery failed'));
       return false;
     }
-
-    console.log('setting timeout to ', scheduler.getTimeout() * 1000);
     this._timeout = setTimeout(function() {
       debug('Send timeout period exceeded');
       self._timeout = null
       onTimeout();
-    }, scheduler.getTimeout() * 1000);
+    }, scheduler.getTimeout());
     scheduler.send();
 
     // On send needs to return the request object
@@ -101,7 +98,7 @@ Envelope.prototype = {
     this._timeout = setTimeout(function() {
       self._timeout = null;
       onRetry();
-    }, scheduler.getInterval() * 1000);
+    }, scheduler.getInterval());
 
   },
 

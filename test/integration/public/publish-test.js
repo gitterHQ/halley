@@ -24,7 +24,7 @@ describe('publish', function() {
         publishOccurred = true;
         return client.publish('/channel', { data: 1 });
       })
-      .then(null, done);
+      .catch(done);
 
   });
 

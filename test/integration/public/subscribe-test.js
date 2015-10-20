@@ -19,7 +19,7 @@ describe('subscriptions', function() {
       }
     });
 
-    subscription.then(null, done);
+    subscription.catch(done);
   });
 
   it('should handle subscription failure correctly', function(done) {

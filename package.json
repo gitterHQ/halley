@@ -32,7 +32,8 @@
     "mocha-loader": "^0.7.1",
     "permessage-deflate": ">=0.1.0",
     "webpack": "^1.12.2",
-    "webpack-dev-middleware": "^1.2.0"
+    "webpack-dev-middleware": "^1.2.0",
+    "whatwg-fetch": "^0.10.0"
   },
   "scripts": {
     "test": "node spec/node.js"

@@ -1,4 +1,5 @@
 var Faye = require('../../..');
+require('whatwg-fetch');
 
 describe('rehandshake', function() {
   this.timeout(60000);
@@ -22,15 +23,17 @@ describe('rehandshake', function() {
       if (count >= 3) {
         done();
       }
-    });
-
-    subscription.then(function() {
-
-      var subscription = client.publish('/delete-client-10ms', { data: 1 })
-        .then(function() {
-          deleteOccurred = true;
-        });
-    }, done);
+    }).then(function() {
+      return fetch('/delete/' + client.getClientId(), {
+        method: 'post',
+        body: ""
+      })
+      .then(function() {
+        console.log('delete successful');
+        deleteOccurred = true;
+      });
+    })
+    .catch(done);
   });
 
 

@@ -49,7 +49,7 @@ function Faye_Dispatcher(client, endpoint, options) {
 
 Faye_Dispatcher.prototype = {
   MAX_REQUEST_SIZE: 2048,
-  DEFAULT_RETRY:    5,
+  DEFAULT_RETRY:    5000,
 
   UP:   1,
   DOWN: 2,
@@ -104,7 +104,7 @@ Faye_Dispatcher.prototype = {
     function removeEnvelope() {
       delete self._envelopes[id];
     }
-
+    
     if (!envelope) {
       var scheduler = new this._scheduler(message, { timeout: timeout, interval: this.retry, attempts: attempts });
       envelope = this._envelopes[id] = new Envelope(message, scheduler, { deadline: options.deadline });

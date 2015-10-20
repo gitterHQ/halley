@@ -126,7 +126,7 @@ extend(Faye_Transport_WebSocket.prototype, {
     return this._state.waitFor({
       fulfilled: 'CONNECTED',
       rejected: 'CLOSED',
-      timeout: this._dispatcher.timeout * 1000 / 2
+      timeout: this._dispatcher.timeout / 2
     });
   },
 
@@ -164,7 +164,7 @@ extend(Faye_Transport_WebSocket.prototype, {
           // Timeout if the connection doesn't become established
           connectTimeout = setTimeout(function() {
             reject(new Error('Timeout on connection'));
-          }, self._dispatcher.timeout * 1000 / 4);
+          }, self._dispatcher.timeout / 4);
           break;
 
         case WS_CLOSING:
@@ -196,7 +196,7 @@ extend(Faye_Transport_WebSocket.prototype, {
 
     });
 
-    // Don't chain 
+    // Don't chain
     self._connectPromise.then(function() {
       self._state.transitionIfPossible('socketConnected');
     }, function(/*err*/) {

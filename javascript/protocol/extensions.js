@@ -25,7 +25,7 @@ Faye_Extensions.prototype = {
 
   pipe: function(stage, message) {
     var extensions = this._extensions;
-    
+
     return new Promise(function(resolve) {
       debug('Passing through %s extensions: %j', stage, message);
 
@@ -40,7 +40,7 @@ Faye_Extensions.prototype = {
 
         var fn = extension[stage];
         if (!fn) return pipe(message);
-        fn(message, pipe);
+        fn.call(extension, message, pipe);
       })(message);
     });
   }
