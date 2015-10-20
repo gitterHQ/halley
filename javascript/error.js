@@ -1,7 +1,7 @@
 'use strict';
 
 /* http://stackoverflow.com/questions/1382107/whats-a-good-way-to-extend-error-in-javascript/27925672#27925672 */
-function Faye_Error(code, params, message) {
+function BayeuxError(code, params, message) {
   this.name = 'FayeError';
 
   if (!Error.captureStackTrace) {
@@ -29,26 +29,26 @@ function Faye_Error(code, params, message) {
   this.message = message;
 }
 
-Faye_Error.prototype = new Error();
-Faye_Error.prototype.name = Faye_Error;
-Faye_Error.prototype.constructor = Faye_Error;
+BayeuxError.prototype = new Error();
+BayeuxError.prototype.name = BayeuxError;
+BayeuxError.prototype.constructor = BayeuxError;
 
-Faye_Error.prototype.toString = function() {
+BayeuxError.prototype.toString = function() {
   return this.code + ':' +
          this.params.join(',') + ':' +
          this.message;
 };
 
-Faye_Error.parse = function(message) {
+BayeuxError.parse = function(message) {
   message = message || '';
   var match = /^([\d+]):([^:]*):(.*)$/.exec(message);
-  if (!match) return new Faye_Error(null, [], message);
+  if (!match) return new BayeuxError(null, [], message);
 
   var code   = parseInt(match[1]);
   var params = match[2].split(',');
   var m      = match[3];
 
-  return new Faye_Error(code, params, m);
+  return new BayeuxError(code, params, m);
 };
 
 // http://code.google.com/p/cometd/wiki/BayeuxCodes
@@ -71,9 +71,9 @@ Object.keys(errors).forEach(function(name) {
   var errorCode = errors[name][0];
   var description = errors[name][1];
 
-  Faye_Error[name] = function() {
+  BayeuxError[name] = function() {
     return new this(errorCode, arguments, description).toString();
   };
 });
 
-module.exports = Faye_Error;
+module.exports = BayeuxError;

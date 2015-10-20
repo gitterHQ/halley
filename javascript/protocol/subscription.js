@@ -3,7 +3,7 @@
 var Promise         = require('bluebird');
 var extend          = require('../util/extend');
 
-function Faye_Subscription(client, channels, callback, context) {
+function Subscription(client, channels, callback, context) {
   this._client    = client;
   this._channels  = channels;
   this._callback  = callback;
@@ -17,7 +17,7 @@ function Faye_Subscription(client, channels, callback, context) {
   });
 }
 
-Faye_Subscription.prototype = {
+Subscription.prototype = {
   cancel: function() {
     if (this._cancelled) return;
     this._client.unsubscribe(this._channels, this._callback, this._context);
@@ -46,10 +46,10 @@ Faye_Subscription.prototype = {
 };
 
 /* Statics */
-extend(Faye_Subscription, {
+extend(Subscription, {
   /* Allow the client to create a subscription with access to the promise */
   createDeferred: function(client, channels, callback, context) {
-    var subscription = new Faye_Subscription(client, channels, callback, context);
+    var subscription = new Subscription(client, channels, callback, context);
 
     return {
       subscription: subscription,
@@ -61,4 +61,4 @@ extend(Faye_Subscription, {
   }
 });
 
-module.exports = Faye_Subscription;
+module.exports = Subscription;

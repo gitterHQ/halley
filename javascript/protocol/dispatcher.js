@@ -1,9 +1,9 @@
 'use strict';
 
-var Faye_Scheduler = require('./scheduler');
-var Faye_Transport = require('../transport/transport');
-var Faye_Publisher = require('../mixins/publisher');
-var Faye_URI       = require('../util/uri');
+var Scheduler      = require('./scheduler');
+var Transport      = require('../transport/transport');
+var PublisherMixin = require('../mixins/publisher');
+var uri            = require('../util/uri');
 var Envelope       = require('./envelope');
 var extend         = require('../util/extend');
 var debug          = require('debug-proxy')('faye:dispatcher');
@@ -15,15 +15,15 @@ var debug          = require('debug-proxy')('faye:dispatcher');
  * tracking in-flight messages
  */
 
-function Faye_Dispatcher(client, endpoint, options) {
+function Dispatcher(client, endpoint, options) {
   this._client     = client;
-  this.endpoint    = Faye_URI.parse(endpoint);
+  this.endpoint    = uri.parse(endpoint);
   this._alternates = options.endpoints || {};
 
   this._disabled    = [];
   this._envelopes   = {};
   this.retry        = options.retry || this.DEFAULT_RETRY;
-  this._scheduler   = options.scheduler || Faye_Scheduler;
+  this._scheduler   = options.scheduler || Scheduler;
   this._state       = 0;
   this.transports   = {};
   this.wsExtensions = [];
@@ -42,12 +42,12 @@ function Faye_Dispatcher(client, endpoint, options) {
   this.tls.ca = this.tls.ca || options.ca;
 
   for (var type in this._alternates)
-    this._alternates[type] = Faye_URI.parse(this._alternates[type]);
+    this._alternates[type] = uri.parse(this._alternates[type]);
 
   this.maxRequestSize = this.MAX_REQUEST_SIZE;
 }
 
-Faye_Dispatcher.prototype = {
+Dispatcher.prototype = {
   MAX_REQUEST_SIZE: 2048,
   DEFAULT_RETRY:    5000,
 
@@ -74,15 +74,15 @@ Faye_Dispatcher.prototype = {
   },
 
   getConnectionTypes: function() {
-    return Faye_Transport.getConnectionTypes();
+    return Transport.getConnectionTypes();
   },
 
   selectTransport: function(transportTypes, callback) {
     var self = this;
     debug('Selecting transport');
 
-    Faye_Transport.get(self, transportTypes, self._disabled, function(transport) {
-      debug('Selected %s transport for %s', transport.connectionType, Faye_URI.stringify(transport.endpoint));
+    Transport.get(self, transportTypes, self._disabled, function(transport) {
+      debug('Selected %s transport for %s', transport.connectionType, uri.stringify(transport.endpoint));
 
       if (transport === self._transport) return;
       if (self._transport) self._transport.close();
@@ -104,7 +104,7 @@ Faye_Dispatcher.prototype = {
     function removeEnvelope() {
       delete self._envelopes[id];
     }
-    
+
     if (!envelope) {
       var scheduler = new this._scheduler(message, { timeout: timeout, interval: this.retry, attempts: attempts });
       envelope = this._envelopes[id] = new Envelope(message, scheduler, { deadline: options.deadline });
@@ -181,6 +181,6 @@ Faye_Dispatcher.prototype = {
 };
 
 /* Mixins */
-extend(Faye_Dispatcher.prototype, Faye_Publisher);
+extend(Dispatcher.prototype, PublisherMixin);
 
-module.exports = Faye_Dispatcher;
+module.exports = Dispatcher;

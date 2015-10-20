@@ -1,12 +1,12 @@
 'use strict';
 
-var Faye_Channel = require('./channel');
+var Channel = require('./channel');
 
-function Faye_Channel_Set() {
+function ChannelSet() {
   this._channels = {};
 }
 
-Faye_Channel_Set.prototype = {
+ChannelSet.prototype = {
   getKeys: function() {
     return Object.keys(this._channels);
   },
@@ -22,7 +22,7 @@ Faye_Channel_Set.prototype = {
   subscribe: function(name, callback, context) {
     var channel = this._channels[name];
     if (!channel) {
-      channel = this._channels[name] = new Faye_Channel(name);
+      channel = this._channels[name] = new Channel(name);
     }
 
     if (callback) channel.on('message', callback, context);
@@ -42,7 +42,7 @@ Faye_Channel_Set.prototype = {
   },
 
   distributeMessage: function(message) {
-    var channels = Faye_Channel.expand(message.channel);
+    var channels = Channel.expand(message.channel);
 
     for (var i = 0, n = channels.length; i < n; i++) {
       var channel = this._channels[channels[i]];
@@ -52,4 +52,4 @@ Faye_Channel_Set.prototype = {
 
 };
 
-module.exports = Faye_Channel_Set;
+module.exports = ChannelSet;

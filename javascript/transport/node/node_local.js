@@ -1,15 +1,15 @@
 'use strict';
 
-var Faye_Transport = require('./transport');
-var inherits       = require('inherits');
-var extend         = require('../../util/extend');
+var Transport = require('./transport');
+var inherits  = require('inherits');
+var extend    = require('../../util/extend');
 
-function Faye_Transport_NodeLocal(dispatcher, endpoint) {
-  Faye_Transport_NodeLocal.super_.call(this, dispatcher, endpoint);
+function NodeLocalTransport(dispatcher, endpoint) {
+  NodeLocalTransport.super_.call(this, dispatcher, endpoint);
 }
-inherits(Faye_Transport_NodeLocal, Faye_Transport);
+inherits(NodeLocalTransport, Transport);
 
-extend(Faye_Transport_NodeLocal.prototype, {
+extend(NodeLocalTransport.prototype, {
   batching: false,
 
   request: function(messages) {
@@ -21,11 +21,11 @@ extend(Faye_Transport_NodeLocal.prototype, {
 });
 
 /* Statics */
-extend(Faye_Transport_NodeLocal, {
+extend(NodeLocalTransport, {
   isUsable: function(client, endpoint, callback) {
     /* TODO: come up with a better way of knowing that the endpoint is the Faye Server */
     callback(!!endpoint.process);
   }
 });
 
-module.exports = Faye_Transport_NodeLocal;
+module.exports = NodeLocalTransport;

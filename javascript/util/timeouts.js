@@ -1,11 +1,11 @@
 'use strict';
 
-function Faye_Timeouts(context) {
+function Timeouts(context) {
   this._context = context;
   this._timeouts = {};
 }
 
-Faye_Timeouts.prototype = {
+Timeouts.prototype = {
   add: function(name, delay, callback) {
     if (this._timeouts.hasOwnProperty(name)) return;
     var self = this;
@@ -33,4 +33,4 @@ Faye_Timeouts.prototype = {
   }
 };
 
-module.exports = Faye_Timeouts;
+module.exports = Timeouts;

@@ -3,7 +3,7 @@
 /* node-safe reference to the window */
 var win = typeof window === 'object' && window; // jshint ignore:line
 
-var Faye_URI = {
+module.exports = {
   isURI: function(uri) {
     return uri && uri.protocol && uri.host && uri.path;
   },
@@ -86,5 +86,3 @@ var Faye_URI = {
     return '?' + pairs.join('&');
   }
 };
-
-module.exports = Faye_URI;

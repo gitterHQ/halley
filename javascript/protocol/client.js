@@ -1,17 +1,17 @@
 'use strict';
 
-var Faye_Extensions   = require('./extensions');
-var Faye_Publisher    = require('../mixins/publisher');
-var Faye_Error        = require('../error');
-var Faye_Channel      = require('./channel');
-var Faye_Channel_Set  = require('./channel-set');
-var Faye_Dispatcher   = require('./dispatcher');
-var Faye_Subscription = require('./subscription');
-var Promise           = require('bluebird');
-var extend            = require('../util/extend');
-var debug             = require('debug-proxy')('faye:client');
-var Faye_FSM          = require('../util/fsm');
-var extend            = require('../util/extend');
+var Extensions     = require('./extensions');
+var PublisherMixin = require('../mixins/publisher');
+var BayeuxError    = require('../error');
+var Channel        = require('./channel');
+var ChannelSet     = require('./channel-set');
+var Dispatcher     = require('./dispatcher');
+var Subscription   = require('./subscription');
+var Promise        = require('bluebird');
+var extend         = require('../util/extend');
+var debug          = require('debug-proxy')('faye:client');
+var StateMachine   = require('../util/fsm');
+var extend         = require('../util/extend');
 
 var MANDATORY_CONNECTION_TYPES = ['long-polling', 'callback-polling', 'in-process'];
 var BAYEUX_VERSION = '1.0';
@@ -85,14 +85,14 @@ function Faye_Client(endpoint, options) {
   debug('New client created for %s', endpoint);
   if (!options) options = {};
 
-  this._extensions = new Faye_Extensions();
+  this._extensions = new Extensions();
   this._endpoint   = endpoint || DEFAULT_ENDPOINT;
-  this._channels   = new Faye_Channel_Set();
-  this._dispatcher = new Faye_Dispatcher(this, this._endpoint, options);
+  this._channels   = new ChannelSet();
+  this._dispatcher = new Dispatcher(this, this._endpoint, options);
 
   this._messageId = 0;
 
-  this._state = new Faye_FSM(FSM, this);
+  this._state = new StateMachine(FSM, this);
 
   this.listenTo(this._state, 'enter:HANDSHAKING'       , this._onEnterHandshaking);
   this.listenTo(this._state, 'enter:DISCONNECTING'     , this._onEnterDisconnecting);
@@ -142,7 +142,7 @@ Faye_Client.prototype = {
     this._dispatcher.selectTransport(MANDATORY_CONNECTION_TYPES);
 
     return this._sendMessage({
-        channel:                  Faye_Channel.HANDSHAKE,
+        channel:                  Channel.HANDSHAKE,
         version:                  BAYEUX_VERSION,
         supportedConnectionTypes: this._dispatcher.getConnectionTypes()
 
@@ -153,7 +153,7 @@ Faye_Client.prototype = {
         }
 
         if (!response.successful) {
-          throw Faye_Error.parse(response.error);
+          throw BayeuxError.parse(response.error);
         }
 
         self._dispatcher.clientId  = response.clientId;
@@ -195,7 +195,7 @@ Faye_Client.prototype = {
     })
     .then(function() {
       return self._sendMessage({
-        channel:        Faye_Channel.CONNECT,
+        channel:        Channel.CONNECT,
         clientId:       self._dispatcher.clientId,
         connectionType: self._dispatcher.connectionType
       }, {
@@ -211,7 +211,7 @@ Faye_Client.prototype = {
         return response;
       }
 
-      throw Faye_Error.parse(response.error);
+      throw BayeuxError.parse(response.error);
     })
     .catch(function(err) {
       debug('Connect failed: %s', err && err.message);
@@ -245,7 +245,7 @@ Faye_Client.prototype = {
     debug('Disconnecting %s', this._dispatcher.clientId);
     var self = this;
     return this._sendMessage({
-        channel:  Faye_Channel.DISCONNECT,
+        channel:  Channel.DISCONNECT,
         clientId: this._dispatcher.clientId
       }, { attempts: 1 })
       .then(function(response) {
@@ -278,7 +278,7 @@ Faye_Client.prototype = {
     this._dispatcher.clientId = null;
     this._dispatcher.close();
     debug('Clearing channel listeners for %s', this._dispatcher.clientId);
-    this._channels = new Faye_Channel_Set();
+    this._channels = new ChannelSet();
   },
 
   /**
@@ -301,7 +301,7 @@ Faye_Client.prototype = {
           debug('Client %s attempting to resubscribe to %s', self._dispatcher.clientId, channel);
 
           return self._sendMessage({
-            channel:      Faye_Channel.SUBSCRIBE,
+            channel:      Channel.SUBSCRIBE,
             clientId:     self._dispatcher.clientId,
             subscription: channel
 
@@ -322,7 +322,7 @@ Faye_Client.prototype = {
   subscribe: function(channel, onMessage, context) {
     var self = this;
 
-    var deferredSub   = Faye_Subscription.createDeferred(this, channel, onMessage, context);
+    var deferredSub   = Subscription.createDeferred(this, channel, onMessage, context);
     var defer         = deferredSub.defer;
     var subscription  = deferredSub.subscription;
 
@@ -348,7 +348,7 @@ Faye_Client.prototype = {
         self._channels.subscribe(channel, onMessage, context);
 
         return self._sendMessage({
-          channel:      Faye_Channel.SUBSCRIBE,
+          channel:      Channel.SUBSCRIBE,
           clientId:     self._dispatcher.clientId,
           subscription: channel
 
@@ -357,7 +357,7 @@ Faye_Client.prototype = {
       .then(function(response) {
         if (!response.successful) {
           debug('Subscription rejected for %s to %s', self._dispatcher.clientId, response.subscription);
-          defer.reject(Faye_Error.parse(response.error));
+          defer.reject(BayeuxError.parse(response.error));
           return;
         }
 
@@ -387,14 +387,14 @@ Faye_Client.prototype = {
         debug('Client %s attempting to unsubscribe from %s', self._dispatcher.clientId, channel);
 
         return self._sendMessage({
-          channel:      Faye_Channel.UNSUBSCRIBE,
+          channel:      Channel.UNSUBSCRIBE,
           clientId:     self._dispatcher.clientId,
           subscription: channel
 
         }, {});
       })
       .then(function(response) {
-        if (!response.successful) throw Faye_Error.parse(response.error);
+        if (!response.successful) throw BayeuxError.parse(response.error);
 
         debug('Unsubscription acknowledged for %s from %s', self._dispatcher.clientId, response.subscription);
       });
@@ -421,7 +421,7 @@ Faye_Client.prototype = {
     })
     .then(function(response) {
       if (!response.successful) {
-        throw Faye_Error.parse(response.error);
+        throw BayeuxError.parse(response.error);
       }
 
       return response;
@@ -512,6 +512,6 @@ Faye_Client.prototype = {
 };
 
 /* Mixins */
-extend(Faye_Client.prototype, Faye_Publisher);
+extend(Faye_Client.prototype, PublisherMixin);
 
 module.exports = Faye_Client;

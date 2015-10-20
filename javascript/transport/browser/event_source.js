@@ -1,28 +1,28 @@
 'use strict';
 
-var Faye_Transport     = require('../transport');
-var Faye_URI           = require('../../util/uri');
-var Promise            = require('bluebird');
-var Faye_Transport_XHR = require('./xhr');
-var inherits           = require('inherits');
-var extend             = require('../../util/extend');
+var Transport    = require('../transport');
+var uri          = require('../../util/uri');
+var Promise      = require('bluebird');
+var XHRTransport = require('./xhr');
+var inherits     = require('inherits');
+var extend       = require('../../util/extend');
 
 var WindowEventSource = window.EventSource;
 var EVENTSOURCE_OPEN = 1;
 
-function Faye_Transport_EventSource(dispatcher, endpoint) {
-  Faye_Transport_EventSource.super_.call(this, dispatcher, endpoint);
+function EventSourceTransport(dispatcher, endpoint) {
+  EventSourceTransport.super_.call(this, dispatcher, endpoint);
   var self = this;
 
   this._connectPromise = new Promise(function(resolve, reject) {
     if (!WindowEventSource) return reject(new Error('EventSource not supported'));
 
-    self._xhr = new Faye_Transport_XHR(dispatcher, endpoint);
+    self._xhr = new XHRTransport(dispatcher, endpoint);
 
     var eventSourceEndpoint = extend({ }, endpoint); // Copy endpoint
     eventSourceEndpoint.pathname += '/' + dispatcher.clientId;
 
-    var socket = new WindowEventSource(Faye_URI.stringify(eventSourceEndpoint));
+    var socket = new WindowEventSource(uri.stringify(eventSourceEndpoint));
 
     socket.onopen = function() {
       self._everConnected = true;
@@ -49,9 +49,9 @@ function Faye_Transport_EventSource(dispatcher, endpoint) {
   });
 }
 
-inherits(Faye_Transport_EventSource, Faye_Transport);
+inherits(EventSourceTransport, Transport);
 
-extend(Faye_Transport_EventSource.prototype, {
+extend(EventSourceTransport.prototype, {
   close: function() {
     if (!this._socket) return;
     this._socket.onopen = this._socket.onerror = this._socket.onmessage = null;
@@ -79,17 +79,17 @@ extend(Faye_Transport_EventSource.prototype, {
 });
 
 /* Statics */
-Faye_Transport_EventSource.isUsable = function(dispatcher, endpoint, callback) {
+EventSourceTransport.isUsable = function(dispatcher, endpoint, callback) {
   var id = dispatcher.clientId;
   if (!id) return callback(false);
 
-  Faye_Transport_XHR.isUsable(dispatcher, endpoint, function(usable) {
+  XHRTransport.isUsable(dispatcher, endpoint, function(usable) {
     if (!usable) return callback(false);
-    Faye_Transport_EventSource.create(dispatcher, endpoint).isUsable(callback);
+    EventSourceTransport.create(dispatcher, endpoint).isUsable(callback);
   });
 };
 
-Faye_Transport_EventSource.create = function(dispatcher, endpoint) {
+EventSourceTransport.create = function(dispatcher, endpoint) {
   var id = dispatcher.clientId;
 
   var sockets = dispatcher.transports.eventsource;
@@ -99,14 +99,14 @@ Faye_Transport_EventSource.create = function(dispatcher, endpoint) {
 
   endpoint = extend({ }, endpoint);
   endpoint.pathname += '/' + (id || '');
-  var url = Faye_URI.stringify(endpoint);
+  var url = uri.stringify(endpoint);
 
   var eventSource = sockets[url];
   if (!eventSource) {
-    eventSource = sockets[url] = new Faye_Transport_EventSource(dispatcher, endpoint);
+    eventSource = sockets[url] = new EventSourceTransport(dispatcher, endpoint);
   }
 
   return eventSource;
 };
 
-module.exports = Faye_Transport_EventSource;
+module.exports = EventSourceTransport;

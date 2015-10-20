@@ -5,13 +5,13 @@ var Promise           = require('bluebird');
 var debug             = require('debug-proxy')('faye:fsm');
 var extend            = require('./extend');
 
-function Faye_FSM(config) {
+function StateMachine(config) {
   this._config = config;
   this._state = config.initial;
   this._transitionQueue = [];
 }
 
-Faye_FSM.prototype = {
+StateMachine.prototype = {
   getState: function() {
     return this._state;
   },
@@ -123,6 +123,6 @@ Faye_FSM.prototype = {
 };
 
 /* Mixins */
-extend(Faye_FSM.prototype, Events);
+extend(StateMachine.prototype, Events);
 
-module.exports = Faye_FSM;
+module.exports = StateMachine;

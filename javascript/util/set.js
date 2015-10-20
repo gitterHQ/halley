@@ -1,10 +1,10 @@
 'use strict';
 
-function Faye_Set() {
+function Set() {
   this._index = {};
 }
 
-Faye_Set.prototype = {
+Set.prototype = {
   add: function(item) {
     var key = (item.id !== undefined) ? item.id : item;
     if (this._index.hasOwnProperty(key)) return false;
@@ -49,4 +49,4 @@ Faye_Set.prototype = {
   }
 };
 
-module.exports = Faye_Set;
+module.exports = Set;

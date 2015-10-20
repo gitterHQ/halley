@@ -3,7 +3,7 @@
 var Events = require('backbone-events-standalone');
 var extend = require('../util/extend');
 
-var Faye_Publisher = {
+var PublisherMixin = {
   countListeners: function(eventType) {
     // This is a dirty implementation which relies on the underlying implementatio
     // of Backbone.Events to remain the same.
@@ -24,6 +24,6 @@ var Faye_Publisher = {
   },
 };
 
-extend(Faye_Publisher, Events);
+extend(PublisherMixin, Events);
 
-module.exports = Faye_Publisher;
+module.exports = PublisherMixin;

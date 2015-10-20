@@ -1,21 +1,21 @@
 'use strict';
 
-var Faye_Transport = require('../transport');
-var Faye_URI       = require('../../util/uri');
-var globalEvents   = require('../../util/global-events');
-var debug          = require('debug-proxy')('faye:xhr');
-var inherits       = require('inherits');
-var extend         = require('../../util/extend');
+var Transport    = require('../transport');
+var uri          = require('../../util/uri');
+var globalEvents = require('../../util/global-events');
+var debug        = require('debug-proxy')('faye:xhr');
+var inherits     = require('inherits');
+var extend       = require('../../util/extend');
 
 var WindowXMLHttpRequest = window.XMLHttpRequest;
 
-function Faye_Transport_XHR(dispatcher, endpoint) {
-  Faye_Transport_XHR.super_.call(this, dispatcher, endpoint);
-  this._sameOrigin = Faye_URI.isSameOrigin(endpoint);
+function XHRTransport(dispatcher, endpoint) {
+  XHRTransport.super_.call(this, dispatcher, endpoint);
+  this._sameOrigin = uri.isSameOrigin(endpoint);
 }
-inherits(Faye_Transport_XHR, Faye_Transport);
+inherits(XHRTransport, Transport);
 
-extend(Faye_Transport_XHR.prototype, {
+extend(XHRTransport.prototype, {
   encode: function(messages) {
     var stringified = JSON.stringify(messages);
     if (this._sameOrigin) {
@@ -86,11 +86,11 @@ extend(Faye_Transport_XHR.prototype, {
 });
 
 /* Statics */
-Faye_Transport_XHR.isUsable = function(dispatcher, endpoint, callback) {
+XHRTransport.isUsable = function(dispatcher, endpoint, callback) {
   var isXhr2 = WindowXMLHttpRequest && WindowXMLHttpRequest.prototype.hasOwnProperty('withCredentials');
-  var sameOrigin = Faye_URI.isSameOrigin(endpoint);
+  var sameOrigin = uri.isSameOrigin(endpoint);
 
   callback(sameOrigin || isXhr2);
 };
 
-module.exports = Faye_Transport_XHR;
+module.exports = XHRTransport;

@@ -1,22 +1,22 @@
 'use strict';
 
-var Faye_Transport = require('../transport');
-var http           = require('http');
-var https          = require('https');
-var Faye_URI       = require('../../util/uri');
-var extend         = require('../../utils/extend');
-var inherits       = require('inherits');
-var extend         = require('../../util/extend');
+var Transport = require('../transport');
+var http      = require('http');
+var https     = require('https');
+var uri       = require('../../util/uri');
+var extend    = require('../../utils/extend');
+var inherits  = require('inherits');
+var extend    = require('../../util/extend');
 
-function Faye_Transport_NodeHttp(dispatcher, endpoint) {
-  Faye_Transport_NodeHttp.super_.call(this, dispatcher, endpoint);
+function NodeHttpTransport(dispatcher, endpoint) {
+  NodeHttpTransport.super_.call(this, dispatcher, endpoint);
 
   this._endpointSecure = this.endpoint.protocol === 'https:';
   this._httpClient     = this._endpointSecure ? https : http;
 }
-inherits(Faye_Transport_NodeHttp, Faye_Transport);
+inherits(NodeHttpTransport, Transport);
 
-extend(Faye_Transport_NodeHttp.prototype, {
+extend(NodeHttpTransport.prototype, {
   encode: function(messages) {
     return JSON.stringify(messages);
   },
@@ -84,8 +84,8 @@ extend(Faye_Transport_NodeHttp.prototype, {
 });
 
 /* Statics */
-Faye_Transport_NodeHttp.isUsable = function(dispatcher, endpoint, callback) {
-  callback(Faye_URI.isURI(endpoint));
+NodeHttpTransport.isUsable = function(dispatcher, endpoint, callback) {
+  callback(uri.isURI(endpoint));
 };
 
-module.exports = Faye_Transport_NodeHttp;
+module.exports = NodeHttpTransport;

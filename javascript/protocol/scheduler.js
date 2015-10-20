@@ -3,7 +3,7 @@
 /**
  * Handles the scheduling of a single message
  */
-function Faye_Scheduler(message, options) {
+function Scheduler(message, options) {
   this.message  = message;
   this.options = options;
   this.attempts = 0;
@@ -11,7 +11,7 @@ function Faye_Scheduler(message, options) {
   this.finished = false;
 }
 
-Faye_Scheduler.prototype = {
+Scheduler.prototype = {
   getTimeout: function() {
     return this.options.timeout;
   },
@@ -61,4 +61,4 @@ Faye_Scheduler.prototype = {
   }
 };
 
-module.exports = Faye_Scheduler;
+module.exports = Scheduler;

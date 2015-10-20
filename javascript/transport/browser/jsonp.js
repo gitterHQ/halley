@@ -1,9 +1,9 @@
 'use strict';
 
-var Faye_Transport = require('../transport');
-var Faye_URI       = require('../../util/uri');
-var inherits       = require('inherits');
-var extend         = require('../../util/extend');
+var Transport = require('../transport');
+var uri       = require('../../util/uri');
+var inherits  = require('inherits');
+var extend    = require('../../util/extend');
 
 var cbCount = 0;
 
@@ -12,17 +12,17 @@ function getCallbackName() {
   return '__jsonp' + cbCount + '__';
 }
 
-function Faye_Transport_JSONP(dispatcher, endpoint) {
-  Faye_Transport_JSONP.super_.call(this, dispatcher, endpoint);
+function JSONPTransport(dispatcher, endpoint) {
+  JSONPTransport.super_.call(this, dispatcher, endpoint);
 }
-inherits(Faye_Transport_JSONP, Faye_Transport);
+inherits(JSONPTransport, Transport);
 
-extend(Faye_Transport_JSONP.prototype, {
+extend(JSONPTransport.prototype, {
  encode: function(messages) {
     var url = extend({}, this.endpoint);
     url.query.message = JSON.stringify(messages);
     url.query.jsonp   = '__jsonp' + cbCount + '__';
-    return Faye_URI.stringify(url);
+    return uri.stringify(url);
   },
 
   request: function(messages) {
@@ -48,7 +48,7 @@ extend(Faye_Transport_JSONP.prototype, {
     };
 
     script.type = 'text/javascript';
-    script.src  = Faye_URI.stringify(endpoint);
+    script.src  = uri.stringify(endpoint);
     head.appendChild(script);
 
     script.onerror = function() {
@@ -61,8 +61,8 @@ extend(Faye_Transport_JSONP.prototype, {
 });
 
 /* Statics */
-Faye_Transport_JSONP.isUsable = function(dispatcher, endpoint, callback) {
+JSONPTransport.isUsable = function(dispatcher, endpoint, callback) {
   callback(true);
 };
 
-module.exports = Faye_Transport_JSONP;
+module.exports = JSONPTransport;

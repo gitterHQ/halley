@@ -1,11 +1,11 @@
 'use strict';
 
-var Faye_Timeouts = require('../util/timeouts');
-var Faye_URI      = require('../util/uri');
-var Promise       = require('bluebird');
-var Faye_Channel  = require('../protocol/channel');
-var debug         = require('debug-proxy')('faye:transport');
-var extend        = require('../util/extend');
+var Timeouts = require('../util/timeouts');
+var uri      = require('../util/uri');
+var Promise  = require('bluebird');
+var Channel  = require('../protocol/channel');
+var debug    = require('debug-proxy')('faye:transport');
+var extend   = require('../util/extend');
 
 var registeredTransports = [];
 
@@ -15,7 +15,7 @@ function Faye_Transport(dispatcher, endpoint) {
   this._outbox     = [];
   this._proxy      = extend({}, this._dispatcher.proxy);
 
-  this.timeouts    = new Faye_Timeouts(this);
+  this.timeouts    = new Timeouts(this);
 }
 
 Faye_Transport.prototype = {
@@ -51,13 +51,13 @@ Faye_Transport.prototype = {
     }
 
     // For a handshake, flush almost immediately
-    if (message.channel === Faye_Channel.HANDSHAKE) {
+    if (message.channel === Channel.HANDSHAKE) {
       this.timeouts.add('publish', 10, this._flush);
       return this._promise;
     }
 
     // TODO: consider why we're doing this
-    if (message.channel === Faye_Channel.CONNECT) {
+    if (message.channel === Channel.CONNECT) {
       this._connectMessage = message;
     }
 
@@ -138,7 +138,7 @@ extend(Faye_Transport, {
         callback(transport);
       });
     }, function() {
-      throw new Error('Could not find a usable connection type for ' + Faye_URI.stringify(endpoint));
+      throw new Error('Could not find a usable connection type for ' + uri.stringify(endpoint));
     });
   },
 

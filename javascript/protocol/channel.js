@@ -1,14 +1,14 @@
 'use strict';
 
-var Faye_Publisher = require('../mixins/publisher');
-var extend = require('../util/extend');
-var Faye_Grammar = require('./grammar');
+var PublisherMixin = require('../mixins/publisher');
+var extend         = require('../util/extend');
+var Grammar        = require('./grammar');
 
-function Faye_Channel(name) {
+function Channel(name) {
   this.id = this.name = name;
 }
 
-Faye_Channel.prototype = {
+Channel.prototype = {
   push: function(message) {
     this.trigger('message', message);
   },
@@ -19,7 +19,7 @@ Faye_Channel.prototype = {
 };
 
 /* Statics */
-extend(Faye_Channel, {
+extend(Channel, {
   HANDSHAKE:    '/meta/handshake',
   CONNECT:      '/meta/connect',
   SUBSCRIBE:    '/meta/subscribe',
@@ -30,8 +30,8 @@ extend(Faye_Channel, {
   SERVICE:      'service',
 
   isValid: function(name) {
-    return Faye_Grammar.CHANNEL_NAME.test(name) ||
-           Faye_Grammar.CHANNEL_PATTERN.test(name);
+    return Grammar.CHANNEL_NAME.test(name) ||
+           Grammar.CHANNEL_PATTERN.test(name);
   },
 
   parse: function(name) {
@@ -79,6 +79,6 @@ extend(Faye_Channel, {
 });
 
 /* Mixins */
-extend(Faye_Channel.prototype, Faye_Publisher);
+extend(Channel.prototype, PublisherMixin);
 
-module.exports = Faye_Channel;
+module.exports = Channel;

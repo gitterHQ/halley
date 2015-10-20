@@ -1,15 +1,15 @@
 'use strict';
 
-var Faye_Transport = require('./transport');
-var Faye_URI       = require('../util/uri');
-var Promise        = require('bluebird');
-var Faye_Set       = require('../util/set');
-var Faye_FSM       = require('../util/fsm');
-var globalEvents   = require('../util/global-events');
-var Events         = require('backbone-events-standalone');
-var debug          = require('debug-proxy')('faye:websocket');
-var inherits       = require('inherits');
-var extend         = require('../util/extend');
+var Transport    = require('./transport');
+var uri          = require('../util/uri');
+var Promise      = require('bluebird');
+var Set          = require('../util/set');
+var StateMachine = require('../util/fsm');
+var globalEvents = require('../util/global-events');
+var Events       = require('backbone-events-standalone');
+var debug        = require('debug-proxy')('faye:websocket');
+var inherits     = require('inherits');
+var extend       = require('../util/extend');
 
 /* @const */
 var WS_CONNECTING  = 0;
@@ -53,29 +53,29 @@ var PROTOCOLS = {
 function getSocketUrl(endpoint) {
   endpoint = extend({ }, endpoint);
   endpoint.protocol = PROTOCOLS[endpoint.protocol];
-  return Faye_URI.stringify(endpoint);
+  return uri.stringify(endpoint);
 }
 
 var _unloaded = false;
 
-function Faye_Transport_WebSocket(dispatcher, endpoint) {
+function WebSocketTransport(dispatcher, endpoint) {
   debug('Initialising websocket transport');
 
-  this._state = new Faye_FSM(FSM);
+  this._state = new StateMachine(FSM);
 
   this.listenTo(this._state, 'enter:CONNECTING', this._onEnterConnecting);
   this.listenTo(this._state, 'enter:CONNECTED', this._onEnterConnected);
   this.listenTo(this._state, 'leave:CONNECTED', this._onLeaveConnected);
   this.listenTo(this._state, 'enter:CLOSED', this._onEnterClosed);
 
-  Faye_Transport_WebSocket.super_.call(this, dispatcher, endpoint);
+  WebSocketTransport.super_.call(this, dispatcher, endpoint);
   // Connect immediately
   this._state.transitionIfPossible('connect');
 
 }
-inherits(Faye_Transport_WebSocket, Faye_Transport);
+inherits(WebSocketTransport, Transport);
 
-extend(Faye_Transport_WebSocket.prototype, {
+extend(WebSocketTransport.prototype, {
   batching:     false,
 
   isUsable: function(callback) {
@@ -93,7 +93,7 @@ extend(Faye_Transport_WebSocket.prototype, {
     var aborted = false;
 
     // Add all messages to the pending queue
-    if (!this._pending) this._pending = new Faye_Set();
+    if (!this._pending) this._pending = new Set();
     for (var i = 0, n = messages.length; i < n; i++) this._pending.add(messages[i]);
 
     self._connectPromise.then(function() {
@@ -322,10 +322,10 @@ extend(Faye_Transport_WebSocket.prototype, {
 });
 
 /* Mixins */
-extend(Faye_Transport_WebSocket.prototype, Events);
+extend(WebSocketTransport.prototype, Events);
 
 /* Statics */
-Faye_Transport_WebSocket.create = function(dispatcher, endpoint) {
+WebSocketTransport.create = function(dispatcher, endpoint) {
   var sockets = dispatcher.transports.websocket;
   if(!sockets) {
     sockets = {};
@@ -341,7 +341,7 @@ Faye_Transport_WebSocket.create = function(dispatcher, endpoint) {
   return socket;
 };
 
-Faye_Transport_WebSocket.isUsable = function(dispatcher, endpoint, callback) {
+WebSocketTransport.isUsable = function(dispatcher, endpoint, callback) {
   this.create(dispatcher, endpoint).isUsable(callback);
 };
 
@@ -349,4 +349,4 @@ globalEvents.on('beforeunload', function() {
   _unloaded = true;
 });
 
-module.exports = Faye_Transport_WebSocket;
+module.exports = WebSocketTransport;
