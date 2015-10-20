@@ -3,7 +3,7 @@ var Faye_Client = require('../../javascript/protocol/client');
 var Faye = require('../../javascript/faye');
 var Faye_Promise = require('../../javascript/util/promise');
 var Faye_Subscription = require('../../javascript/protocol/subscription');
-var extend = require('../../javascript/util/extend');
+var extend = require('lodash/object/extend');
 
 JS.ENV.ClientSpec = JS.Test.describe("Client", function() { with(this) {
   before(function() { with(this) {

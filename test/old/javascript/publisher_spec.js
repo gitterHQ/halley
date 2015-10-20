@@ -1,6 +1,6 @@
 var Faye = require('../../javascript/faye');
 var Faye_Publisher = require('../../javascript/mixins/publisher');
-var extend = require('../../javascript/util/extend');
+var extend = require('lodash/object/extend');
 
 JS.ENV.PublisherSpec = JS.Test.describe("Publisher", function() { with(this) {
   before(function() { with(this) {
