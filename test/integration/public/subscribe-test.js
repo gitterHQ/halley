@@ -1,4 +1,5 @@
 var Faye = require('../../..');
+var assert = require('assert');
 
 describe('subscriptions', function() {
   var client;
@@ -17,6 +18,24 @@ describe('subscriptions', function() {
       if (++count >= 1) {
         return done();
       }
+    });
+
+    subscription.catch(done);
+  });
+
+  it('should cancel a subscription correctly', function(done) {
+    var count = 0;
+    var subscription = client.subscribe('/datetime', function(message) {
+      count++;
+      if (count === 2) {
+        subscription.cancel()
+          .then(function() {
+            done();
+          })
+          .catch(done);
+      }
+
+      assert(count <= 2);
     });
 
     subscription.catch(done);
