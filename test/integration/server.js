@@ -14,133 +14,146 @@ var debug = require('debug')('faye:test-server');
 var ProxyServer = require('./proxy-server');
 var PUBLIC_DIR = __dirname + '/public';
 
-process.on('uncaughtException', function(e) {
-  console.error(e.stack || e);
-});
+function main(callback) {
+  var app = express();
+  var server = http.createServer(app);
+  var fayeServer = http.createServer();
+  var proxyServer = new ProxyServer(8001, 8002);
 
-var app = express();
-var server = http.createServer(app);
-var fayeServer = http.createServer();
-var proxyServer = new ProxyServer(8001, 8002);
-
-var bayeux = new faye.NodeAdapter({
-  mount: '/bayeux',
-  timeout: 3,
-  ping: 2,
-  engine: {
-    interval: 1
-  }
-});
-bayeux.attach(fayeServer);
-
-app.use(webpackMiddleware(webpack({
-  context: __dirname + "/public",
-  entry: "mocha!./test-suite",
-  output: {
-    path: __dirname + "/",
-    filename: "test-suite.js"
-  },
-  devtool: "#eval"
-
-}), {
-  noInfo: false,
-  quiet: false,
-
-  watchOptions: {
-      aggregateTimeout: 300,
-      poll: true
-  },
-
-  publicPath: "/",
-  stats: { colors: true }
-}));
-app.use(express.static(PUBLIC_DIR));
-
-app.post('/delete/:clientId', function(req, res) {
-  var clientId = req.params.clientId;
-  console.log('Deleting client', clientId);
-  bayeux._server._engine.destroyClient(clientId, function() {
-    res.status(200).send('OK');
+  var bayeux = new faye.NodeAdapter({
+    mount: '/bayeux',
+    timeout: 3,
+    ping: 2,
+    engine: {
+      interval: 1
+    }
   });
+  bayeux.attach(fayeServer);
 
-});
+  app.use(webpackMiddleware(webpack({
+    context: __dirname + "/public",
+    entry: "mocha!./test-suite",
+    output: {
+      path: __dirname + "/",
+      filename: "test-suite.js"
+    },
+    devtool: "#eval"
 
-app.post('/network-outage', function(req, res) {
-  var timeout = parseInt(req.query.timeout) || 15000;
+  }), {
+    noInfo: false,
+    quiet: false,
 
-  proxyServer.disableTraffic();
-  console.log('disable traffic');
-  setTimeout(function() {
-    console.log('enabling traffic');
-    proxyServer.enableTraffic();
-  }, timeout);
+    watchOptions: {
+        aggregateTimeout: 300,
+        poll: true
+    },
 
-  res.status(200).send('OK');
-});
+    publicPath: "/",
+    stats: { colors: true }
+  }));
+  app.use(express.static(PUBLIC_DIR));
 
-app.post('/disconnect', function(req, res) {
-  proxyServer.unlisten(function() {
-
-    proxyServer.listen(function() {
+  app.post('/delete/:clientId', function(req, res) {
+    var clientId = req.params.clientId;
+    console.log('Deleting client', clientId);
+    bayeux._server._engine.destroyClient(clientId, function() {
       res.status(200).send('OK');
     });
 
   });
-});
+
+  app.post('/network-outage', function(req, res) {
+    var timeout = parseInt(req.query.timeout) || 15000;
+
+    proxyServer.disableTraffic();
+    console.log('disable traffic');
+    setTimeout(function() {
+      console.log('enabling traffic');
+      proxyServer.enableTraffic();
+    }, timeout);
+
+    res.status(200).send('OK');
+  });
+
+  app.post('/disconnect', function(req, res) {
+    proxyServer.unlisten(function() {
+
+      proxyServer.listen(function() {
+        res.status(200).send('OK');
+      });
+
+    });
+  });
 
 
-app.use(function(req, res) {
-  res.sendStatus(404);
-});
+  app.use(function(req, res) {
+    res.sendStatus(404);
+  });
 
-bayeux.getClient().subscribe('/control', function(message) {
-  console.log('MESSAGE', message);
-});
+  bayeux.getClient().subscribe('/control', function(message) {
+    console.log('MESSAGE', message);
+  });
 
-setInterval(function() {
-  bayeux.getClient().publish('/datetime', { date: Date.now() });
-}, 100);
+  setInterval(function() {
+    bayeux.getClient().publish('/datetime', { date: Date.now() });
+  }, 100);
 
-bayeux.addExtension({
-  incoming: function(message, callback) {
-    if (message.channel === '/meta/subscribe' && message.subscription === '/banned') {
-      message.error = 'Invalid subscription';
-    }
-
-    if (message.channel === '/devnull') {
-      return;
-    }
-
-    if (message.channel === '/meta/handshake') {
-      if (message.ext && message.ext.failHandshake) {
-        message.error = 'Unable to handshake';
+  bayeux.addExtension({
+    incoming: function(message, callback) {
+      if (message.channel === '/meta/subscribe' && message.subscription === '/banned') {
+        message.error = 'Invalid subscription';
       }
+
+      if (message.channel === '/devnull') {
+        return;
+      }
+
+      if (message.channel === '/meta/handshake') {
+        if (message.ext && message.ext.failHandshake) {
+          message.error = 'Unable to handshake';
+        }
+      }
+
+      callback(message);
     }
+  });
 
-    callback(message);
-  }
-});
+  bayeux.on('handshake', function(clientId) {
+    console.log('[  handshake] ' + clientId);
+  });
 
-bayeux.on('handshake', function(clientId) {
-  console.log('[  handshake] ' + clientId);
-});
+  bayeux.on('subscribe', function(clientId, channel) {
+    console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);
+  });
 
-bayeux.on('subscribe', function(clientId, channel) {
-  console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);
-});
+  bayeux.on('unsubscribe', function(clientId, channel) {
+    console.log('[UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
+  });
 
-bayeux.on('unsubscribe', function(clientId, channel) {
-  console.log('[UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
-});
+  bayeux.on('disconnect', function(clientId) {
+    console.log('[ DISCONNECT] ' + clientId);
+  });
 
-bayeux.on('disconnect', function(clientId) {
-  console.log('[ DISCONNECT] ' + clientId);
-});
+  var port = process.env.PORT || '8000';
 
-var port = process.env.PORT || '8000';
-fayeServer.listen(8001);
-server.listen(port, function() {
-  console.log('Listening on ' + port);
-});
+  fayeServer.listen(8001, function() {
+    server.listen(port, function() {
+      proxyServer.listen(callback);
+    });
 
-proxyServer.listen();
+  });
+
+}
+
+module.exports = main;
+
+if (require.main === module) {
+  process.on('uncaughtException', function(e) {
+    console.error(e.stack || e);
+    process.exit(1);
+  });
+
+  main(function() {
+    console.log('Listening');
+  });
+}
