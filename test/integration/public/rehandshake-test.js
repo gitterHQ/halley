@@ -1,5 +1,5 @@
 var Faye = require('../../..');
-require('whatwg-fetch');
+var fetch = require('../fetch');
 
 describe('rehandshake', function() {
   this.timeout(60000);

@@ -1,6 +1,6 @@
 var Faye = require('../../..');
 var assert = require('assert');
-require('whatwg-fetch');
+var fetch = require('../fetch');
 
 describe('bad-connection', function() {
   this.timeout(800000);
