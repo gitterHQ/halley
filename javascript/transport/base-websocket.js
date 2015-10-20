@@ -1,16 +1,15 @@
 'use strict';
 
-var Faye_Transport   = require('./transport');
-var globalEvents     = require('../util/global-events');
-var Faye_URI         = require('../util/uri');
-var Promise          = require('bluebird');
-var Faye_Set         = require('../util/set');
-var Faye_FSM         = require('../util/fsm');
-var websocketFactory = require('./websocket-factory');
-var Events           = require('backbone-events-standalone');
-var debug            = require('debug-proxy')('faye:websocket');
-var inherits         = require('inherits');
-var extend           = require('../util/extend');
+var Faye_Transport = require('./transport');
+var Faye_URI       = require('../util/uri');
+var Promise        = require('bluebird');
+var Faye_Set       = require('../util/set');
+var Faye_FSM       = require('../util/fsm');
+var globalEvents   = require('../util/global-events');
+var Events         = require('backbone-events-standalone');
+var debug          = require('debug-proxy')('faye:websocket');
+var inherits       = require('inherits');
+var extend         = require('../util/extend');
 
 /* @const */
 var WS_CONNECTING  = 0;
@@ -130,6 +129,10 @@ extend(Faye_Transport_WebSocket.prototype, {
     });
   },
 
+  _createWebsocket: function(/*url*/) {
+    throw new Error('Abstract');
+  },
+
   _onEnterConnecting: function() {
     var self = this;
 
@@ -143,7 +146,7 @@ extend(Faye_Transport_WebSocket.prototype, {
     self._connectPromise = new Promise(function(resolve, reject) {
 
       var url = getSocketUrl(self.endpoint);
-      var socket = self._socket = websocketFactory(url);
+      var socket = self._socket = self._createWebsocket(url);
 
       if (!socket) {
         return reject(new Error('Sockets not supported'));
@@ -333,7 +336,7 @@ Faye_Transport_WebSocket.create = function(dispatcher, endpoint) {
     return sockets[endpoint.href];
   }
 
-  var socket =  new Faye_Transport_WebSocket(dispatcher, endpoint);
+  var socket =  new this(dispatcher, endpoint);
   sockets[endpoint.href] = socket;
   return socket;
 };

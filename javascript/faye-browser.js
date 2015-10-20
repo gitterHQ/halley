@@ -6,7 +6,7 @@ Faye.Client = require('./protocol/client');
 var Faye_Transport = require('./transport/transport');
 
 /* Register the transports. Order is important */
-Faye_Transport.register('websocket'       , require('./transport/web_socket'));
+Faye_Transport.register('websocket'       , require('./transport/browser/browser-websocket'));
 // TODO: consider eventsource
 // Faye_Transport.register('eventsource'              , require('./transport/browser/event_source'));
 Faye_Transport.register('long-polling'    , require('./transport/browser/xhr'));

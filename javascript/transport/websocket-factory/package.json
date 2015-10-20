@@ -1,6 +1,0 @@
-{
-  "name": "gitter-faye-websocket-factory",
-  "main": "./websocket-factory-node",
-  "browser": "./websocket-factory-browser",
-  "private": true
-}

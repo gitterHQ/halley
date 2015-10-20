@@ -4,15 +4,17 @@
 var net = require('net');
 var EventEmitter = require('events').EventEmitter;
 
-function ProxyServer(serverPort) {
+function ProxyServer(serverPort, listenPort) {
   this.serverPort = serverPort;
+  this.listenPort = listenPort;
 }
 
 var emitter = new EventEmitter();
 
 ProxyServer.prototype = {
-  listen: function(port) {
-    if (this.server) return;
+  listen: function(callback) {
+    if (!callback) callback = function() {};
+    if (this.server) return callback();
 
     var self = this;
     var server = this.server = net.createServer(function(c) { //'connection' listener
@@ -24,27 +26,33 @@ ProxyServer.prototype = {
       self.createClient(c);
     });
 
-    server.listen(port, function() { //'listening' listener
+    server.listen(this.listenPort, function() { //'listening' listener
       console.log('server bound');
+      callback();
     });
   },
 
-  unlisten: function() {
-    if (!this.server) return;
-
+  unlisten: function(callback) {
+    if (!callback) callback = function() {};
     emitter.emit('disconnectAll');
+
+    if (!this.server) return callback();
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
     this.server.close(function() {
       console.log('Server closed');
+      callback();
     });
     this.server = null;
   },
 
   createClient: function(incoming) {
     var self = this;
-    var backend = net.connect({ port: this.serverPort }, function() { //'connect' listener
-      console.log('connection created');
+    console.log('connection created');
 
+    var backend = net.connect({ port: this.serverPort }, function() { //'connect' listener
+      console.log('backend connection created');
       var disconnect = function() {
+        console.log('DISCONNECTING!', incoming);
         incoming.destroy();
         backend.end();
       }.bind(incoming);

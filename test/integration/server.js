@@ -21,7 +21,7 @@ process.on('uncaughtException', function(e) {
 var app = express();
 var server = http.createServer(app);
 var fayeServer = http.createServer();
-var proxyServer = new ProxyServer(8001);
+var proxyServer = new ProxyServer(8001, 8002);
 
 var bayeux = new faye.NodeAdapter({
   mount: '/bayeux',
@@ -76,6 +76,16 @@ app.post('/network-outage', function(req, res) {
   }, timeout);
 
   res.status(200).send('OK');
+});
+
+app.post('/disconnect', function(req, res) {
+  proxyServer.unlisten(function() {
+
+    proxyServer.listen(function() {
+      res.status(200).send('OK');
+    });
+
+  });
 });
 
 
@@ -133,4 +143,4 @@ server.listen(port, function() {
   console.log('Listening on ' + port);
 });
 
-proxyServer.listen(8002);
+proxyServer.listen();
