@@ -116,7 +116,7 @@ function main(options, callback) {
     res.status(200).send('OK');
   });
 
-  app.post('/disconnect', function(req, res) {
+  app.post('/restart', function(req, res) {
     terminateProxyChild(function() {
       createProxyChild(function() {
         res.status(200).send('OK');
