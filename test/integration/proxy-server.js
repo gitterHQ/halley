@@ -11,6 +11,8 @@ function ProxyServer(serverPort, listenPort) {
 
 var emitter = new EventEmitter();
 
+var log = console.log.bind(console, 'proxy:');
+
 ProxyServer.prototype = {
   listen: function(callback) {
     if (!callback) callback = function() {};
@@ -18,98 +20,86 @@ ProxyServer.prototype = {
 
     var self = this;
     var server = this.server = net.createServer(function(c) { //'connection' listener
-      console.log('client connected');
+      log('client connected');
       c.on('end', function() {
-        console.log('client disconnected');
+        log('client disconnected');
       });
 
       self.createClient(c);
     });
 
     server.listen(this.listenPort, function() { //'listening' listener
-      console.log('server bound');
+      log('server bound');
       callback();
     });
-  },
-
-  unlisten: function(callback) {
-    if (!callback) callback = function() {};
-    emitter.emit('disconnectAll');
-
-    if (!this.server) return callback();
-    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-    this.server.close(function() {
-      console.log('Server closed');
-      callback();
-    });
-    this.server = null;
   },
 
   createClient: function(incoming) {
     var self = this;
-    console.log('connection created');
+    log('connection created');
 
-    var backend = net.connect({ port: this.serverPort }, function() { //'connect' listener
-      console.log('backend connection created');
-      var disconnect = function() {
-        console.log('DISCONNECTING!', incoming);
-        incoming.destroy();
-        backend.end();
-      }.bind(incoming);
-
-      emitter.addListener('disconnectAll', disconnect);
+    var backend = net.connect({ port: this.serverPort }, function() {
+      log('backend connection created');
 
       incoming.on('data', function(data) {
-        console.log('in');
-        if (self.trafficDisabled) return;
+        if (self.trafficDisabled) {
+          log('dropping incoming request');
+          return;
+        }
+
+        log('request', data.toString('utf8'));
         backend.write(data);
       });
 
       backend.on('data', function(data) {
-        console.log('out');
+        if (self.trafficDisabled) {
+          log('dropping backend response');
+          return;
+        }
 
-        if (self.trafficDisabled) return;
+        log('response', data.toString('utf8'));
         incoming.write(data);
       });
 
       incoming.on('end', function() {
-        console.log('incoming end');
+        log('incoming end');
         // Intentionally leave sockets hanging
       });
 
       backend.on('end', function() {
-        console.log('backend end');
+        log('backend end');
         // Intentionally leave sockets hanging
         incoming.destroy();
       });
 
       incoming.on('error', function() {
-        console.log('incoming error');
+        log('incoming error');
         backend.destroy();
       });
 
       backend.on('error', function() {
-        console.log('backend error');
+        log('backend error');
       });
 
       backend.on('close', function() {
-        console.log('backend close');
+        log('backend close');
         incoming.destroy();
       });
 
       incoming.on('close', function() {
-        console.log('incoming close');
-        emitter.removeListener('disconnectAll', disconnect);
+        log('incoming close');
       });
 
     });
   },
 
   disableTraffic: function() {
+    log('Trashing all incoming traffic');
     this.trafficDisabled = true;
   },
 
   enableTraffic: function() {
+    log('Re-enabling incoming traffic');
     this.trafficDisabled = false;
   }
 };
