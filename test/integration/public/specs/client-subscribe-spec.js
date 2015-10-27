@@ -4,7 +4,6 @@ var assert = require('assert');
 
 module.exports = function() {
   describe('subscriptions', function() {
-    this.timeout(500000);
     
     it('should subscribe to a channel and receive messages', function(done) {
       var count = 0;
