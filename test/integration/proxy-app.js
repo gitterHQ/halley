@@ -16,10 +16,12 @@ proxyServer.listen(function() {
 
 process.on('message', function(data) {
   if (data.disable) {
+    console.log('proxy: disabling traffic');
     proxyServer.disableTraffic();
   }
 
   if (data.enable) {
+    console.log('proxy: reenabling traffic');
     proxyServer.enableTraffic();
   }
 });

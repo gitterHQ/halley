@@ -1,15 +1,11 @@
-/* jshint node:true */
 'use strict';
 
 var net = require('net');
-var EventEmitter = require('events').EventEmitter;
 
 function ProxyServer(serverPort, listenPort) {
   this.serverPort = serverPort;
   this.listenPort = listenPort;
 }
-
-var emitter = new EventEmitter();
 
 var log = console.log.bind(console, 'proxy:');
 

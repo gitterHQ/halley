@@ -1,20 +1,14 @@
 /* jshint node:true */
 'use strict';
 
-var fs = require('fs');
-var path = require('path');
 var http = require('http');
-var https = require('https');
-var deflate = require('permessage-deflate');
 var faye = require('gitter-faye');
 var express = require('express');
 var webpack = require('webpack');
 var webpackMiddleware = require("webpack-dev-middleware");
-var debug = require('debug')('faye:test-server');
 var PUBLIC_DIR = __dirname + '/public';
 
-
-var proxyChild;
+var proxyChild, server, fayeServer;
 
 function createProxyChild(callback) {
   if (!callback) callback = function() {};
@@ -38,7 +32,6 @@ function createProxyChild(callback) {
 function terminateProxyChild(callback) {
   if (!callback) callback = function() {};
 
-
   if (proxyChild) {
     proxyChild.once('exit', function() {
       callback();
@@ -51,11 +44,11 @@ function terminateProxyChild(callback) {
   }
 }
 
-function main(options, callback) {
+function listen(options, callback) {
   var app = express();
   var fayeApp = express();
-  var server = http.createServer(app);
-  var fayeServer = http.createServer(fayeApp);
+  server = http.createServer(app);
+  fayeServer = http.createServer(fayeApp);
 
   var bayeux = new faye.NodeAdapter({
     mount: '/bayeux',
@@ -75,8 +68,17 @@ function main(options, callback) {
         path: __dirname + "/",
         filename: "test-suite.js"
       },
+      resolve: {
+        alias: {
+          sinon: 'sinon-browser-only'
+        }
+      },
+      module: {
+        noParse: [
+          /sinon-browser-only/
+        ]
+      },
       devtool: "#eval"
-
     }), {
       noInfo: false,
       quiet: false,
@@ -103,13 +105,13 @@ function main(options, callback) {
   });
 
   app.post('/network-outage', function(req, res) {
-    var timeout = parseInt(req.query.timeout) || 15000;
+    var timeout = parseInt(req.query.timeout, 10) || 15000;
 
     console.log('disable traffic');
     proxyChild.send({ disable: true });
 
     setTimeout(function() {
-      console.log('enabling traffic');
+      console.log('enabling traffic after ' + timeout);
       proxyChild.send({ enable: true });
     }, timeout);
 
@@ -182,21 +184,21 @@ function main(options, callback) {
     }
   });
 
-  bayeux.on('handshake', function(clientId) {
-    console.log('[  handshake] ' + clientId);
-  });
-
-  bayeux.on('subscribe', function(clientId, channel) {
-    console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);
-  });
-
-  bayeux.on('unsubscribe', function(clientId, channel) {
-    console.log('[UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
-  });
-
-  bayeux.on('disconnect', function(clientId) {
-    console.log('[ DISCONNECT] ' + clientId);
-  });
+  // bayeux.on('handshake', function(clientId) {
+  //   console.log('[  handshake] ' + clientId);
+  // });
+  //
+  // bayeux.on('subscribe', function(clientId, channel) {
+  //   console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);
+  // });
+  //
+  // bayeux.on('unsubscribe', function(clientId, channel) {
+  //   console.log('[UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
+  // });
+  //
+  // bayeux.on('disconnect', function(clientId) {
+  //   console.log('[ DISCONNECT] ' + clientId);
+  // });
 
   var port = process.env.PORT || '8000';
 
@@ -209,7 +211,14 @@ function main(options, callback) {
 
 }
 
-module.exports = main;
+function unlisten(callback) {
+  fayeServer.close();
+  server.close();
+  terminateProxyChild(callback);
+}
+
+exports.listen = listen;
+exports.unlisten = unlisten;
 
 if (require.main === module) {
   process.on('uncaughtException', function(e) {
@@ -217,7 +226,7 @@ if (require.main === module) {
     process.exit(1);
   });
 
-  main({ webpack: true }, function() {
+  listen({ webpack: true }, function() {
     console.log('Listening');
   });
 }

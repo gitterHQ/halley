@@ -4,7 +4,6 @@ var Promise = require('bluebird');
 Promise.longStackTraces();
 
 require('./client-long-polling-test');
-require('./client-callback-polling-test');
 require('./client-websockets-test');
 require('./client-all-transports-test');
 // require('./on-before-unload-test');
