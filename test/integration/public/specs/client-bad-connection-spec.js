@@ -16,6 +16,14 @@ module.exports = function() {
       var outageTime;
       var outageGraceTime;
 
+      function cleanup(err) {
+        fetch('/restore-network-outage', {
+          method: 'post',
+          body: ""
+        });
+        done(err);
+      }
+
       this.client.subscribe('/datetime', function() {
         count++;
 
@@ -29,20 +37,17 @@ module.exports = function() {
             outageGraceTime = Date.now() + 1000;
             console.log('Outage');
           })
-          .catch(done);
+          .catch(cleanup);
         }
 
         if (!outageTime) return;
         if (outageGraceTime >= Date.now()) return;
 
-        console.log('Receiving messages again');
-
         postOutageCount++;
 
         if (postOutageCount >= 3) {
-          console.log('OUTAGE TIME IS ', Date.now() - outageTime);
           assert(Date.now() - outageTime >= (OUTAGE_TIME * 0.8));
-          done();
+          cleanup();
         }
       });
     });

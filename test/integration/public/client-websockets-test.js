@@ -7,7 +7,8 @@ describe('client-websocket', function() {
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8001/bayeux', {
         timeout: 45,
-        connectionTypes: ['websocket']
+        connectionTypes: ['websocket'],
+        disabled: ['long-polling', 'callback-polling']
       });
     });
 
@@ -22,7 +23,8 @@ describe('client-websocket', function() {
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8002/bayeux', {
         timeout: 45,
-        connectionTypes: ['websocket']
+        connectionTypes: ['websocket'],
+        disabled: ['long-polling', 'callback-polling']
       });
     });
 

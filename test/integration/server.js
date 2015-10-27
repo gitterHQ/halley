@@ -78,7 +78,7 @@ function listen(options, callback) {
           /sinon-browser-only/
         ]
       },
-      devtool: "#eval"
+      devtool: "#cheap-source-map"
     }), {
       noInfo: false,
       quiet: false,
@@ -117,6 +117,13 @@ function listen(options, callback) {
 
     res.status(200).send('OK');
   });
+
+
+  app.post('/restore-network-outage', function(req, res) {
+    proxyChild.send({ enable: true });
+    res.status(200).send('OK');
+  });
+
 
   app.post('/restart', function(req, res) {
     terminateProxyChild(function() {

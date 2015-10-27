@@ -3,6 +3,7 @@
 var Promise = require('bluebird');
 Promise.longStackTraces();
 
+require('./browser-websocket-test');
 require('./client-long-polling-test');
 require('./client-callback-polling-test');
 require('./client-websockets-test');
