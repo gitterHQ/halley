@@ -9,8 +9,8 @@ describe('client events', function() {
 
   beforeEach(function() {
     client = new Faye.Client('http://localhost:8001/bayeux', { timeout: 45 });
-    client.on('handshake', function() {
-      eventQueue.push('handshake');
+    client.on('handshake:success', function() {
+      eventQueue.push('handshake:success');
     });
   });
 

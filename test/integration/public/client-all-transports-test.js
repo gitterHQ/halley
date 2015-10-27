@@ -34,7 +34,7 @@ describe('client-all-transport', function() {
       this.client.disconnect();
     });
 
-    require('./specs/client-spec')();
+    require('./specs/client-proxied-spec')();
 
   });
 

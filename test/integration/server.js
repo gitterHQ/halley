@@ -172,7 +172,8 @@ function listen(options, callback) {
       if (message.channel === '/advice-handshake') {
         advice = message.advice = message.advice || {};
         advice.reconnect = 'handshake';
-        advice.timeout = 2000;
+        advice.interval = 150;
+        // advice.timeout = 150;
       }
 
       if (message.channel === '/advice-none') {
