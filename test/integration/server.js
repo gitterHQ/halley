@@ -137,7 +137,7 @@ function listen(options, callback) {
       });
     });
   });
-  
+
   var wsRestoreTimer;
   app.post('/stop-websockets', function(req, res) {
     var timeout = parseInt(req.query.timeout, 10) || 15000;
@@ -172,12 +172,20 @@ function listen(options, callback) {
     bayeux.getClient().publish('/datetime', { date: Date.now() });
   }, 100);
 
+  fayeServer.on('upgrade', function(req) {
+    if (crushWebsocketConnections) {
+      // Really mess things up
+      req.socket.write('<OHNOES>');
+      req.socket.destroy();
+    }
+  });
+  
   bayeux.addExtension({
     incoming: function(message, req, callback) {
       if (crushWebsocketConnections) {
         if (req && req.headers.connection === 'Upgrade') {
           console.log('KILLING WEBSOCKET');
-          req.end();
+          req.socket.destroy();
           return;
         }
       }

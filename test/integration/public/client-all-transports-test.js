@@ -8,8 +8,7 @@ describe('client-all-transport', function() {
 
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8001/bayeux', {
-        timeout: 45,
-        connectionTypes: ['websocket']
+        timeout: 45
       });
     });
 
@@ -18,15 +17,14 @@ describe('client-all-transport', function() {
     });
 
     require('./specs/client-spec')();
-
+    require('./specs/client-bad-websockets-spec')();
   });
 
   describe('proxied', function() {
 
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8002/bayeux', {
-        timeout: 45,
-        connectionTypes: ['websocket']
+        timeout: 45
       });
     });
 
