@@ -9,6 +9,7 @@ var webpackMiddleware = require("webpack-dev-middleware");
 var PUBLIC_DIR = __dirname + '/public';
 
 var proxyChild, server, fayeServer;
+var crushWebsocketConnections;
 
 function createProxyChild(callback) {
   if (!callback) callback = function() {};
@@ -104,13 +105,16 @@ function listen(options, callback) {
 
   });
 
+  var networkRestoreTimer;
+
   app.post('/network-outage', function(req, res) {
     var timeout = parseInt(req.query.timeout, 10) || 15000;
 
     console.log('disable traffic');
     proxyChild.send({ disable: true });
 
-    setTimeout(function() {
+    clearTimeout(networkRestoreTimer);
+    networkRestoreTimer = setTimeout(function() {
       console.log('enabling traffic after ' + timeout);
       proxyChild.send({ enable: true });
     }, timeout);
@@ -120,6 +124,7 @@ function listen(options, callback) {
 
 
   app.post('/restore-network-outage', function(req, res) {
+    clearTimeout(networkRestoreTimer);
     proxyChild.send({ enable: true });
     res.status(200).send('OK');
   });
@@ -132,6 +137,28 @@ function listen(options, callback) {
       });
     });
   });
+  
+  var wsRestoreTimer;
+  app.post('/stop-websockets', function(req, res) {
+    var timeout = parseInt(req.query.timeout, 10) || 15000;
+
+    console.log('disable traffic');
+    crushWebsocketConnections = true;
+
+    clearTimeout(wsRestoreTimer);
+    wsRestoreTimer = setTimeout(function() {
+      console.log('enabling traffic after ' + timeout);
+      crushWebsocketConnections = false;
+    }, timeout);
+
+    res.status(200).send('OK');
+  });
+
+  app.post('/restore-websockets', function(req, res) {
+    clearTimeout(networkRestoreTimer);
+    crushWebsocketConnections = false;
+    res.status(200).send('OK');
+  });
 
   app.get('*', function(req, res) {
     res.status(404).send('Not found');
@@ -141,16 +168,19 @@ function listen(options, callback) {
     res.status(404).send('Not found');
   });
 
-  bayeux.getClient().subscribe('/control', function(message) {
-    console.log('MESSAGE', message);
-  });
-
   setInterval(function() {
     bayeux.getClient().publish('/datetime', { date: Date.now() });
   }, 100);
 
   bayeux.addExtension({
-    incoming: function(message, callback) {
+    incoming: function(message, req, callback) {
+      if (crushWebsocketConnections) {
+        if (req && req.headers.connection === 'Upgrade') {
+          console.log('KILLING WEBSOCKET');
+          req.end();
+          return;
+        }
+      }
       if (message.channel === '/meta/subscribe' && message.subscription === '/banned') {
         message.error = 'Invalid subscription';
       }
@@ -168,7 +198,7 @@ function listen(options, callback) {
       callback(message);
     },
 
-    outgoing: function(message, callback) {
+    outgoing: function(message, req, callback) {
       var advice;
       if (message.channel === '/advice-retry') {
         advice = message.advice = message.advice || {};

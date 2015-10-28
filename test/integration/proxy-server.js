@@ -43,7 +43,6 @@ ProxyServer.prototype = {
           return;
         }
 
-        log('request', data.toString('utf8'));
         backend.write(data);
       });
 
@@ -53,7 +52,6 @@ ProxyServer.prototype = {
           return;
         }
 
-        log('response', data.toString('utf8'));
         incoming.write(data);
       });
 
