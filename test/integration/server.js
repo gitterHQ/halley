@@ -79,7 +79,7 @@ function listen(options, callback) {
           /sinon-browser-only/
         ]
       },
-      devtool: "#cheap-source-map"
+      devtool: "#eval"
     }), {
       noInfo: false,
       quiet: false,
@@ -179,7 +179,7 @@ function listen(options, callback) {
       req.socket.destroy();
     }
   });
-  
+
   bayeux.addExtension({
     incoming: function(message, req, callback) {
       if (crushWebsocketConnections) {

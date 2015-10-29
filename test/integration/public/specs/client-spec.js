@@ -6,4 +6,5 @@ module.exports = function() {
   require('./client-reset-spec')();
   require('./client-advice-spec')();
   require('./client-delete-spec')();
+  require('./client-bad-websockets-spec')();
 };
