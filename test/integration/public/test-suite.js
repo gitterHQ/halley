@@ -1,7 +1,16 @@
 'use strict';
 
+require('../../../lib/util/externals').use({
+  Events: require('backbone-events-standalone'),
+  extend: require('lodash/object/extend')
+});
+
 var Promise = require('bluebird');
-Promise.longStackTraces();
+Promise.config({
+  warnings: false,
+  longStackTraces: true,
+  cancellation: true
+});
 
 require('./browser-websocket-test');
 require('./client-long-polling-test');

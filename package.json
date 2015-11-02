@@ -16,10 +16,10 @@
     "node": ">=0.8.0"
   },
   "main": "./index.js",
-  "browserify": "./browser-standalone",
+  "browser": "./browser-standalone",
   "dependencies": {
     "backbone-events-standalone": "suprememoocow/backbone-events-standalone#backbone-1.2.3",
-    "bluebird": "^2.10.2",
+    "bluebird": "^3.0.2",
     "debug": "^2.2.0",
     "debug-proxy": "^0.1.2",
     "faye-websocket": "~0.9.4",

@@ -1,19 +1,25 @@
 'use strict';
 
 var assert = require('assert');
+var Promise = require('bluebird');
 
 module.exports = function() {
   describe('subscriptions', function() {
-    
+
     it('should subscribe to a channel and receive messages', function(done) {
-      var count = 0;
-      var subscription = this.client.subscribe('/datetime', function() {
-        if (++count >= 1) {
-          return done();
-        }
+      var defer = {};
+      defer.promise = new Promise(function(resolve, reject) {
+        defer.resolve = resolve;
+        defer.reject = reject;
       });
 
-      subscription.catch(done);
+      var subscription = this.client.subscribe('/datetime', function(message) {
+        console.log('MESSAGE', message);
+        defer.resolve();
+      });
+
+      return Promise.all([subscription.promise, defer.promise])
+        .nodeify(done);
     });
 
     it('should cancel a subscription correctly', function(done) {

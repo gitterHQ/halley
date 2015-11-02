@@ -1,5 +1,10 @@
 'use strict';
 
+var Promise = require('bluebird');
+Promise.config({
+  cancellation: true
+});
+
 require('./lib/util/externals').use({
   Events: require('backbone').Events,
   extend: require('underscore').extend

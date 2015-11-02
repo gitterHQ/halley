@@ -1,4 +1,4 @@
-var Faye = require('../../..');
+'use strict';
 
 var Promise = require('bluebird');
 Promise.longStackTraces();
