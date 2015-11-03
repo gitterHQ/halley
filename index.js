@@ -15,4 +15,4 @@ var Transport = require('./lib/transport/transport');
 Transport.register('websocket'   , require('./lib/transport/node/node-websocket'));
 Transport.register('long-polling', require('./lib/transport/node/node_http'));
 
-module.exports = require('lib/main');
+module.exports = require('./lib/main');

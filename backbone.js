@@ -17,4 +17,4 @@ Transport.register('websocket'       , require('./lib/transport/browser/browser-
 Transport.register('long-polling'    , require('./lib/transport/browser/xhr'));
 Transport.register('callback-polling', require('./lib/transport/browser/jsonp'));
 
-module.exports = require('lib/main');
+module.exports = require('./lib/main');
