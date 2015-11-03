@@ -5,14 +5,10 @@ Promise.config({
   cancellation: true
 });
 
-
 require('./lib/util/externals').use({
   Events: require('backbone-events-standalone'),
   extend: require('lodash/object/extend')
 });
-
-var Faye = { };
-Faye.Client = require('./lib/protocol/client');
 
 var Transport = require('./lib/transport/transport');
 
@@ -21,4 +17,4 @@ Transport.register('websocket'       , require('./lib/transport/browser/browser-
 Transport.register('long-polling'    , require('./lib/transport/browser/xhr'));
 Transport.register('callback-polling', require('./lib/transport/browser/jsonp'));
 
-module.exports = Faye;
+module.exports = require('lib/main');

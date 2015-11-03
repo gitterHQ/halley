@@ -10,11 +10,9 @@ require('./lib/util/externals').use({
   extend: require('lodash/object/extend')
 });
 
-var Faye = { };
 var Transport = require('./lib/transport/transport');
-Faye.Client = require('./lib/protocol/client');
 
 Transport.register('websocket'   , require('./lib/transport/node/node-websocket'));
 Transport.register('long-polling', require('./lib/transport/node/node_http'));
 
-module.exports = Faye;
+module.exports = require('lib/main');
