@@ -18,7 +18,7 @@
   "main": "./index.js",
   "browser": "./browser-standalone",
   "dependencies": {
-    "backbone-events-standalone": "suprememoocow/backbone-events-standalone#backbone-1.2.3",
+    "backbone-events-standalone": "github:suprememoocow/backbone-events-standalone#backbone-1.2.3",
     "bluebird": "^3.0.2",
     "debug": "^2.2.0",
     "debug-proxy": "^0.1.2",
@@ -50,9 +50,15 @@
   "scripts": {
     "test": "mocha test/integration/node-test-suite"
   },
+  "directories": {
+    "test": "test"
+  },
   "repository": {
     "type": "git",
-    "url": "git://github.com/gitterHQ/faye.git"
+    "url": "git+https://github.com/gitterHQ/halley.git"
   },
-  "bugs": "http://github.com/gitterHQ/faye/issues"
+  "bugs": {
+    "url": "https://github.com/gitterHQ/halley/issues"
+  },
+  "homepage": "https://github.com/gitterHQ/halley#readme"
 }
