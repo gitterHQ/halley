@@ -5,14 +5,16 @@ Halley is an experimental fork of James Coglan's excellent Faye library.
 ## Differences from Faye
 
 The main differences from Faye are (listed in no particular order):
-* Heavily reliant on promises
-* No Ruby client or server and no server support. Halley is a Javascript Bayeux client only
-* Webpack/browserify packaging
-* Client reset support. This will force the client to rehandshake. This can be useful when the application realises that the connection is dead before the bayeux client does and allows for faster recovery in these situations.
-* No eventsource support
-* Custom implementations have been replaced with external libraries:
+* **Uses promises** (and Bluebird's promise cancelleation feature) to do the heavy-lifting whereever possible.
+* No Ruby client or server and no server support. Halley is a **Javascript Bayeux client only**
+* **Webpack/browserify packaging**
+* **Client reset support**. This will force the client to rehandshake. This can be useful when the application realises that the connection is dead before the bayeux client does and allows for faster recovery in these situations.
+* **No eventsource support** as we've found them to be unreliable in a ELB/haproxy setup
+* All **durations are in milliseconds**, not seconds
+* Wherever possible, implementations have been replaced with external libraries:
   * Uses bluebird for promises
   * Uses backbone events (or backbone-events-standalone) for events
+  * Mocha and sinon for testing
 
 ## License
 
