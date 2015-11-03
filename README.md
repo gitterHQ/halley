@@ -9,10 +9,11 @@ The main differences from Faye are (listed in no particular order):
 * No Ruby client or server and no server support. Halley is a Javascript Bayeux client only
 * Webpack/browserify packaging
 * Client reset support. This will force the client to rehandshake. This can be useful when the application realises that the connection is dead before the bayeux client does and allows for faster recovery in these situations.
-* No eventsource support
+* No eventsource support as we've found them to be unreliable in a ELB/haproxy setup
 * Custom implementations have been replaced with external libraries:
   * Uses bluebird for promises
   * Uses backbone events (or backbone-events-standalone) for events
+  * Mocha and sinon for testing
 
 ## License
 
