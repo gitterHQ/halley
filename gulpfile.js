@@ -15,16 +15,10 @@ gulp.task("webpack-standalone", function(callback) {
       entry: "./browser-standalone.js",
       output: {
         path: "dist/",
-        filename: "faye.js",
+        filename: "halley.js",
         libraryTarget: "umd",
-        library: "Faye"
+        library: "Halley"
       },
-      resolve: {
-        alias: {
-          'debug-proxy': 'debug'
-        }
-      },
-
       stats: true,
 
       failOnError: true,
@@ -43,7 +37,7 @@ gulp.task("webpack-backbone", function(callback) {
       entry: "./backbone.js",
       output: {
         path: "dist/",
-        filename: "faye-backbone.js",
+        filename: "halley-backbone.js",
         libraryTarget: "umd",
         library: "Faye"
       },
@@ -51,12 +45,6 @@ gulp.task("webpack-backbone", function(callback) {
         "backbone": "Backbone",
         "underscore": "_"
       },
-      resolve: {
-        alias: {
-          'debug-proxy': 'debug'
-        }
-      },
-
       stats: true,
 
       failOnError: true,
