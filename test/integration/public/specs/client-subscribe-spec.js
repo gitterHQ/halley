@@ -14,7 +14,6 @@ module.exports = function() {
       });
 
       var subscription = this.client.subscribe('/datetime', function(message) {
-        console.log('MESSAGE', message);
         defer.resolve();
       });
 

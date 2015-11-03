@@ -7,6 +7,7 @@ var express = require('express');
 var webpack = require('webpack');
 var webpackMiddleware = require("webpack-dev-middleware");
 var PUBLIC_DIR = __dirname + '/public';
+var debug = require('debug')('halley:test:server');
 
 var proxyChild, server, fayeServer;
 var crushWebsocketConnections;
@@ -20,11 +21,11 @@ function createProxyChild(callback) {
     });
 
     proxyChild.on('exit', function(exitCode) {
-      console.log('Proxy terminated with exitCode ' + exitCode);
+      debug('Proxy terminated with exitCode ' + exitCode);
     });
 
     proxyChild.once('message', function() {
-      console.log('RECV', arguments);
+      debug('RECV', arguments);
       callback();
     });
   });
@@ -64,10 +65,10 @@ function listen(options, callback) {
   if (options.webpack) {
     app.use(webpackMiddleware(webpack({
       context: __dirname + "/public",
-      entry: "mocha!./test-suite",
+      entry: "mocha!./test-suite-browser",
       output: {
         path: __dirname + "/",
-        filename: "test-suite.js"
+        filename: "test-suite-browser.js"
       },
       resolve: {
         alias: {
@@ -98,7 +99,7 @@ function listen(options, callback) {
 
   app.post('/delete/:clientId', function(req, res) {
     var clientId = req.params.clientId;
-    console.log('Deleting client', clientId);
+    debug('Deleting client', clientId);
     bayeux._server._engine.destroyClient(clientId, function() {
       res.status(200).send('OK');
     });
@@ -110,12 +111,12 @@ function listen(options, callback) {
   app.post('/network-outage', function(req, res) {
     var timeout = parseInt(req.query.timeout, 10) || 15000;
 
-    console.log('disable traffic');
+    debug('disable traffic');
     proxyChild.send({ disable: true });
 
     clearTimeout(networkRestoreTimer);
     networkRestoreTimer = setTimeout(function() {
-      console.log('enabling traffic after ' + timeout);
+      debug('enabling traffic after ' + timeout);
       proxyChild.send({ enable: true });
     }, timeout);
 
@@ -142,12 +143,12 @@ function listen(options, callback) {
   app.post('/stop-websockets', function(req, res) {
     var timeout = parseInt(req.query.timeout, 10) || 15000;
 
-    console.log('disable traffic');
+    debug('disable traffic');
     crushWebsocketConnections = true;
 
     clearTimeout(wsRestoreTimer);
     wsRestoreTimer = setTimeout(function() {
-      console.log('enabling traffic after ' + timeout);
+      debug('enabling traffic after ' + timeout);
       crushWebsocketConnections = false;
     }, timeout);
 
@@ -184,7 +185,7 @@ function listen(options, callback) {
     incoming: function(message, req, callback) {
       if (crushWebsocketConnections) {
         if (req && req.headers.connection === 'Upgrade') {
-          console.log('KILLING WEBSOCKET');
+          debug('KILLING WEBSOCKET');
           req.socket.destroy();
           return;
         }
@@ -231,19 +232,19 @@ function listen(options, callback) {
   });
 
   // bayeux.on('handshake', function(clientId) {
-  //   console.log('[  handshake] ' + clientId);
+  //   debug('[  handshake] ' + clientId);
   // });
   //
   // bayeux.on('subscribe', function(clientId, channel) {
-  //   console.log('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);
+  //   debug('[  SUBSCRIBE] ' + clientId + ' -> ' + channel);
   // });
   //
   // bayeux.on('unsubscribe', function(clientId, channel) {
-  //   console.log('[UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
+  //   debug('[UNSUBSCRIBE] ' + clientId + ' -> ' + channel);
   // });
   //
   // bayeux.on('disconnect', function(clientId) {
-  //   console.log('[ DISCONNECT] ' + clientId);
+  //   debug('[ DISCONNECT] ' + clientId);
   // });
 
   var port = process.env.PORT || '8000';
@@ -273,6 +274,6 @@ if (require.main === module) {
   });
 
   listen({ webpack: true }, function() {
-    console.log('Listening');
+    debug('Listening');
   });
 }

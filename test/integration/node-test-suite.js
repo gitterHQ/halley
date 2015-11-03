@@ -5,7 +5,6 @@ describe('test-suite', function() {
   var server = require('./server');
 
   before(function(done) {
-    console.log('Starting server');
     server.listen({ }, done);
   });
 

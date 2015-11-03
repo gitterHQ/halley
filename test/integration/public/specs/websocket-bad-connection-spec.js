@@ -27,7 +27,7 @@ module.exports = function() {
           ]);
         })
         .finally(function() {
-          fetch('/restore-network-outage', {
+          return fetch('/restore-network-outage', {
             method: 'post',
             body: ""
           })
@@ -61,7 +61,7 @@ module.exports = function() {
           ]);
         })
         .finally(function() {
-          fetch('/restore-network-outage', {
+          return fetch('/restore-network-outage', {
             method: 'post',
             body: ""
           })
