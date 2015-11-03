@@ -1,14 +1,18 @@
-# Faye
+# Halley
 
-Faye is a set of tools for simple publish-subscribe messaging between web
-clients. It ships with easy-to-use message routing servers for Node.js and Rack
-applications, and clients that can be used on the server and in the browser.
+Halley is an experimental fork of James Coglan's excellent Faye library.
 
-* Documentation: http://faye.jcoglan.com
-* Mailing list: http://groups.google.com/group/faye-users
-* Bug tracker: http://github.com/faye/faye/issues
-* Source code: http://github.com/faye/faye
+## Differences from Faye
 
+The main differences from Faye are (listed in no particular order):
+* Heavily reliant on promises
+* No Ruby client or server and no server support. Halley is a Javascript Bayeux client only
+* Webpack/browserify packaging
+* Client reset support. This will force the client to rehandshake. This can be useful when the application realises that the connection is dead before the bayeux client does and allows for faster recovery in these situations.
+* No eventsource support
+* Custom implementations have been replaced with external libraries:
+  * Uses bluebird for promises
+  * Uses backbone events (or backbone-events-standalone) for events
 
 ## License
 
