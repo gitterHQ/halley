@@ -1,6 +1,18 @@
 'use strict';
 
 var assert = require('assert');
+var Promise = require('bluebird');
+
+function defer() {
+  var d = {};
+
+  d.promise = new Promise(function(resolve, reject) {
+    d.resolve = resolve;
+    d.reject = reject;
+  });
+
+  return d;
+}
 
 module.exports = function() {
   describe('advice', function() {
@@ -9,9 +21,11 @@ module.exports = function() {
       var publishOccurred = false;
       var client = this.client;
 
+      var d = defer();
+
       client.subscribe('/datetime', function() {
           if (!publishOccurred) return;
-          done();
+          d.resolve();
         })
         .then(function() {
           return client.publish('/advice-retry', { data: 1 });
@@ -19,7 +33,10 @@ module.exports = function() {
         .then(function() {
           publishOccurred = true;
         })
-        .catch(done);
+        .then(function() {
+          return d.promise;
+        })
+        .nodeify(done);
     });
 
     /**
@@ -30,14 +47,11 @@ module.exports = function() {
       var client = this.client;
       var originalClientId;
       var rehandshook = false;
+      var d = defer();
 
       client.subscribe('/datetime', function() {
           if (!rehandshook) return;
-
-          assert(client.getClientId());
-          assert.notEqual(client.getClientId(), originalClientId);
-
-          done();
+          d.resolve();
         })
         .then(function() {
           originalClientId = client.getClientId();
@@ -48,7 +62,14 @@ module.exports = function() {
 
           return client.publish('/advice-handshake', { data: 1 });
         })
-        .catch(done);
+        .then(function() {
+          return d.promise;
+        })
+        .then(function() {          
+          assert(client.getClientId());
+          assert.notEqual(client.getClientId(), originalClientId);
+        })
+        .nodeify(done);
     });
 
   });

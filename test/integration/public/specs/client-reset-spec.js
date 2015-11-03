@@ -1,6 +1,18 @@
 'use strict';
 
 var assert = require('assert');
+var Promise = require('bluebird');
+
+function defer() {
+  var d = {};
+
+  d.promise = new Promise(function(resolve, reject) {
+    d.resolve = resolve;
+    d.reject = reject;
+  });
+
+  return d;
+}
 
 module.exports = function() {
   describe('reset', function() {
@@ -12,6 +24,7 @@ module.exports = function() {
       var rehandshook = false;
       var count = 0;
       var postResetCount = 0;
+      var d = defer();
 
       var subscription = client.subscribe('/datetime', function() {
         count++;
@@ -34,14 +47,20 @@ module.exports = function() {
           // the possiblity of a race condition in which a message
           // arrives at the same time as the reset
           if (postResetCount > 3) {
-            assert(client.getClientId());
-            assert(client.getClientId() !== originalClientId);
-            done();
+            d.resolve();
           }
         }
       });
 
-      subscription.catch(done);
+      return subscription.promise
+        .then(function() {
+          return d.promise;
+        })
+        .then(function() {
+          assert(client.getClientId());
+          assert(client.getClientId() !== originalClientId);
+        })
+        .nodeify(done);
     });
 
 

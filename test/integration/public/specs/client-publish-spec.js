@@ -3,6 +3,17 @@
 var Promise = require('bluebird');
 var assert = require('assert');
 
+function defer() {
+  var d = {};
+
+  d.promise = new Promise(function(resolve, reject) {
+    d.resolve = resolve;
+    d.reject = reject;
+  });
+
+  return d;
+}
+
 module.exports = function() {
 
   describe('publish', function() {
@@ -10,16 +21,20 @@ module.exports = function() {
     it('should handle publishes', function(done) {
       var publishOccurred = false;
       var client = this.client;
+      var d = defer();
 
-      client.subscribe('/datetime', function(message) {
+      client.subscribe('/datetime', function() {
           if (!publishOccurred) return;
-          done();
+          d.resolve();
         })
         .then(function() {
           publishOccurred = true;
           return client.publish('/channel', { data: 1 });
         })
-        .catch(done);
+        .then(function() {
+          return d.promise;
+        })
+        .nodeify(done);
 
     });
 
@@ -47,13 +62,13 @@ module.exports = function() {
         return self.client.publish('/channel', { data: count })
           .then(function() {
             return next();
-          })
+          });
       })().nodeify(done);
     });
 
     it('should handle a parallel publishes', function(done) {
       this.timeout(6000);
-      
+
       var count = 0;
       var self = this;
       return (function next() {

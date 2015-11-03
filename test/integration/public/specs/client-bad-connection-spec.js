@@ -2,7 +2,18 @@
 
 var assert = require('assert');
 var fetch = require('../../fetch');
+var Promise = require('bluebird');
 
+function defer() {
+  var d = {};
+
+  d.promise = new Promise(function(resolve, reject) {
+    d.resolve = resolve;
+    d.reject = reject;
+  });
+
+  return d;
+}
 var OUTAGE_TIME = 5000;
 
 module.exports = function() {
@@ -16,14 +27,7 @@ module.exports = function() {
       var outageTime;
       var outageGraceTime;
 
-      function cleanup(err) {
-        fetch('/restore-network-outage', {
-          method: 'post',
-          body: ""
-        });
-        done(err);
-      }
-
+      var d = defer();
       this.client.subscribe('/datetime', function() {
         count++;
 
@@ -35,9 +39,10 @@ module.exports = function() {
           .then(function() {
             outageTime = Date.now();
             outageGraceTime = Date.now() + 1000;
-            console.log('Outage');
           })
-          .catch(cleanup);
+          .catch(function(err) {
+            d.reject(err);
+          });
         }
 
         if (!outageTime) return;
@@ -47,9 +52,19 @@ module.exports = function() {
 
         if (postOutageCount >= 3) {
           assert(Date.now() - outageTime >= (OUTAGE_TIME * 0.8));
-          cleanup();
+          d.resolve();
         }
-      });
+      }).promise
+      .then(function() {
+        return d.promise;
+      })
+      .finally(function() {
+        return fetch('/restore-network-outage', {
+            method: 'post',
+            body: ""
+          });
+      })
+      .nodeify(done);
     });
 
 

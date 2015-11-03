@@ -2,6 +2,18 @@
 
 var assert = require('assert');
 var fetch = require('../../fetch');
+var Promise = require('bluebird');
+
+function defer() {
+  var d = {};
+
+  d.promise = new Promise(function(resolve, reject) {
+    d.resolve = resolve;
+    d.reject = reject;
+  });
+
+  return d;
+}
 
 module.exports = function() {
   describe('server-restart', function() {
@@ -13,6 +25,7 @@ module.exports = function() {
       var postOutageCount = 0;
       var outageTime;
       var clientId;
+      var d = defer();
 
       client.subscribe('/datetime', function(message) {
         count++;
@@ -26,7 +39,9 @@ module.exports = function() {
           .then(function() {
             outageTime = Date.now();
           })
-          .catch(done);
+          .catch(function(err) {
+            d.reject(err);
+          });
         }
 
         if (!outageTime) return;
@@ -34,11 +49,16 @@ module.exports = function() {
         postOutageCount++;
 
         if (postOutageCount >= 3) {
-          // A disconnect should not re-initialise the client
-          assert.strictEqual(clientId, client.getClientId());
-          done();
+          d.resolve();
         }
-      });
+      }).promise.then(function() {
+        return d.promise;
+      })
+      .then(function() {
+        // A disconnect should not re-initialise the client
+        assert.strictEqual(clientId, client.getClientId());
+      })
+      .nodeify(done);
     });
 
   });
