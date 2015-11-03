@@ -1,6 +1,17 @@
 # Halley
 
-Halley is an experimental fork of James Coglan's Faye Bayeux client.
+Halley is an experimental fork of James Coglan's excellent Faye library.
+
+## Differences from Faye
+
+The main differences from Faye are (listed in no particular order):
+* Heavily reliant on promises
+* No Ruby client or server and no server support. Halley is a Javascript Bayeux client only
+* Webpack/browserify packaging
+* Client reset support. This will force the client to rehandshake. This can be useful when the application realises that the connection is dead before the bayeux client does and allows for faster recovery in these situations.
+* Custom implementations have been replaced with external libraries:
+  * Uses bluebird for promises
+  * Uses backbone events (or backbone-events-standalone) for events
 
 ## License
 
