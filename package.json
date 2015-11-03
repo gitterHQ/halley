@@ -1,7 +1,7 @@
 {
-  "name": "gitter-faye-client",
-  "description": "Simple pub/sub messaging for the web",
-  "author": "James Coglan <jcoglan@gmail.com> (http://jcoglan.com/)",
+  "name": "halley",
+  "description": "A bayeux client for modern browsers and node. Forked from Faye",
+  "author": "Andrew Newdigate <andrew@gitter.im>",
   "keywords": [
     "comet",
     "websocket",
@@ -11,7 +11,7 @@
     "http"
   ],
   "license": "MIT",
-  "version": "1.1.0-h",
+  "version": "0.2.0",
   "engines": {
     "node": ">=0.8.0"
   },
