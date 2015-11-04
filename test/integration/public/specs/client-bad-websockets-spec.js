@@ -20,8 +20,6 @@ module.exports = function() {
   describe('bad-websockets', function() {
 
     it('should deal with bad corporate proxies', function(done) {
-      this.timeout(60000);
-
       var count = 0;
       var self = this;
 

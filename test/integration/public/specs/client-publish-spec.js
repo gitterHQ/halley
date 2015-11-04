@@ -39,8 +39,6 @@ module.exports = function() {
     });
 
     it('should fail when a publish does not work', function(done) {
-      this.timeout(6000);
-
       return this.client.publish('/devnull', { data: 1 }, { attempts: 1 })
         .then(function() {
           throw new Error('Expected failure');
@@ -52,7 +50,6 @@ module.exports = function() {
     });
 
     it('should handle a large number of publish messages', function(done) {
-      this.timeout(20000);
       var count = 0;
       var self = this;
       return (function next() {
@@ -67,8 +64,6 @@ module.exports = function() {
     });
 
     it('should handle a parallel publishes', function(done) {
-      this.timeout(20000);
-
       var count = 0;
       var self = this;
       return (function next() {
@@ -87,7 +82,6 @@ module.exports = function() {
     });
 
     it('should handle the cancellation of one publish without affecting another', function(done) {
-      this.timeout(10000);
       var p1 = this.client.publish('/channel', { data: 1 })
         .then(function() {
           throw new Error('Expected error');

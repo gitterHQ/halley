@@ -17,8 +17,6 @@ function defer() {
 
 module.exports = function() {
   describe('client-delete', function() {
-    this.timeout(60000);
-
     /**
      * This test ensures that the client is able to recover from a situation
      * where the server unexpectedly deletes the client and the client

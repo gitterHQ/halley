@@ -43,7 +43,6 @@ module.exports = function() {
      * Tests to ensure that after receiving a handshake advice
      */
     it('should handle advice handshake', function(done) {
-      this.timeout(6000);
       var client = this.client;
       var originalClientId;
       var rehandshook = false;
@@ -65,7 +64,7 @@ module.exports = function() {
         .then(function() {
           return d.promise;
         })
-        .then(function() {          
+        .then(function() {
           assert(client.getClientId());
           assert.notEqual(client.getClientId(), originalClientId);
         })

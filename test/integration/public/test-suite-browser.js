@@ -15,8 +15,8 @@ Promise.config({
 var serverControl = require('./server-control');
 
 describe('browser integration tests', function() {
-  this.timeout(10000);
-  
+  this.timeout(30000);
+
   afterEach(function(done) {
     serverControl.restoreAll().nodeify(done);
   });
@@ -27,13 +27,8 @@ describe('browser integration tests', function() {
 
   require('./browser-websocket-test');
   require('./client-long-polling-test');
-  require('./client-callback-polling-test');
   require('./client-websockets-test');
   require('./client-all-transports-test');
-  // require('./on-before-unload-test');
-  // require('./subscribe-test');
-  //
-
 });
 
 describe('browser unit tests', function() {

@@ -1,14 +1,13 @@
 'use strict';
 
-var Faye = require('../../..');
+var Halley = require('../../..');
 var globalEvents = require('../../../lib/util/global-events');
 
 describe('onbeforeunload', function() {
-  this.timeout(10000000);
   var client;
 
   beforeEach(function() {
-    client = new Faye.Client('http://localhost:8001/bayeux', { timeout: 45 });
+    client = new Halley.Client('http://localhost:8001/bayeux', { timeout: 45 });
   });
 
   afterEach(function() {

@@ -1,15 +1,14 @@
 'use strict';
 
-var Faye = require('../../..');
+var Halley = require('../../..');
 var assert = require('assert');
 
 describe('client events', function() {
-  this.timeout(10000000);
   var client;
   var eventQueue = [];
 
   beforeEach(function() {
-    client = new Faye.Client('http://localhost:8001/bayeux', { timeout: 45 });
+    client = new Halley.Client('http://localhost:8001/bayeux', { timeout: 45 });
     client.on('handshake:success', function() {
       eventQueue.push('handshake:success');
     });

@@ -20,8 +20,6 @@ module.exports = function() {
   describe('bad-connection', function() {
 
     it('should deal with dropped packets', function(done) {
-      this.timeout(60000);
-
       var count = 0;
       var postOutageCount = 0;
       var outageTime;
