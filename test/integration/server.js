@@ -55,10 +55,10 @@ function listen(options, callback) {
 
   var bayeux = new faye.NodeAdapter({
     mount: '/bayeux',
-    timeout: 3,
-    ping: 2,
+    timeout: 1,
+    ping: 0.5,
     engine: {
-      interval: 1
+      interval: 0.5
     }
   });
   bayeux.attach(fayeServer);
