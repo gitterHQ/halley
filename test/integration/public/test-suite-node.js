@@ -23,3 +23,4 @@ require('./client-all-transports-test');
 // require('./publish-test');
 // require('./bad-connection-test');
 // require('./server-restart-test');
+require('./extensions-test');
