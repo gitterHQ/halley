@@ -52,7 +52,7 @@ module.exports = function() {
     });
 
     it('should handle a large number of publish messages', function(done) {
-      this.timeout(6000);
+      this.timeout(20000);
       var count = 0;
       var self = this;
       return (function next() {
@@ -67,7 +67,7 @@ module.exports = function() {
     });
 
     it('should handle a parallel publishes', function(done) {
-      this.timeout(6000);
+      this.timeout(20000);
 
       var count = 0;
       var self = this;

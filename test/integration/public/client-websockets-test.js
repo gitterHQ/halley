@@ -6,7 +6,8 @@ describe('client-websocket', function() {
   describe('direct', function() {
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8001/bayeux', {
-        retry: 1,
+        retry: 500,
+        timeout: 500,
         connectionTypes: ['websocket'],
         disabled: ['long-polling', 'callback-polling']
       });
@@ -22,7 +23,8 @@ describe('client-websocket', function() {
   describe('proxied', function() {
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8002/bayeux', {
-        retry: 1,
+        retry: 500,
+        timeout: 500,
         connectionTypes: ['websocket'],
         disabled: ['long-polling', 'callback-polling']
       });

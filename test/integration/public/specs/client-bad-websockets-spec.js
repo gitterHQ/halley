@@ -14,7 +14,7 @@ function defer() {
   return d;
 }
 
-var OUTAGE_TIME = 5000;
+var OUTAGE_TIME = 2000;
 
 module.exports = function() {
   describe('bad-websockets', function() {

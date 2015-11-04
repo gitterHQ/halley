@@ -8,7 +8,8 @@ describe('client-all-transport', function() {
 
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8001/bayeux', {
-        retry: 1
+        retry: 500,
+        timeout: 500
       });
     });
 
@@ -24,7 +25,8 @@ describe('client-all-transport', function() {
 
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8002/bayeux', {
-        retry: 1
+        retry: 500,
+        timeout: 500
       });
     });
 

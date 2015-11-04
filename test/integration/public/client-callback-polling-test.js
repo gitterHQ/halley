@@ -7,7 +7,8 @@ describe('client-callback-polling', function() {
   describe('direct', function() {
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8001/bayeux', {
-        retry: 1,
+        retry: 500,
+        timeout: 500,
         connectionTypes: ['callback-polling'],
         disabled: ['websocket', 'long-polling']
       });
@@ -23,7 +24,8 @@ describe('client-callback-polling', function() {
   describe('direct', function() {
     beforeEach(function() {
       this.client = new Faye.Client('http://localhost:8002/bayeux', {
-        retry: 1,
+        retry: 500,
+        timeout: 500,
         connectionTypes: ['callback-polling'],
         disabled: ['websocket', 'long-polling']
       });
