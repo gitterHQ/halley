@@ -12,6 +12,13 @@ Promise.config({
   cancellation: true
 });
 
+var serverControl = require('./server-control');
+afterEach(function(done) {
+  serverControl.restoreAll().then(function() {
+    done();
+  }, done);
+});
+
 require('./browser-websocket-test');
 require('./client-long-polling-test');
 require('./client-callback-polling-test');

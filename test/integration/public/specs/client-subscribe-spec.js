@@ -13,7 +13,7 @@ module.exports = function() {
         defer.reject = reject;
       });
 
-      var subscription = this.client.subscribe('/datetime', function(message) {
+      var subscription = this.client.subscribe('/datetime', function() {
         defer.resolve();
       });
 

@@ -1,7 +1,19 @@
 'use strict';
 
-var fetch = require('../../fetch');
 var assert = require('assert');
+var Promise = require('bluebird');
+var serverControl = require('../server-control');
+
+function defer() {
+  var d = {};
+
+  d.promise = new Promise(function(resolve, reject) {
+    d.resolve = resolve;
+    d.reject = reject;
+  });
+
+  return d;
+}
 
 module.exports = function() {
   describe('client-delete', function() {
@@ -18,26 +30,30 @@ module.exports = function() {
       var deleteOccurred = false;
       var originalClientId;
 
+      var d = defer();
       client.subscribe('/datetime', function() {
         if (!deleteOccurred) return;
         count++;
         if (count === 3) {
-          assert.notEqual(originalClientId, client.getClientId());
-          done();
+          d.resolve();
         }
       }).then(function() {
         originalClientId = client.getClientId();
         assert(originalClientId);
 
-        return fetch('/delete/' + client.getClientId(), {
-          method: 'post',
-          body: ""
-        })
-        .then(function() {
-          deleteOccurred = true;
-        });
+        return serverControl.deleteSocket(client.getClientId());
       })
-      .catch(done);
+      .then(function() {
+        deleteOccurred = true;
+      })
+      .then(function() {
+        return d.promise;
+      })
+      .then(function() {
+        assert.notEqual(originalClientId, client.getClientId());
+
+      })
+      .nodeify(done);
     });
 
 

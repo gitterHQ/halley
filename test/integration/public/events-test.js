@@ -1,5 +1,6 @@
+'use strict';
+
 var Faye = require('../../..');
-var fetch = require('../fetch');
 var assert = require('assert');
 
 describe('client events', function() {

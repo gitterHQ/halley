@@ -1,8 +1,8 @@
 'use strict';
 
 var assert = require('assert');
-var fetch = require('../../fetch');
 var Promise = require('bluebird');
+var serverControl = require('../server-control');
 
 function defer() {
   var d = {};
@@ -32,16 +32,14 @@ module.exports = function() {
 
         if (count === 3) {
           clientId = client.getClientId();
-          return fetch('/restart', {
-            method: 'post',
-            body: ""
-          })
-          .then(function() {
-            outageTime = Date.now();
-          })
-          .catch(function(err) {
-            d.reject(err);
-          });
+
+          return serverControl.restart()
+            .then(function() {
+              outageTime = Date.now();
+            })
+            .catch(function(err) {
+              d.reject(err);
+            });
         }
 
         if (!outageTime) return;

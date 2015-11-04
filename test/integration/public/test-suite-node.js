@@ -12,6 +12,11 @@ Promise.config({
   cancellation: true
 });
 
+var serverControl = require('./server-control');
+afterEach(function(done) {
+  serverControl.restoreAll().nodeify(done);
+});
+
 require('./node-websocket-test');
 require('./client-long-polling-test');
 require('./client-websockets-test');

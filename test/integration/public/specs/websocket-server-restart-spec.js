@@ -1,7 +1,7 @@
 'use strict';
 
 var sinon = require('sinon');
-var fetch = require('../../fetch');
+var serverControl = require('../server-control');
 
 module.exports = function() {
   describe('server restart', function() {
@@ -13,10 +13,7 @@ module.exports = function() {
       this.websocket.connect()
         .bind(this)
         .then(function() {
-          return fetch('/restart', {
-            method: 'post',
-            body: ""
-          });
+          return serverControl.restart();
         })
         .delay(10)
         .then(function() {

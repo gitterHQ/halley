@@ -1,8 +1,7 @@
-var Faye = require('../../..');
-var fetch = require('../fetch');
-var assert = require('assert');
-var globalEvents = require('../../../lib/util/global-events');
+'use strict';
 
+var Faye = require('../../..');
+var globalEvents = require('../../../lib/util/global-events');
 
 describe('onbeforeunload', function() {
   this.timeout(10000000);

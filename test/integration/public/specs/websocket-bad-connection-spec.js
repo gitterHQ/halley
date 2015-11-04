@@ -1,8 +1,8 @@
 'use strict';
 
-var fetch = require('../../fetch');
 var Promise = require('bluebird');
 var globalEvents = require('../../../../lib/util/global-events');
+var serverControl = require('../server-control');
 
 module.exports = function() {
   describe('bad connection', function() {
@@ -20,17 +20,8 @@ module.exports = function() {
                 resolve();
               }
             }),
-            fetch('/network-outage?timeout=1000', {
-              method: 'post',
-              body: ""
-            })
+            serverControl.networkOutage(1000)
           ]);
-        })
-        .finally(function() {
-          return fetch('/restore-network-outage', {
-            method: 'post',
-            body: ""
-          })
         })
         .nodeify(done);
     });
@@ -52,19 +43,11 @@ module.exports = function() {
                 resolve();
               }
             }),
-            fetch('/network-outage?timeout=1000', {
-              method: 'post',
-              body: ""
-            }).then(function() {
-              globalEvents.trigger('network');
-            })
+            serverControl.networkOutage(1000)
+              .then(function() {
+                globalEvents.trigger('network');
+              })
           ]);
-        })
-        .finally(function() {
-          return fetch('/restore-network-outage', {
-            method: 'post',
-            body: ""
-          })
         })
         .nodeify(done);
     });

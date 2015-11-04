@@ -1,7 +1,7 @@
 'use strict';
 
 var assert = require('assert');
-var fetch = require('../../fetch');
+var serverControl = require('../server-control');
 var Promise = require('bluebird');
 
 function defer() {
@@ -32,10 +32,7 @@ module.exports = function() {
         count++;
 
         if (count === 1) {
-          return fetch('/network-outage?timeout=' + OUTAGE_TIME, {
-            method: 'post',
-            body: ""
-          })
+          return serverControl.networkOutage(OUTAGE_TIME)
           .then(function() {
             outageTime = Date.now();
             outageGraceTime = Date.now() + 1000;
@@ -57,12 +54,6 @@ module.exports = function() {
       }).promise
       .then(function() {
         return d.promise;
-      })
-      .finally(function() {
-        return fetch('/restore-network-outage', {
-            method: 'post',
-            body: ""
-          });
       })
       .nodeify(done);
     });
