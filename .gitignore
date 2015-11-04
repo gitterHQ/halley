@@ -5,3 +5,4 @@ node_modules
 .wake.json
 coverage
 dist
+.env

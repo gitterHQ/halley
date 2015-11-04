@@ -39,7 +39,7 @@ gulp.task("webpack-backbone", function(callback) {
         path: "dist/",
         filename: "halley-backbone.js",
         libraryTarget: "umd",
-        library: "Faye"
+        library: "Halley"
       },
       externals: {
         "backbone": "Backbone",
@@ -75,3 +75,34 @@ gulp.task('gzip', ['uglify'], function () {
 });
 
 gulp.task('default', ['webpack', 'uglify', 'gzip']);
+
+
+gulp.task("webpack-test-suite-browser", function(callback) {
+    // run webpack
+    webpack({
+      entry: "./test/integration/public/test-suite-browser.js",
+      output: {
+        path: "dist/",
+        filename: "test-suite-browser.js",
+      },
+      stats: true,
+      resolve: {
+        alias: {
+          sinon: 'sinon-browser-only'
+        }
+      },
+      module: {
+        noParse: [
+          /sinon-browser-only/
+        ]
+      },
+      devtool: "#eval",
+      failOnError: true,
+    }, function(err, stats) {
+        if(err) throw new gutil.PluginError("webpack", err);
+        gutil.log("[webpack]", stats.toString({
+            // output options
+        }));
+        callback();
+    });
+});
