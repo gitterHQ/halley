@@ -18,7 +18,7 @@ describe('browser websocket transport', function() {
         }
       };
 
-      this.websocket = new WebSocket(this.dispatcher, uri.parse('http://localhost:8001/bayeux'));
+      this.websocket = new WebSocket(this.dispatcher, uri.parse(this.urlDirect));
     });
 
     afterEach(function() {
@@ -41,7 +41,7 @@ describe('browser websocket transport', function() {
         }
       };
 
-      this.websocket = new WebSocket(this.dispatcher, uri.parse('http://localhost:8002/bayeux'));
+      this.websocket = new WebSocket(this.dispatcher, uri.parse(this.urlProxied));
     });
 
     afterEach(function() {

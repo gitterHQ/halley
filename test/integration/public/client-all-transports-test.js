@@ -7,9 +7,9 @@ describe('client-all-transport', function() {
   describe('direct', function() {
 
     beforeEach(function() {
-      this.client = new Halley.Client('http://localhost:8001/bayeux', {
-        retry: 500,
-        timeout: 500
+      this.client = new Halley.Client(this.urlDirect, {
+        retry: this.clientOptions.retry,
+        timeout: this.clientOptions.timeout
       });
     });
 
@@ -24,9 +24,9 @@ describe('client-all-transport', function() {
   describe('proxied', function() {
 
     beforeEach(function() {
-      this.client = new Halley.Client('http://localhost:8002/bayeux', {
-        retry: 500,
-        timeout: 500
+      this.client = new Halley.Client(this.urlProxied, {
+        retry: this.clientOptions.retry,
+        timeout: this.clientOptions.timeout
       });
     });
 

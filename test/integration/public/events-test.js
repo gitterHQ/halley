@@ -8,7 +8,11 @@ describe('client events', function() {
   var eventQueue = [];
 
   beforeEach(function() {
-    client = new Halley.Client('http://localhost:8001/bayeux', { timeout: 45 });
+    client = new Halley.Client(this.urlDirect, {
+      retry: this.clientOptions.retry,
+      timeout: this.clientOptions.timeout
+    });
+
     client.on('handshake:success', function() {
       eventQueue.push('handshake:success');
     });

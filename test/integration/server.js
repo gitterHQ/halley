@@ -8,7 +8,6 @@ var webpack = require('webpack');
 var webpackMiddleware = require("webpack-dev-middleware");
 var PUBLIC_DIR = __dirname + '/public';
 var debug = require('debug')('halley:test:server');
-var BrowserStackTunnel = require('browserstacktunnel-wrapper');
 
 var proxyChild, server, fayeServer;
 var crushWebsocketConnections;
@@ -55,7 +54,7 @@ function listen(options, callback) {
 
   var bayeux = new faye.NodeAdapter({
     mount: '/bayeux',
-    timeout: 1,
+    timeout: 10,
     ping: 0.5,
     engine: {
       interval: 0.5
@@ -267,68 +266,14 @@ function listen(options, callback) {
 
   fayeServer.listen(8001, function() {
     server.listen(port, function() {
-      createProxyChild(function() {
-        startBrowserStackTunnel(callback);
-      });
+      createProxyChild(callback);
     });
 
   });
 
 }
 
-var browserStackTunnel = null;
-
-function startBrowserStackTunnel(callback) {
-  if (!process.env.BROWSERSTACK_USERNAME || browserStackTunnel) return callback();
-
-  browserStackTunnel = new BrowserStackTunnel({
-    key: process.env.BROWSERSTACK_KEY,
-    hosts: [{
-      name: 'localhost',
-      port: 8000,
-      sslFlag: 0
-    }, {
-      name: 'localhost',
-      port: 8001,
-      sslFlag: 0
-    }, {
-      name: 'localhost',
-      port: 8002,
-      sslFlag: 0
-    }], // optionally set hosts
-    // osxBin: 'your_bin_dir', // optionally override the default bin directory for the OSX binary
-    // linux32Bin: 'your_bin_dir', // optionally override the default bin directory for the Linux 32 bit binary
-    // linux64Bin: 'your_bin_dir', // optionally override the default bin directory for the Linux 64 bit binary
-    // win32Bin: 'your_bin_dir', // optionally override the default bin directory for the win32 binary
-    // localIdentifier: 'my_tunnel', // optionally set the -localIdentifier option
-    v: true, // optionally set the -v (verbose) option
-    // proxyUser: PROXY_USER, // optionally set the -proxyUser option
-    // proxyPass: PROXY_PASS, // optionally set the -proxyPass option
-    // proxyPort: PROXY_PORT, // optionally set the -proxyPort option
-    // proxyHost: PROXY_HOST, // optionally set the -proxyHost option
-    // force: false, // optionally set the -force option
-    // forcelocal: false, // optionally set the -forcelocal option
-    // onlyAutomate: false, // optionally set the -onlyAutomate option
-  });
-
-  browserStackTunnel.start(function(err) {
-    if (err) return callback(err);
-    console.log('Browserstack tunnel started');
-    callback();
-  });
-}
-
-function stopBrowserStackTunnel() {
-  if (!browserStackTunnel) return;
-
-  browserStackTunnel.stop(function(err) {
-    if (err) console.error(err);
-  });
-
-  browserStackTunnel = null;
-}
 function unlisten(callback) {
-  stopBrowserStackTunnel();
   fayeServer.close();
   server.close();
   terminateProxyChild(callback);

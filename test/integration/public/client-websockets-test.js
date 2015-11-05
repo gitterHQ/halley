@@ -5,9 +5,9 @@ var Halley = require('../../..');
 describe('client-websocket', function() {
   describe('direct', function() {
     beforeEach(function() {
-      this.client = new Halley.Client('http://localhost:8001/bayeux', {
-        retry: 500,
-        timeout: 500,
+      this.client = new Halley.Client(this.urlDirect, {
+        retry: this.clientOptions.retry,
+        timeout: this.clientOptions.timeout,
         connectionTypes: ['websocket'],
         disabled: ['long-polling', 'callback-polling']
       });
@@ -22,9 +22,10 @@ describe('client-websocket', function() {
 
   describe('proxied', function() {
     beforeEach(function() {
-      this.client = new Halley.Client('http://localhost:8002/bayeux', {
-        retry: 500,
-        timeout: 500,
+      this.client = new Halley.Client(this.urlProxied, {
+        retry: this.clientOptions.retry,
+        timeout: this.clientOptions.timeout,
+
         connectionTypes: ['websocket'],
         disabled: ['long-polling', 'callback-polling']
       });

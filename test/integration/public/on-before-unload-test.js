@@ -7,7 +7,7 @@ describe('onbeforeunload', function() {
   var client;
 
   beforeEach(function() {
-    client = new Halley.Client('http://localhost:8001/bayeux', { timeout: 45 });
+    client = new Halley.Client(this.urlDirect, { timeout: 45 });
   });
 
   afterEach(function() {
