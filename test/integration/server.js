@@ -54,7 +54,7 @@ function listen(options, callback) {
 
   var bayeux = new faye.NodeAdapter({
     mount: '/bayeux',
-    timeout: 10,
+    timeout: 1,
     ping: 0.5,
     engine: {
       interval: 0.5
