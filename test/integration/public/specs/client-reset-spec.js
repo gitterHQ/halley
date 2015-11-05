@@ -16,8 +16,6 @@ function defer() {
 
 module.exports = function() {
   describe('reset', function() {
-    this.timeout(10000);
-
     it('a reset should proceed normally', function(done) {
       var client = this.client;
       var originalClientId;

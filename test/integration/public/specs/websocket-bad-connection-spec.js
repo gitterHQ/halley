@@ -8,8 +8,6 @@ module.exports = function() {
   describe('bad connection', function() {
 
     it('should terminate if the server cannot be pinged', function(done) {
-      this.timeout(10000);
-
       this.websocket.connect()
         .bind(this)
         .then(function() {
@@ -31,8 +29,6 @@ module.exports = function() {
      * This should make the speed of recovery much faster
      */
     it('should terminate if the server cannot be pinged after a network event', function(done) {
-      this.timeout(10000);
-
       this.websocket.connect()
         .bind(this)
         .then(function() {
