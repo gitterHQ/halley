@@ -26,7 +26,7 @@ exports.deleteSocket = function(clientId) {
 };
 
 exports.restart = function() {
-  return fetchBluebird('/restart', {
+  return fetchBluebird('http://localhost:8000/restart', {
     method: 'post',
     body: ""
   });
