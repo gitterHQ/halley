@@ -20,8 +20,16 @@ gulp.task("webpack-standalone", function(callback) {
         library: "Halley"
       },
       stats: true,
-
       failOnError: true,
+      node: {
+        console: false,
+        global: true,
+        process: false,
+        Buffer: false,
+        __filename: false,
+        __dirname: false,
+        setImmediate: false
+      },
     }, function(err, stats) {
         if(err) throw new gutil.PluginError("webpack", err);
         gutil.log("[webpack]", stats.toString({
@@ -46,8 +54,16 @@ gulp.task("webpack-backbone", function(callback) {
         "underscore": "_"
       },
       stats: true,
-
       failOnError: true,
+      node: {
+        console: false,
+        global: true,
+        process: false,
+        Buffer: false,
+        __filename: false,
+        __dirname: false,
+        setImmediate: false
+      },
     }, function(err, stats) {
         if(err) throw new gutil.PluginError("webpack", err);
         gutil.log("[webpack]", stats.toString({
@@ -98,6 +114,15 @@ gulp.task("webpack-test-suite-browser", function(callback) {
       },
       devtool: "#eval",
       failOnError: true,
+      node: {
+        console: false,
+        global: true,
+        process: true,
+        Buffer: false,
+        __filename: false,
+        __dirname: false,
+        setImmediate: false
+      },
     }, function(err, stats) {
         if(err) throw new gutil.PluginError("webpack", err);
         gutil.log("[webpack]", stats.toString({

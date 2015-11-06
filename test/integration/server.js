@@ -80,7 +80,17 @@ function listen(options, callback) {
           /sinon-browser-only/
         ]
       },
-      devtool: "#eval"
+      devtool: "#eval",
+      node: {
+        console: false,
+        global: true,
+        process: true,
+        Buffer: false,
+        __filename: false,
+        __dirname: false,
+        setImmediate: false
+      },
+
     }), {
       noInfo: false,
       quiet: false,

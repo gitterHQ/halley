@@ -44,4 +44,5 @@ describe('browser integration tests', function() {
 
 describe('browser unit tests', function() {
   require('./extensions-test');
+  require('./transport-pool-test');
 });
