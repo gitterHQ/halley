@@ -47,12 +47,16 @@ module.exports = function() {
           count++;
         });
 
-      subscription.then(function() {
-          assert.ok(false);
-        }, function(err) {
-          assert.strictEqual(count, 0);
-          done();
-        });
+      subscription.promise
+        .finally(function() {
+          try {
+            assert(subscription.promise.isCancelled());
+            done();
+          } catch(e) {
+            done(e);
+          }
+        })
+        .nodeify(done);
 
       // Cancel immediately
       subscription.cancel();
