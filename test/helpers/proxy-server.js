@@ -4,9 +4,11 @@ var net = require('net');
 var debug = require('debug')('halley:test:proxy-server');
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
+var enableDestroy = require('server-destroy');
 
 function ProxyServer(serverPort) {
   EventEmitter.call(this);
+  this.setMaxListeners(100);
   this.serverPort = serverPort;
   this.listenPort = 0;
 }
@@ -23,6 +25,8 @@ ProxyServer.prototype.start = function(callback) {
     self.createClient(c);
   });
 
+  enableDestroy(server);
+
   server.listen(this.listenPort, function() { //'listening' listener
     debug('server bound');
 
@@ -33,7 +37,7 @@ ProxyServer.prototype.start = function(callback) {
 
 ProxyServer.prototype.stop = function(callback) {
   this.emit('close');
-  this.server.close(callback);
+  this.server.destroy(callback);
 };
 
 ProxyServer.prototype.createClient = function(incoming) {

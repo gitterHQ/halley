@@ -1,13 +1,14 @@
 /* jshint node:true, unused:true */
 'use strict';
 
-var gulp       = require('gulp');
-var webpack    = require('gulp-webpack');
-var gzip       = require('gulp-gzip');
-var sourcemaps = require('gulp-sourcemaps');
-var gutil      = require('gulp-util');
-var webpack    = require('webpack');
-var uglify     = require('gulp-uglify');
+var gulp        = require('gulp');
+var webpack     = require('gulp-webpack');
+var gzip        = require('gulp-gzip');
+var sourcemaps  = require('gulp-sourcemaps');
+var gutil       = require('gulp-util');
+var webpack     = require('webpack');
+var uglify      = require('gulp-uglify');
+var KarmaServer = require('karma').Server;
 
 gulp.task("webpack-standalone", function(callback) {
     // run webpack
@@ -92,7 +93,6 @@ gulp.task('gzip', ['uglify'], function () {
 
 gulp.task('default', ['webpack', 'uglify', 'gzip']);
 
-
 gulp.task("webpack-test-suite-browser", function(callback) {
     // run webpack
     webpack({
@@ -130,4 +130,27 @@ gulp.task("webpack-test-suite-browser", function(callback) {
         }));
         callback();
     });
+});
+
+
+gulp.task('karma', function (done) {
+  var fork = require('child_process').fork;
+
+  var child = fork('./test/helpers/server');
+  setTimeout(function() {
+
+    function karmaComplete(err) {
+      child.kill();
+      done(err);
+    }
+
+    var karma = new KarmaServer({
+      configFile: __dirname + '/karma.conf.js',
+      singleRun: true
+    }, karmaComplete);
+
+    karma.start();
+
+  }, 1000);
+
 });

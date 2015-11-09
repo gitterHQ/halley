@@ -1,5 +1,5 @@
-// Karma configuration
-// Generated on Thu Nov 05 2015 23:15:07 GMT+0000 (GMT)
+var webpack = require('webpack');
+var internalIp = require('internal-ip');
 
 module.exports = function(config) {
   config.set({
@@ -15,8 +15,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'test/integration/public/test-suite-browser.js'
-      // 'dist/test-suite-browser.js'
+      'test/test-suite-browser.js'
     ],
 
 
@@ -28,7 +27,7 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      'test/integration/public/test-suite-browser.js': ['webpack']
+      'test/test-suite-browser.js': ['webpack']
     },
 
 
@@ -52,21 +51,38 @@ module.exports = function(config) {
 
 
     // enable / disable watching file and executing tests whenever any file changes
-    autoWatch: true,
+    autoWatch: false,
 
+    browserStack: {
+      username: process.env.BROWSERSTACK_USERNAME,
+      accessKey: process.env.BROWSERSTACK_KEY
+    },
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome', 'Firefox', 'Safari'],
+    // browsers: [/*'Chrome',*/ 'Firefox', 'Safari'],
 
+    customLaunchers: {
+      bs_firefox_mac: {
+        base: 'BrowserStack',
+        browser: 'firefox',
+        browser_version: '21.0',
+        os: 'OS X',
+        os_version: 'Mountain Lion'
+      },
+      bs_iphone5: {
+        base: 'BrowserStack',
+        device: 'iPhone 5',
+        os: 'ios',
+        os_version: '6.0'
+      }
+    },
+
+    browsers: ['bs_firefox_mac'],
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: false,
-
-    // Concurrency level
-    // how many browser should be started simultanous
-    concurrency: 1,
+    singleRun: true,
 
     webpack: {
       resolve: {
@@ -89,6 +105,11 @@ module.exports = function(config) {
         __dirname: false,
         setImmediate: false
       },
+      plugins: [
+        new webpack.DefinePlugin({
+          HALLEY_TEST_SERVER: JSON.stringify('http://' + internalIp.v4() + ':8000')
+        })
+      ]
     },
 
     webpackMiddleware: {
@@ -98,9 +119,12 @@ module.exports = function(config) {
     plugins: [
       require("karma-mocha"),
       require("karma-chrome-launcher"),
-      // require("karma-firefox-launcher"),
-      // require("karma-safari-launcher"),
+      require("karma-firefox-launcher"),
+      require("karma-safari-launcher"),
+      require("karma-browserstack-launcher"),
       require("karma-webpack")
-    ]
-  })
-}
+    ],
+
+    browserNoActivityTimeout: 30000
+  });
+};

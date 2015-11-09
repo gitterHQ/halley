@@ -21,8 +21,8 @@ describe('browser integration tests', function() {
     this.serverControl = new RemoteServerControl();
     this.serverControl.setup()
       .bind(this)
-      .then(function(ports) {
-        this.ports = ports;
+      .then(function(urls) {
+        this.urls = urls;
       })
       .nodeify(done);
   });
@@ -33,8 +33,8 @@ describe('browser integration tests', function() {
   });
 
   beforeEach(function() {
-    this.urlDirect = 'http://localhost:' + this.ports.bayeuxPort + '/bayeux';
-    this.urlProxied = 'http://localhost:' + this.ports.proxyPort  + '/bayeux';
+    this.urlDirect = this.urls.bayeux;
+    this.urlProxied = this.urls.proxied;
 
     this.clientOptions = {
       retry: 5000,

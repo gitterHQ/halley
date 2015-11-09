@@ -7,15 +7,20 @@ var webpack = require('webpack');
 var webpackMiddleware = require("webpack-dev-middleware");
 var PUBLIC_DIR = __dirname + '/public';
 var debug = require('debug')('halley:test:server');
-var server;
 var BayeuxWithProxyServer = require('./bayeux-with-proxy-server');
+var internalIp = require('internal-ip');
+var enableDestroy = require('server-destroy');
+
+var localIp = process.env.HALLEY_LOCAL_IP || internalIp.v4();
 
 var idCounter = 0;
 var servers = {};
+var server;
 
 function listen(options, callback) {
   var app = express();
   server = http.createServer(app);
+  enableDestroy(server);
 
   if (options.webpack) {
     app.use(webpackMiddleware(webpack({
@@ -45,6 +50,11 @@ function listen(options, callback) {
         __dirname: false,
         setImmediate: false
       },
+      plugins:[
+        new webpack.DefinePlugin({
+          HALLEY_TEST_SERVER: JSON.stringify('http://' + localIp + ':8000')
+        })
+      ]
 
     }), {
       noInfo: false,
@@ -68,13 +78,13 @@ function listen(options, callback) {
   });
 
   app.post('/setup', function(req, res, next) {
-    var server = new BayeuxWithProxyServer();
+    var server = new BayeuxWithProxyServer(localIp);
     var id = idCounter++;
     servers[id] = server;
-    server.start(function(err, ports) {
+    server.start(function(err, urls) {
       if (err) return next(err);
 
-      res.send({ id: id, ports: ports });
+      res.send({ id: id, urls: urls });
     });
   });
 
@@ -82,6 +92,8 @@ function listen(options, callback) {
     var id = req.params.id;
 
     var server = servers[id];
+    delete servers[id];
+
     server.stop(function(err) {
       if (err) return next(err);
       res.send('OK');
@@ -154,12 +166,24 @@ function listen(options, callback) {
   });
 
   var port = process.env.PORT || '8000';
-
   server.listen(port, callback);
 }
 
 function unlisten(callback) {
-  server.close(callback);
+  debug('Unlisten');
+  Object.keys(servers).forEach(function(id) {
+    var server = servers[id];
+
+    server.stop(function(err) {
+      if (err) {
+        debug('Error stopping server ' + err);
+      }
+    });
+
+  });
+
+  servers = {};
+  server.destroy(callback);
 }
 
 exports.listen = listen;
@@ -171,7 +195,13 @@ if (require.main === module) {
     process.exit(1);
   });
 
-  listen({ webpack: true }, function() {
+  listen({ webpack: true }, function(err) {
+
+    if (err) {
+      debug('Unable to start server: %s', err);
+      return;
+    }
+
     debug('Listening');
   });
 }

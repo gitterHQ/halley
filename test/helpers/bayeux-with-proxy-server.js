@@ -5,7 +5,8 @@ var BayeuxServer = require('./bayeux-server');
 var ProxyServer = require('./proxy-server');
 var Promise = require('bluebird');
 
-function BayeuxWithProxyServer() {
+function BayeuxWithProxyServer(localIp) {
+  this.localIp = localIp;
 }
 
 BayeuxWithProxyServer.prototype = {
@@ -18,7 +19,10 @@ BayeuxWithProxyServer.prototype = {
       self.proxyServer.start(function(err, proxyPort) {
         if (err) return callback(err);
 
-        return callback(null, { bayeuxPort: bayeuxPort, proxyPort: proxyPort });
+        return callback(null, {
+          bayeux: 'http://' + self.localIp + ':' + bayeuxPort + '/bayeux',
+          proxied: 'http://' + self.localIp + ':' + proxyPort + '/bayeux',
+        });
       });
     });
   },
@@ -37,7 +41,6 @@ BayeuxWithProxyServer.prototype = {
     });
 
   },
-
 
   networkOutage: Promise.method(function(timeout) {
     this.proxyServer.disableTraffic(timeout);

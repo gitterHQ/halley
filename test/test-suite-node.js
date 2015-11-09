@@ -18,13 +18,13 @@ describe('node-test-suite', function() {
 
   before(function(done) {
     var self = this;
-    this.server = new BayeuxWithProxyServer();
+    this.server = new BayeuxWithProxyServer('localhost');
 
     this.serverControl = this.server;
 
-    this.server.start(function(err, ports) {
+    this.server.start(function(err, urls) {
       if (err) return done(err);
-      self.ports = ports;
+      self.urls = urls;
       done();
     });
   });
@@ -43,8 +43,8 @@ describe('node-test-suite', function() {
     });
 
     beforeEach(function() {
-      this.urlDirect = 'http://localhost:' + this.ports.bayeuxPort + '/bayeux';
-      this.urlProxied = 'http://localhost:' + this.ports.proxyPort  + '/bayeux';
+      this.urlDirect = this.urls.bayeux;
+      this.urlProxied = this.urls.proxied;
 
       this.clientOptions = {
         retry: 500,
