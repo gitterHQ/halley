@@ -19,8 +19,9 @@ describe('browser websocket transport', function() {
       interval: 0,
       timeout: 1000,
       retry: 1
-    }
-  })
+    };
+  });
+
   describe('direct', function() {
 
     beforeEach(function() {
