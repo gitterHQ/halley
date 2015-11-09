@@ -1,13 +1,13 @@
 'use strict';
 
-var Faye = require('../../..');
+var Halley = require('..');
 
 describe('client-long-polling', function() {
 
   describe('direct', function() {
 
     beforeEach(function() {
-      this.client = new Faye.Client(this.urlDirect, {
+      this.client = new Halley.Client(this.urlDirect, {
         retry: this.clientOptions.retry,
         timeout: this.clientOptions.timeout,
         connectionTypes: ['long-polling'],
@@ -26,7 +26,7 @@ describe('client-long-polling', function() {
   describe('proxied', function() {
 
     beforeEach(function() {
-      this.client = new Faye.Client(this.urlProxied, {
+      this.client = new Halley.Client(this.urlProxied, {
         retry: this.clientOptions.retry,
         timeout: this.clientOptions.timeout,
         connectionTypes: ['long-polling'],

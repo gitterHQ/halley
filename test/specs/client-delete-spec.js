@@ -2,7 +2,6 @@
 
 var assert = require('assert');
 var Promise = require('bluebird');
-var serverControl = require('../server-control');
 
 function defer() {
   var d = {};
@@ -27,6 +26,7 @@ module.exports = function() {
       var count = 0;
       var deleteOccurred = false;
       var originalClientId;
+      var serverControl = this.serverControl;
 
       var d = defer();
       client.subscribe('/datetime', function() {
@@ -56,4 +56,4 @@ module.exports = function() {
 
 
   });
-}
+};

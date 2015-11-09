@@ -2,7 +2,6 @@
 
 var assert = require('assert');
 var Promise = require('bluebird');
-var serverControl = require('../server-control');
 
 function defer() {
   var d = {};
@@ -24,6 +23,7 @@ module.exports = function() {
       var outageTime;
       var clientId;
       var d = defer();
+      var serverControl = this.serverControl;
 
       client.subscribe('/datetime', function(message) {
         count++;

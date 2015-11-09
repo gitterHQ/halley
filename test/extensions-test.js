@@ -1,6 +1,6 @@
 'use strict';
 
-var Extensions = require('../../../lib/protocol/extensions');
+var Extensions = require('../lib/protocol/extensions');
 var assert = require('assert');
 
 describe('extensions', function() {

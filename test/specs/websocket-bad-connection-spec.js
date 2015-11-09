@@ -1,13 +1,13 @@
 'use strict';
 
 var Promise = require('bluebird');
-var globalEvents = require('../../../../lib/util/global-events');
-var serverControl = require('../server-control');
+var globalEvents = require('../../lib/util/global-events');
 
 module.exports = function() {
   describe('bad connection', function() {
 
     it('should terminate if the server cannot be pinged', function(done) {
+      var serverControl = this.serverControl;
       this.websocket.connect()
         .bind(this)
         .then(function() {
@@ -29,6 +29,8 @@ module.exports = function() {
      * This should make the speed of recovery much faster
      */
     it('should terminate if the server cannot be pinged after a network event', function(done) {
+      var serverControl = this.serverControl;
+
       this.websocket.connect()
         .bind(this)
         .then(function() {

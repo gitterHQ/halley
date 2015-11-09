@@ -1,7 +1,7 @@
 'use strict';
 
-var Halley = require('../../..');
-var globalEvents = require('../../../lib/util/global-events');
+var Halley = require('..');
+var globalEvents = require('../lib/util/global-events');
 
 describe('onbeforeunload', function() {
   var client;

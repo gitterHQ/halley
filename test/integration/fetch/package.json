@@ -1,4 +1,0 @@
-{
-  "main": "./fetch-node",
-  "browserify": "./fetch-browser"
-}

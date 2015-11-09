@@ -1,15 +1,15 @@
 'use strict';
 
-var Halley = require('../../..');
+var Halley = require('..');
 
-describe('client-all-transport', function() {
-
+describe('client-websocket', function() {
   describe('direct', function() {
-
     beforeEach(function() {
       this.client = new Halley.Client(this.urlDirect, {
         retry: this.clientOptions.retry,
-        timeout: this.clientOptions.timeout
+        timeout: this.clientOptions.timeout,
+        connectionTypes: ['websocket'],
+        disabled: ['long-polling', 'callback-polling']
       });
     });
 
@@ -18,15 +18,16 @@ describe('client-all-transport', function() {
     });
 
     require('./specs/client-spec')();
-    require('./specs/client-bad-websockets-spec')();
   });
 
   describe('proxied', function() {
-
     beforeEach(function() {
       this.client = new Halley.Client(this.urlProxied, {
         retry: this.clientOptions.retry,
-        timeout: this.clientOptions.timeout
+        timeout: this.clientOptions.timeout,
+
+        connectionTypes: ['websocket'],
+        disabled: ['long-polling', 'callback-polling']
       });
     });
 
@@ -35,7 +36,7 @@ describe('client-all-transport', function() {
     });
 
     require('./specs/client-proxied-spec')();
-
   });
+
 
 });

@@ -1,29 +1,40 @@
 'use strict';
 
-require('../../../lib/util/externals').use({
+require('../lib/util/externals').use({
   Events: require('backbone-events-standalone'),
   extend: require('lodash/object/extend')
 });
 
 var Promise = require('bluebird');
 Promise.config({
-  warnings: true,
-  longStackTraces: true,
+  warnings: false,
+  longStackTraces: false,
   cancellation: true
 });
 
-var serverControl = require('./server-control');
+var RemoteServerControl = require('./helpers/remote-server-control');
 
 describe('browser integration tests', function() {
   this.timeout(30000);
 
   before(function(done) {
-    serverControl.restoreAll().nodeify(done);
+    this.serverControl = new RemoteServerControl();
+    this.serverControl.setup()
+      .bind(this)
+      .then(function(ports) {
+        this.ports = ports;
+      })
+      .nodeify(done);
+  });
+
+  after(function(done) {
+    this.serverControl.teardown()
+      .nodeify(done);
   });
 
   beforeEach(function() {
-    this.urlDirect = 'http://localhost:8001/bayeux';
-    this.urlProxied = 'http://localhost:8002/bayeux';
+    this.urlDirect = 'http://localhost:' + this.ports.bayeuxPort + '/bayeux';
+    this.urlProxied = 'http://localhost:' + this.ports.proxyPort  + '/bayeux';
 
     this.clientOptions = {
       retry: 5000,
@@ -32,7 +43,7 @@ describe('browser integration tests', function() {
   });
 
   afterEach(function(done) {
-    serverControl.restoreAll().nodeify(done);
+    this.serverControl.restoreAll().nodeify(done);
   });
 
 

@@ -1,6 +1,5 @@
 'use strict';
 
-var serverControl = require('../server-control');
 var Promise = require('bluebird');
 
 function defer() {
@@ -25,7 +24,7 @@ module.exports = function() {
 
       var d = defer();
 
-      return serverControl.stopWebsockets(OUTAGE_TIME)
+      return this.serverControl.stopWebsockets(OUTAGE_TIME)
         .then(function() {
           return self.client.subscribe('/datetime', function() {
             count++;

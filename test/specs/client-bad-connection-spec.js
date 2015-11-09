@@ -1,7 +1,6 @@
 'use strict';
 
 var assert = require('assert');
-var serverControl = require('../server-control');
 var Promise = require('bluebird');
 
 function defer() {
@@ -24,13 +23,14 @@ module.exports = function() {
       var postOutageCount = 0;
       var outageTime;
       var outageGraceTime;
+      var self = this;
 
       var d = defer();
       this.client.subscribe('/datetime', function() {
         count++;
 
         if (count === 1) {
-          return serverControl.networkOutage(OUTAGE_TIME)
+          return self.serverControl.networkOutage(OUTAGE_TIME)
           .then(function() {
             outageTime = Date.now();
             outageGraceTime = Date.now() + 1000;

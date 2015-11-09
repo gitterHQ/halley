@@ -1,7 +1,7 @@
 'use strict';
 
-var WebSocket = require('../../../lib/transport/node/node-websocket');
-var uri = require('../../../lib/util/uri');
+var WebSocket = require('../lib/transport/node/node-websocket');
+var uri = require('../lib/util/uri');
 
 describe('node websocket transport', function() {
 
