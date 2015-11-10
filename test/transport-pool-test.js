@@ -20,7 +20,7 @@ describe('transport pool', function() {
 
     this.StreamingTransport.prototype = {
       connect: function() {
-        return Promise.delay(2);
+        return Promise.delay(10);
       },
       close: function() {
       },
@@ -140,7 +140,7 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
         })
-        .delay(5)
+        .delay(10)
         .then(function() {
           return this.transportPool.reevaluate();
         })
@@ -197,7 +197,7 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
         })
-        .delay(5)
+        .delay(10)
         .then(function() {
           return this.transportPool.reevaluate();
         })
@@ -209,7 +209,7 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
         })
-        .delay(5)
+        .delay(10)
         .then(function() {
           return this.transportPool.reevaluate();
         })
@@ -230,6 +230,9 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
           polling = transport;
+        })
+        .delay(10)
+        .then(function() {
           return this.transportPool.reevaluate();
         })
         .then(function(transport) {
