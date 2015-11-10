@@ -37,8 +37,8 @@ describe('browser integration tests', function() {
     this.urlProxied = this.urls.proxied;
 
     this.clientOptions = {
-      retry: 5000,
-      timeout: 5000
+      retry: 500,
+      timeout: 1000
     };
   });
 

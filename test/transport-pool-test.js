@@ -125,7 +125,7 @@ describe('transport pool', function() {
         })
         .delay(10)
         .then(function() {
-          return this.transportPool.get();
+          return this.transportPool.reevaluate();
         })
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
@@ -140,9 +140,9 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
         })
-        .delay(10)
+        .delay(5)
         .then(function() {
-          return this.transportPool.get();
+          return this.transportPool.reevaluate();
         })
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
@@ -196,10 +196,10 @@ describe('transport pool', function() {
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
-          return Promise.delay(10);
         })
+        .delay(5)
         .then(function() {
-          return this.transportPool.get();
+          return this.transportPool.reevaluate();
         })
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
@@ -208,7 +208,10 @@ describe('transport pool', function() {
         })
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
-          return Promise.delay(10);
+        })
+        .delay(5)
+        .then(function() {
+          return this.transportPool.reevaluate();
         })
         .then(function() {
           return this.transportPool.get();
@@ -227,10 +230,7 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
           polling = transport;
-          return Promise.delay(10);
-        })
-        .then(function() {
-          return this.transportPool.get();
+          return this.transportPool.reevaluate();
         })
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
