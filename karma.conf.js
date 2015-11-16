@@ -60,8 +60,8 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    // browsers: [/*'Chrome',*/ 'Firefox', 'Safari'],
-
+    browsers: ['Chrome', 'Firefox', 'Safari'],
+/*
     customLaunchers: {
       bs_firefox_mac: {
         base: 'BrowserStack',
@@ -79,7 +79,7 @@ module.exports = function(config) {
     },
 
     browsers: ['bs_firefox_mac'],
-
+*/
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
     singleRun: true,

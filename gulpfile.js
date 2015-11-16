@@ -144,16 +144,26 @@ gulp.task('karma', function (done) {
   var fork = require('child_process').fork;
 
   var child = fork('./test/helpers/server');
-  setTimeout(function() {
 
+  process.on('exit', function() {
+    child.kill();
+  });
+
+  setTimeout(function() {
     function karmaComplete(err) {
+      if (err) {
+        console.log('ERROR IS')
+        console.log(err.stack);
+      }
       child.kill();
       done(err);
     }
 
     var karma = new KarmaServer({
       configFile: __dirname + '/karma.conf.js',
-      singleRun: true
+      browsers: ['Firefox', 'Chrome', 'Safari'],
+      singleRun: true,
+      concurrency: 1
     }, karmaComplete);
 
     karma.start();
