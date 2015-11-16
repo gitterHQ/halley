@@ -17,6 +17,8 @@ var idCounter = 0;
 var servers = {};
 var server;
 
+var port = process.env.PORT || '8000';
+
 function listen(options, callback) {
   var app = express();
   server = http.createServer(app);
@@ -52,7 +54,7 @@ function listen(options, callback) {
       },
       plugins:[
         new webpack.DefinePlugin({
-          HALLEY_TEST_SERVER: JSON.stringify('http://' + localIp + ':8000')
+          HALLEY_TEST_SERVER: JSON.stringify('http://' + localIp + ':' + port)
         })
       ]
 
@@ -165,7 +167,6 @@ function listen(options, callback) {
     res.status(404).send('Not found');
   });
 
-  var port = process.env.PORT || '8000';
   server.listen(port, callback);
 }
 
