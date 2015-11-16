@@ -8,6 +8,7 @@ var sourcemaps  = require('gulp-sourcemaps');
 var gutil       = require('gulp-util');
 var webpack     = require('webpack');
 var uglify      = require('gulp-uglify');
+var mocha       = require('gulp-spawn-mocha');
 var KarmaServer = require('karma').Server;
 
 gulp.task("webpack-standalone", function(callback) {
@@ -91,8 +92,6 @@ gulp.task('gzip', ['uglify'], function () {
       .pipe(gulp.dest('dist/min'));
 });
 
-gulp.task('default', ['webpack', 'uglify', 'gzip']);
-
 gulp.task("webpack-test-suite-browser", function(callback) {
     // run webpack
     webpack({
@@ -132,6 +131,14 @@ gulp.task("webpack-test-suite-browser", function(callback) {
     });
 });
 
+gulp.task('test', function() {
+  return gulp.src(['test/test-suite-node.js'], { read: false })
+    .pipe(mocha({
+      istanbul: {
+        dir: 'dist/coverage'
+      }
+    }));
+});
 
 gulp.task('karma', function (done) {
   var fork = require('child_process').fork;
@@ -154,3 +161,5 @@ gulp.task('karma', function (done) {
   }, 1000);
 
 });
+
+gulp.task('default', ['webpack', 'uglify', 'gzip', 'test']);

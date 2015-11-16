@@ -34,7 +34,7 @@ describe('node-test-suite', function() {
   });
 
   describe('integration tests', function() {
-    this.timeout(10000);
+    this.timeout(15000);
 
     before(function(done) {
       /* Give server time to startup */
