@@ -15,7 +15,7 @@ function defer() {
 }
 
 module.exports = function() {
-  describe('advice', function() {
+  describe('client-advice', function() {
 
     it('should handle advice retry', function(done) {
       var publishOccurred = false;

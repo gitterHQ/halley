@@ -5,7 +5,7 @@ var assert = require('assert');
 
 module.exports = function() {
 
-  describe('publish', function() {
+  describe('client-publish', function() {
 
     it('should handle publishes', function(done) {
       var client = this.client;

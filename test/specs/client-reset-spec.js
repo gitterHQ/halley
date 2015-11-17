@@ -15,7 +15,7 @@ function defer() {
 }
 
 module.exports = function() {
-  describe('reset', function() {
+  describe('client-reset', function() {
     it('a reset should proceed normally', function(done) {
       var client = this.client;
       var originalClientId;

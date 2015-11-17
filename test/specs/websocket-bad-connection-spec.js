@@ -4,7 +4,7 @@ var Promise = require('bluebird');
 var globalEvents = require('../../lib/util/global-events');
 
 module.exports = function() {
-  describe('bad connection', function() {
+  describe('websocket-bad-connection', function() {
 
     it('should terminate if the server cannot be pinged', function(done) {
       var serverControl = this.serverControl;
@@ -13,12 +13,12 @@ module.exports = function() {
         .then(function() {
           var self = this;
           return Promise.all([
-            new Promise(function(resolve, reject) {
+            new Promise(function(resolve) {
               self.dispatcher.transportDown = function() {
                 resolve();
               }
             }),
-            serverControl.networkOutage(1000)
+            serverControl.networkOutage(2000)
           ]);
         })
         .nodeify(done);

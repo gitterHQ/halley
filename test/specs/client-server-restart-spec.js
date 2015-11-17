@@ -15,7 +15,7 @@ function defer() {
 }
 
 module.exports = function() {
-  describe('server-restart', function() {
+  describe('client-server-restart', function() {
     it('should deal with a server restart', function(done) {
       var client = this.client;
       var count = 0;

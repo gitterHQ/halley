@@ -16,7 +16,7 @@ function defer() {
 var OUTAGE_TIME = 5000;
 
 module.exports = function() {
-  describe('bad-connection', function() {
+  describe('client-bad-connection', function() {
 
     it('should deal with dropped packets', function(done) {
       var count = 0;

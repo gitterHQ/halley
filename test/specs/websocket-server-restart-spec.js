@@ -3,7 +3,7 @@
 var sinon = require('sinon');
 
 module.exports = function() {
-  describe('server restart', function() {
+  describe('websocket-server-restart', function() {
 
     it('should terminate if the server disconnects', function(done) {
       var self = this;

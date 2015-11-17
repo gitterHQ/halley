@@ -16,7 +16,7 @@ function defer() {
 var OUTAGE_TIME = 2000;
 
 module.exports = function() {
-  describe('bad-websockets', function() {
+  describe('client-bad-websockets', function() {
 
     it('should deal with bad corporate proxies', function(done) {
       var count = 0;

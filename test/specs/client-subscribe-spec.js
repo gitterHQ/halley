@@ -4,7 +4,7 @@ var assert = require('assert');
 var Promise = require('bluebird');
 
 module.exports = function() {
-  describe('subscriptions', function() {
+  describe('client-subscribe', function() {
 
     it('should subscribe to a channel and receive messages', function(done) {
       var defer = {};
