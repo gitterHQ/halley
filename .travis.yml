@@ -4,6 +4,7 @@ node_js:
 - '0.10'
 - '4.0'
 before_script:
+  - npm install -g npm@2.x.x
   - npm install -g gulp
 script: gulp
 after_success: ./node_modules/.bin/coveralls --verbose < dist/coverage/lcov.info
