@@ -3,37 +3,14 @@
 var Promise = require('bluebird');
 var assert = require('assert');
 
-function defer() {
-  var d = {};
-
-  d.promise = new Promise(function(resolve, reject) {
-    d.resolve = resolve;
-    d.reject = reject;
-  });
-
-  return d;
-}
-
 module.exports = function() {
 
   describe('publish', function() {
 
     it('should handle publishes', function(done) {
-      var publishOccurred = false;
       var client = this.client;
-      var d = defer();
 
-      client.subscribe('/datetime', function() {
-          if (!publishOccurred) return;
-          d.resolve();
-        })
-        .then(function() {
-          publishOccurred = true;
-          return client.publish('/channel', { data: 1 });
-        })
-        .then(function() {
-          return d.promise;
-        })
+      return client.publish('/channel', { data: 1 })
         .nodeify(done);
 
     });

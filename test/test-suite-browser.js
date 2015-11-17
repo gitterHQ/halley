@@ -7,8 +7,8 @@ require('../lib/util/externals').use({
 
 var Promise = require('bluebird');
 Promise.config({
-  warnings: false,
-  longStackTraces: false,
+  warnings: true,
+  longStackTraces: true,
   cancellation: true
 });
 
