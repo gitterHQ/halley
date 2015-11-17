@@ -25,7 +25,7 @@ module.exports = function() {
       var d = defer();
       var serverControl = this.serverControl;
 
-      client.subscribe('/datetime', function(message) {
+      client.subscribe('/datetime', function() {
         count++;
 
         if (count === 3) {

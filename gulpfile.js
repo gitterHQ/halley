@@ -131,12 +131,18 @@ gulp.task("webpack-test-suite-browser", function(callback) {
     });
 });
 
-gulp.task('test', function() {
+gulp.task('test-coverage', function() {
   return gulp.src(['test/test-suite-node.js'], { read: false })
     .pipe(mocha({
       istanbul: {
         dir: 'dist/coverage'
       }
+    }));
+});
+
+gulp.task('test', function() {
+  return gulp.src(['test/test-suite-node.js'], { read: false })
+    .pipe(mocha({
     }));
 });
 
