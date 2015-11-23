@@ -12,6 +12,9 @@ Promise.config({
   cancellation: true
 });
 
+require('setimmediate');
+Promise.setScheduler(setImmediate);
+
 var RemoteServerControl = require('./helpers/remote-server-control');
 
 describe('browser integration tests', function() {
