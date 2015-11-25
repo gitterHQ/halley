@@ -66,6 +66,7 @@ describe('node-test-suite', function() {
   describe('unit tests', function() {
     require('./extensions-test');
     require('./transport-pool-test');
+    require('./statemachine-mixin-test');
   });
 
 

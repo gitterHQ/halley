@@ -13,7 +13,9 @@ Promise.config({
 });
 
 require('setimmediate');
-Promise.setScheduler(setImmediate);
+Promise.setScheduler(function(fn) {
+  window.setImmediate(fn);
+});
 
 var RemoteServerControl = require('./helpers/remote-server-control');
 
@@ -59,4 +61,5 @@ describe('browser integration tests', function() {
 describe('browser unit tests', function() {
   require('./extensions-test');
   require('./transport-pool-test');
+  require('./statemachine-mixin-test');
 });
