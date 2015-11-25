@@ -18,12 +18,12 @@
   "main": "./index.js",
   "browser": "./browser-standalone",
   "dependencies": {
-    "backbone-events-standalone": "github:suprememoocow/backbone-events-standalone#e3cf6aaf0742d655687296753836339dcf0ff483",
+    "backbone-events-standalone": "git://github.com/suprememoocow/backbone-events-standalone.git#e3cf6aaf0742d655687296753836339dcf0ff483",
     "bluebird": "^3.0.5",
-    "debug": "^2.2.0",
+    "debug": "^2.0.0",
     "faye-websocket": "~0.10.0",
-    "inherits": "^2.0.1",
-    "lodash": "^3.10.1"
+    "inherits": "^2.0.0",
+    "lodash": "^3.0.0"
   },
   "devDependencies": {
     "coveralls": "^2.11.4",
