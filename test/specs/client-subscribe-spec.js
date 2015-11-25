@@ -33,12 +33,11 @@ module.exports = function() {
             .catch(done);
         }
 
-        assert(count <= 2);
+        assert(count <= 5);
       });
 
       subscription.catch(done);
     });
-
 
     it('should handle subscriptions that are cancelled before establishment', function(done) {
       var count = 0;
@@ -72,6 +71,29 @@ module.exports = function() {
       }, function() {
         done();
       });
+    });
+
+    it('should deal with subscriptions that fail with unknown client', function(done) {
+      this.client.connect()
+        .bind(this)
+        .then(function() {
+          return this.serverControl.deleteSocket(this.client.getClientId());
+        })
+        .then(function() {
+          var defer = {};
+          defer.promise = new Promise(function(resolve, reject) {
+            defer.resolve = resolve;
+            defer.reject = reject;
+          });
+
+          var subscription = this.client.subscribe('/datetime', function() {
+            defer.resolve();
+          });
+
+          return Promise.all([subscription.promise, defer.promise]);
+        })
+        .nodeify(done);
+
     });
 
   });

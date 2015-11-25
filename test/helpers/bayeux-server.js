@@ -5,6 +5,7 @@ var http = require('http');
 var faye = require('gitter-faye');
 var debug = require('debug')('halley:test:bayeux-server');
 var enableDestroy = require('server-destroy');
+var extend = require('lodash/object/extend');
 
 function BayeuxServer() {
   this.port = 0;
@@ -18,10 +19,10 @@ BayeuxServer.prototype = {
 
     var bayeux = this.bayeux = new faye.NodeAdapter({
       mount: '/bayeux',
-      timeout: 2,
+      timeout: 10,
       ping: 2,
       engine: {
-        interval: 2
+        interval: 0.3
       }
     });
     bayeux.attach(server);
@@ -39,6 +40,35 @@ BayeuxServer.prototype = {
     });
 
     var self = this;
+
+    bayeux.addExtension({
+      incoming: function(message, req, callback) {
+        var clientId = message.clientId;
+        if (!clientId) return callback(message);
+
+        // This is a bit of a hack, but Faye doesn't appear to do it
+        // automatically: check that the client actually exists. If it
+        // doesn't reject it
+        bayeux._server._engine.clientExists(clientId, function(exists) {
+          if(!exists) {
+            message.error = '401:' + clientId + ':Unknown client';
+          }
+
+          return callback(message);
+        });
+      },
+
+      outgoing: function(message, req, callback) {
+        if (message.successful === false && message.error) {
+          // If we're sending 401 messages to the client, they don't
+          // actually have a connection, so tell them to rehandshake
+          if (message.error.indexOf('401:') === 0) {
+            message.advice = extend(message.advice || {}, { "reconnect": "handshake", interval: 0 });
+          }
+        }
+        return callback(message);
+      }
+    });
 
     bayeux.addExtension({
       incoming: function(message, req, callback) {
