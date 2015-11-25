@@ -294,6 +294,101 @@ describe('statemachine-mixin', function() {
 
   });
 
+  describe('dedup', function() {
 
+    beforeEach(function() {
+
+      var TEST_FSM = {
+        name: "test",
+        initial: "A",
+        transitions: {
+          A: {
+            t1: "B"
+          },
+          B: {
+            t1: "C"
+          },
+          C: {
+          }
+        }
+      };
+
+      function TestMachine() {
+        this.initStateMachine(TEST_FSM);
+      }
+
+      TestMachine.prototype = {
+        _onEnterB: function() {
+          this.bCount = this.bCount ? this.bCount + 1 : 1;
+          return Promise.delay(1);
+        },
+        _onEnterC: function() {
+          return Promise.delay(1);
+        }
+      };
+      extend(TestMachine.prototype, StateMachineMixin);
+
+      this.testMachine = new TestMachine();
+    });
+
+    it('should transition with dedup', function(done) {
+      return Promise.all([
+          this.testMachine.transitionState('t1'),
+          this.testMachine.transitionState('t1', { dedup: true }),
+        ])
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.testMachine.bCount, 1);
+          assert(this.testMachine.stateIs('B'));
+        })
+        .nodeify(done);
+    });
+
+    it('should clearup pending transitions', function(done) {
+      return this.testMachine.transitionState('t1')
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.testMachine.bCount, 1);
+          assert(this.testMachine.stateIs('B'));
+          assert.deepEqual(this.testMachine._pendingTransitions, {});
+        })
+        .nodeify(done);
+    });
+
+    it('should transition with dedup followed by non-dedup', function(done) {
+      return Promise.all([
+          this.testMachine.transitionState('t1'),
+          this.testMachine.transitionState('t1', { dedup: true }),
+          this.testMachine.transitionState('t1'),
+        ])
+        .bind(this)
+        .then(function() {
+          assert(this.testMachine.stateIs('C'));
+          assert.deepEqual(this.testMachine._pendingTransitions, {});
+        })
+        .nodeify(done);
+    });
+
+    it('should dedup against the first pending transition', function(done) {
+      var p1 = this.testMachine.transitionState('t1');
+      var p2 = this.testMachine.transitionState('t1');
+      var p3 = this.testMachine.transitionState('t1', { dedup: true })
+        .bind(this)
+        .then(function() {
+          assert(p1.isFulfilled());
+          assert(p2.isPending());
+        });
+
+      return Promise.all([p1, p2, p3])
+        .bind(this)
+        .then(function() {
+          assert(this.testMachine.stateIs('C'));
+          assert.deepEqual(this.testMachine._pendingTransitions, {});
+        })
+        .nodeify(done);
+    });
+
+
+  });
 
 });
