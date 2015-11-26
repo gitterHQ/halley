@@ -2,6 +2,7 @@
 
 var WebSocket = require('../lib/transport/node/node-websocket');
 var uri = require('../lib/util/uri');
+var Advice = require('../lib/protocol/advice');
 
 describe('node websocket transport', function() {
 
@@ -15,12 +16,11 @@ describe('node websocket transport', function() {
       }
     };
 
-    this.advice = {
-      reconnect: 'retry',
+    this.advice = new Advice({
       interval: 0,
       timeout: 1000,
       retry: 1
-    };
+    });
 
   });
 

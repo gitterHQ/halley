@@ -31,7 +31,7 @@ module.exports = function() {
           assert(originalClientId);
           client.reset();
 
-          client.once('handshake:success', function() {
+          client.once('connected', function() {
             rehandshook = true;
           });
 

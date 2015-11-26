@@ -2,6 +2,7 @@
 
 var WebSocket = require('../lib/transport/browser/browser-websocket');
 var uri = require('../lib/util/uri');
+var Advice = require('../lib/protocol/advice');
 
 describe('browser websocket transport', function() {
   beforeEach(function() {
@@ -14,12 +15,12 @@ describe('browser websocket transport', function() {
       }
     };
 
-    this.advice = {
-      reconnect: 'retry',
+    this.advice = new Advice({
       interval: 0,
       timeout: 1000,
       retry: 1
-    };
+    });
+
   });
 
   describe('direct', function() {

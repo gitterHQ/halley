@@ -55,7 +55,7 @@ module.exports = function() {
         .then(function() {
           originalClientId = client.getClientId();
 
-          client.once('handshake:success', function() {
+          client.once('connected', function() {
             rehandshook = true;
           });
 
