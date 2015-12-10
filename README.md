@@ -14,9 +14,9 @@ The main differences from Faye are (listed in no particular order):
 * **No eventsource support** as we've found them to be unreliable in a ELB/haproxy setup
 * All **durations are in milliseconds**, not seconds
 * Wherever possible, implementations have been replaced with external libraries:
-  * Uses bluebird for promises
+  * Uses [bluebird](https://github.com/petkaantonov/bluebird/) for promises
   * Uses backbone events (or backbone-events-standalone) for events
-  * Mocha and sinon for testing
+  * Mocha/sinon/karma for testing
 
 ### Debugging
 
