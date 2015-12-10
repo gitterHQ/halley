@@ -18,6 +18,15 @@ The main differences from Faye are (listed in no particular order):
   * Uses backbone events (or backbone-events-standalone) for events
   * Mocha and sinon for testing
 
+### Debugging
+
+Halley uses [debug](https://github.com/visionmedia/debug) for debugging. 
+
+  * To enable in nodejs, `export DEBUG=halley:*`
+  * To enable in a browser, `window.localStorage.debug='halley:*'`
+
+To limit the amount of debug logging produced, you can specify individual categories, eg `export DEBUG=halley:client`.
+
 ## License
 
 (The MIT License)
