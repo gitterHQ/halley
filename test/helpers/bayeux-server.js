@@ -72,6 +72,20 @@ BayeuxServer.prototype = {
 
     bayeux.addExtension({
       incoming: function(message, req, callback) {
+
+        if (message.channel === '/meta/subscribe' && message.subscription === '/slow') {
+          return setTimeout(function() {
+            callback(message);
+          }, 100);
+        }
+
+        return callback(message);
+      }
+
+    });
+
+    bayeux.addExtension({
+      incoming: function(message, req, callback) {
         if (self.crushWebsocketConnections) {
           if (req && req.headers.connection === 'Upgrade') {
             debug('Disconnecting websocket');

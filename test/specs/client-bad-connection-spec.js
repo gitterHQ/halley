@@ -18,7 +18,7 @@ var OUTAGE_TIME = 5000;
 module.exports = function() {
   describe('client-bad-connection', function() {
 
-    it('should deal with dropped packets', function(done) {
+    it('should deal with dropped packets', function() {
       var count = 0;
       var postOutageCount = 0;
       var outageTime;
@@ -49,11 +49,10 @@ module.exports = function() {
           assert(Date.now() - outageTime >= (OUTAGE_TIME * 0.8));
           d.resolve();
         }
-      }).promise
+      })
       .then(function() {
         return d.promise;
-      })
-      .nodeify(done);
+      });
     });
 
 

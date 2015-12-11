@@ -36,10 +36,10 @@ describe('node-test-suite', function() {
   describe('integration tests', function() {
     this.timeout(20000);
 
-    before(function(done) {
+    before(function() {
       /* Give server time to startup */
       this.timeout(20000);
-      this.serverControl.restoreAll().nodeify(done);
+      return this.serverControl.restoreAll();
     });
 
     beforeEach(function() {
@@ -52,8 +52,8 @@ describe('node-test-suite', function() {
       };
     });
 
-    afterEach(function(done) {
-      this.serverControl.restoreAll().nodeify(done);
+    afterEach(function() {
+      return this.serverControl.restoreAll();
     });
 
     require('./node-websocket-test');

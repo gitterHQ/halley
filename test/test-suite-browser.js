@@ -8,13 +8,8 @@ require('../lib/util/externals').use({
 var Promise = require('bluebird');
 Promise.config({
   warnings: true,
-  longStackTraces: true,
+  longStackTraces: false,
   cancellation: true
-});
-
-require('setimmediate');
-Promise.setScheduler(function(fn) {
-  window.setImmediate(fn);
 });
 
 var RemoteServerControl = require('./helpers/remote-server-control');
@@ -22,19 +17,17 @@ var RemoteServerControl = require('./helpers/remote-server-control');
 describe('browser integration tests', function() {
   this.timeout(30000);
 
-  before(function(done) {
+  before(function() {
     this.serverControl = new RemoteServerControl();
-    this.serverControl.setup()
+    return this.serverControl.setup()
       .bind(this)
       .then(function(urls) {
         this.urls = urls;
-      })
-      .nodeify(done);
+      });
   });
 
-  after(function(done) {
-    this.serverControl.teardown()
-      .nodeify(done);
+  after(function() {
+    return this.serverControl.teardown();
   });
 
   beforeEach(function() {
@@ -47,8 +40,8 @@ describe('browser integration tests', function() {
     };
   });
 
-  afterEach(function(done) {
-    this.serverControl.restoreAll().nodeify(done);
+  afterEach(function() {
+    return this.serverControl.restoreAll();
   });
 
 

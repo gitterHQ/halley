@@ -18,7 +18,7 @@ var OUTAGE_TIME = 2000;
 module.exports = function() {
   describe('client-bad-websockets', function() {
 
-    it('should deal with bad corporate proxies', function(done) {
+    it('should deal with bad corporate proxies', function() {
       var count = 0;
       var self = this;
 
@@ -36,8 +36,7 @@ module.exports = function() {
         })
         .then(function() {
           return d.promise;
-        })
-        .nodeify(done);
+        });
 
 
     });

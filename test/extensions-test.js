@@ -5,7 +5,7 @@ var assert = require('assert');
 
 describe('extensions', function() {
 
-  it('should call extensions in sequence', function(done) {
+  it('should call extensions in sequence', function() {
     var count = 0;
 
     function Ext(x) {
@@ -30,11 +30,10 @@ describe('extensions', function() {
     extensions.add(new Ext(5));
     extensions.add(new Ext(6));
 
-    extensions.pipe('incoming', { count: 0 })
+    return extensions.pipe('incoming', { count: 0 })
       .then(function(message) {
         assert.deepEqual(message, { count: 6 });
-      })
-      .nodeify(done);
+      });
   });
 
 });

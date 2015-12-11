@@ -6,9 +6,10 @@ var globalEvents = require('../../lib/util/global-events');
 module.exports = function() {
   describe('websocket-bad-connection', function() {
 
-    it('should terminate if the server cannot be pinged', function(done) {
+    it('should terminate if the server cannot be pinged', function() {
       var serverControl = this.serverControl;
-      this.websocket.connect()
+
+      return this.websocket.connect()
         .bind(this)
         .then(function() {
           var self = this;
@@ -20,18 +21,17 @@ module.exports = function() {
             }),
             serverControl.networkOutage(2000)
           ]);
-        })
-        .nodeify(done);
+        });
     });
 
     /**
      * This test simulates a network event, such as online/offline detection
      * This should make the speed of recovery much faster
      */
-    it('should terminate if the server cannot be pinged after a network event', function(done) {
+    it('should terminate if the server cannot be pinged after a network event', function() {
       var serverControl = this.serverControl;
 
-      this.websocket.connect()
+      return this.websocket.connect()
         .bind(this)
         .then(function() {
           var self = this;
@@ -46,8 +46,7 @@ module.exports = function() {
                 globalEvents.trigger('network');
               })
           ]);
-        })
-        .nodeify(done);
+        });
     });
 
   });

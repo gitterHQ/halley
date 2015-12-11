@@ -16,7 +16,7 @@ function defer() {
 
 module.exports = function() {
   describe('client-server-restart', function() {
-    it('should deal with a server restart', function(done) {
+    it('should deal with a server restart', function() {
       var client = this.client;
       var count = 0;
       var postOutageCount = 0;
@@ -25,7 +25,7 @@ module.exports = function() {
       var d = defer();
       var serverControl = this.serverControl;
 
-      client.subscribe('/datetime', function() {
+      return client.subscribe('/datetime', function() {
         count++;
 
         if (count === 3) {
@@ -47,14 +47,13 @@ module.exports = function() {
         if (postOutageCount >= 3) {
           d.resolve();
         }
-      }).promise.then(function() {
+      }).then(function() {
         return d.promise;
       })
       .then(function() {
         // A disconnect should not re-initialise the client
         assert.strictEqual(clientId, client.getClientId());
-      })
-      .nodeify(done);
+      });
     });
 
   });

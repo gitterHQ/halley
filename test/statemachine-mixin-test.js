@@ -38,16 +38,15 @@ describe('statemachine-mixin', function() {
       this.testMachine = new TestMachine();
     });
 
-    it('should transition', function(done) {
-      this.testMachine.transitionState('t1')
+    it('should transition', function() {
+      return this.testMachine.transitionState('t1')
         .bind(this)
         .then(function() {
           assert(this.testMachine.stateIs('B'));
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should serialize transitions', function(done) {
+    it('should serialize transitions', function() {
       return Promise.all([
           this.testMachine.transitionState('t1'),
           this.testMachine.transitionState('t2')
@@ -55,32 +54,28 @@ describe('statemachine-mixin', function() {
         .bind(this)
         .then(function() {
           assert(this.testMachine.stateIs('C'));
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should handle optional transitions', function(done) {
-      this.testMachine.transitionState('doesnotexist', { optional: true })
+    it('should handle optional transitions', function() {
+      return this.testMachine.transitionState('doesnotexist', { optional: true })
         .bind(this)
         .then(function() {
           assert(this.testMachine.stateIs('A'));
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should reject invalid transitions', function(done) {
-      this.testMachine.transitionState('doesnotexist')
+    it('should reject invalid transitions', function() {
+      return this.testMachine.transitionState('doesnotexist')
         .bind(this)
         .then(function() {
           assert.ok(false);
         }, function(err) {
           assert.strictEqual(err.message, 'Unable to perform transition doesnotexist from state A');
-
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should proceed with queued transitions after a transition has failed', function(done) {
+    it('should proceed with queued transitions after a transition has failed', function() {
       return Promise.all([
           this.testMachine.transitionState('doesnotexist'),
           this.testMachine.transitionState('t1'),
@@ -90,8 +85,7 @@ describe('statemachine-mixin', function() {
           assert(p1.isRejected());
           assert(p2.isFulfilled());
           assert(this.testMachine.stateIs('B'));
-        })
-        .nodeify(done);
+        });
 
     });
   });
@@ -137,16 +131,15 @@ describe('statemachine-mixin', function() {
 
     });
 
-    it('should transition', function(done) {
-      this.testMachine.transitionState('t1')
+    it('should transition', function() {
+      return this.testMachine.transitionState('t1')
         .bind(this)
         .then(function() {
           assert(this.testMachine.stateIs('C'));
-        })
-        .nodeify(done);
+        });
     });
 
-    it.skip('should reject on state transitions', function(done) {
+    it.skip('should reject on state transitions', function() {
       return Promise.all([
           this.testMachine.waitForState({
             rejected: 'B',
@@ -159,22 +152,20 @@ describe('statemachine-mixin', function() {
           assert.ok(false);
         }, function(err) {
           assert.strictEqual(err.message, 'State is B');
-        })
-        .nodeify(done);
+        });
     });
 
-    it.skip('should wait for state transitions when already in the state', function(done) {
-        this.testMachine.waitForState({
+    it.skip('should wait for state transitions when already in the state', function() {
+      return this.testMachine.waitForState({
           fulfilled: 'A'
         })
         .bind(this)
         .then(function() {
           assert(this.testMachine.stateIs('A'));
-        })
-        .nodeify(done);
+        });
     });
 
-    it.skip('should reject state transitions when already in the state', function(done) {
+    it.skip('should reject state transitions when already in the state', function() {
       return this.testMachine.waitForState({
           fulfilled: 'C',
           rejected: 'A'
@@ -184,11 +175,10 @@ describe('statemachine-mixin', function() {
           assert.ok(false);
         }, function() {
           assert.ok(true);
-        })
-        .nodeify(done);
+        });
     });
 
-    it.skip('should timeout waiting for state transitions', function(done) {
+    it.skip('should timeout waiting for state transitions', function() {
       return this.testMachine.waitForState({
           fulfilled: 'C',
           rejected: 'B',
@@ -199,8 +189,7 @@ describe('statemachine-mixin', function() {
           assert.ok(false);
         }, function(err) {
           assert.strictEqual(err.message, 'Timeout waiting for state C');
-        })
-        .nodeify(done);
+        });
     });
 
   });
@@ -257,16 +246,15 @@ describe('statemachine-mixin', function() {
 
     });
 
-    it('should handle errors on transition', function(done) {
-      this.testMachine.transitionState('t1')
+    it('should handle errors on transition', function() {
+      return this.testMachine.transitionState('t1')
         .bind(this)
         .then(function() {
           assert(this.testMachine.stateIs('D'));
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should transition to error state before other queued transitions', function(done) {
+    it('should transition to error state before other queued transitions', function() {
       return Promise.all([
           this.testMachine.transitionState('t1'),
           this.testMachine.transitionState('t3'),
@@ -276,20 +264,18 @@ describe('statemachine-mixin', function() {
           assert(p1.isFulfilled());
           assert(p2.isFulfilled());
           assert(this.testMachine.stateIs('E'));
-        })
-        .nodeify(done);
+        });
     });
 
 
-    it('should throw the original error if the state does not have an error transition', function(done) {
+    it('should throw the original error if the state does not have an error transition', function() {
       return this.testMachine.transitionState('t6')
         .bind(this)
         .then(function() {
           assert.ok(false);
         }, function(err) {
           assert.strictEqual(err.message, 'Failed on enter');
-        })
-        .nodeify(done);
+        });
     });
 
   });
@@ -331,7 +317,7 @@ describe('statemachine-mixin', function() {
       this.testMachine = new TestMachine();
     });
 
-    it('should transition with dedup', function(done) {
+    it('should transition with dedup', function() {
       return Promise.all([
           this.testMachine.transitionState('t1'),
           this.testMachine.transitionState('t1', { dedup: true }),
@@ -340,22 +326,20 @@ describe('statemachine-mixin', function() {
         .then(function() {
           assert.strictEqual(this.testMachine.bCount, 1);
           assert(this.testMachine.stateIs('B'));
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should clearup pending transitions', function(done) {
+    it('should clearup pending transitions', function() {
       return this.testMachine.transitionState('t1')
         .bind(this)
         .then(function() {
           assert.strictEqual(this.testMachine.bCount, 1);
           assert(this.testMachine.stateIs('B'));
           assert.deepEqual(this.testMachine._pendingTransitions, {});
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should transition with dedup followed by non-dedup', function(done) {
+    it('should transition with dedup followed by non-dedup', function() {
       return Promise.all([
           this.testMachine.transitionState('t1'),
           this.testMachine.transitionState('t1', { dedup: true }),
@@ -365,11 +349,10 @@ describe('statemachine-mixin', function() {
         .then(function() {
           assert(this.testMachine.stateIs('C'));
           assert.deepEqual(this.testMachine._pendingTransitions, {});
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should dedup against the first pending transition', function(done) {
+    it('should dedup against the first pending transition', function() {
       var p1 = this.testMachine.transitionState('t1');
       var p2 = this.testMachine.transitionState('t1');
       var p3 = this.testMachine.transitionState('t1', { dedup: true })
@@ -384,8 +367,7 @@ describe('statemachine-mixin', function() {
         .then(function() {
           assert(this.testMachine.stateIs('C'));
           assert.deepEqual(this.testMachine._pendingTransitions, {});
-        })
-        .nodeify(done);
+        });
     });
 
 

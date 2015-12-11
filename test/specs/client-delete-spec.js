@@ -21,7 +21,7 @@ module.exports = function() {
      * where the server unexpectedly deletes the client and the client
      * no longer exists on the server
      */
-    it('should recover from an unexpected disconnect', function(done) {
+    it('should recover from an unexpected disconnect', function() {
       var client = this.client;
       var count = 0;
       var deleteOccurred = false;
@@ -29,7 +29,7 @@ module.exports = function() {
       var serverControl = this.serverControl;
 
       var d = defer();
-      client.subscribe('/datetime', function() {
+      return client.subscribe('/datetime', function() {
         if (!deleteOccurred) return;
         count++;
         if (count === 3) {
@@ -49,9 +49,7 @@ module.exports = function() {
       })
       .then(function() {
         assert.notEqual(originalClientId, client.getClientId());
-
-      })
-      .nodeify(done);
+      });
     });
 
 

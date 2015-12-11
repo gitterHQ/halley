@@ -77,48 +77,44 @@ describe('transport pool', function() {
   });
 
   describe('get', function() {
-    it('should return an instance of a transport', function(done) {
-      this.transportPool.get()
+    it('should return an instance of a transport', function() {
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should return an instance of a polling transport', function(done) {
+    it('should return an instance of a polling transport', function() {
       this.transportPool.setAllowed(['polling']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should return an instance of a streaming transport', function(done) {
+    it('should return an instance of a streaming transport', function() {
       this.transportPool.setAllowed(['streaming']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should fail if an async transport is unavailable', function(done) {
+    it('should fail if an async transport is unavailable', function() {
       this.transportPool.setAllowed(['streaming-fail']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function() {
           assert.ok(false, 'Expected a failure');
-        }, function() {})
-        .nodeify(done);
+        }, function() {});
     });
 
-    it('should return polling transport and then switch to streaming when it comes online', function(done) {
+    it('should return polling transport and then switch to streaming when it comes online', function() {
       this.transportPool.setAllowed(['streaming', 'polling']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
@@ -129,13 +125,12 @@ describe('transport pool', function() {
         })
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should return polling transport and then switch to streaming when it comes online, even when some transport fail', function(done) {
+    it('should return polling transport and then switch to streaming when it comes online, even when some transport fail', function() {
       this.transportPool.setAllowed(['streaming-fail', 'streaming', 'polling']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
@@ -146,13 +141,12 @@ describe('transport pool', function() {
         })
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should close transports on close', function(done) {
+    it('should close transports on close', function() {
       this.transportPool.setAllowed(['streaming-fail', 'streaming', 'polling']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           var mock = sinon.mock(transport);
@@ -161,15 +155,14 @@ describe('transport pool', function() {
           this.transportPool.close();
           assert.deepEqual(this.transportPool._transports, {});
           mock.verify();
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should reselect on down', function(done) {
+    it('should reselect on down', function() {
       var firstTransport;
 
       this.transportPool.setAllowed(['streaming', 'streaming-fail']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           var mock = sinon.mock(transport);
@@ -186,13 +179,12 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
           assert.notStrictEqual(transport, firstTransport);
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should reselect on down with async and sync connections', function(done) {
+    it('should reselect on down with async and sync connections', function() {
       this.transportPool.setAllowed(['streaming', 'polling']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
@@ -218,14 +210,13 @@ describe('transport pool', function() {
         })
         .then(function(transport) {
           assert(transport instanceof this.StreamingTransport);
-        })
-        .nodeify(done);
+        });
     });
 
-    it('should handle multiple transports going down', function(done) {
+    it('should handle multiple transports going down', function() {
       var polling;
       this.transportPool.setAllowed(['streaming', 'polling']);
-      this.transportPool.get()
+      return this.transportPool.get()
         .bind(this)
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
@@ -244,8 +235,7 @@ describe('transport pool', function() {
         .then(function(transport) {
           assert(transport instanceof this.PollingTransport);
           assert.notStrictEqual(transport, polling);
-        })
-        .nodeify(done);
+        });
     });
 
   });

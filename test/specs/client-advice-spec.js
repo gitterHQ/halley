@@ -17,13 +17,13 @@ function defer() {
 module.exports = function() {
   describe('client-advice', function() {
 
-    it('should handle advice retry', function(done) {
+    it('should handle advice retry', function() {
       var publishOccurred = false;
       var client = this.client;
 
       var d = defer();
 
-      client.subscribe('/datetime', function() {
+      return client.subscribe('/datetime', function() {
           if (!publishOccurred) return;
           d.resolve();
         })
@@ -36,19 +36,18 @@ module.exports = function() {
         .then(function() {
           return d.promise;
         })
-        .nodeify(done);
     });
 
     /**
      * Tests to ensure that after receiving a handshake advice
      */
-    it('should handle advice handshake', function(done) {
+    it('should handle advice handshake', function() {
       var client = this.client;
       var originalClientId;
       var rehandshook = false;
       var d = defer();
 
-      client.subscribe('/datetime', function() {
+      return client.subscribe('/datetime', function() {
           if (!rehandshook) return;
           d.resolve();
         })
@@ -67,8 +66,7 @@ module.exports = function() {
         .then(function() {
           assert(client.getClientId());
           assert.notEqual(client.getClientId(), originalClientId);
-        })
-        .nodeify(done);
+        });
     });
 
   });
