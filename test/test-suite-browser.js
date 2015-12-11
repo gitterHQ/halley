@@ -1,3 +1,4 @@
+/* jshint browser:true */
 'use strict';
 
 require('../lib/util/externals').use({
@@ -8,7 +9,7 @@ require('../lib/util/externals').use({
 var Promise = require('bluebird');
 Promise.config({
   warnings: true,
-  longStackTraces: false,
+  longStackTraces: !!window.localStorage.BLUEBIRD_LONG_STACK_TRACES,
   cancellation: true
 });
 
@@ -52,6 +53,8 @@ describe('browser integration tests', function() {
 });
 
 describe('browser unit tests', function() {
+  require('./promise-util-test');
+  require('./channel-set-test');
   require('./extensions-test');
   require('./transport-pool-test');
   require('./statemachine-mixin-test');

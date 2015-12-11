@@ -52,11 +52,12 @@ module.exports = function() {
         .bind(this)
         .then(function() {
           // The subscribe will be inflight right now
+          assert(subscribe.isPending());
           subscribe.cancel();
         })
         .delay(10)
         .then(function() {
-          assert(!this.client._channels.hasSubscription('/datetime'));
+          assert.deepEqual(this.client.listChannels(), []);
         });
     });
 
@@ -72,15 +73,17 @@ module.exports = function() {
       return this.client.connect()
         .bind(this)
         .then(function() {
+
           // The subscribe will be inflight right now
+          assert(subscribe1.isPending());
           subscribe1.cancel();
+        })
+        .then(function() {
+          assert(!subscribe2.isCancelled());
           return subscribe2;
         })
-        .delay(10)
-        .then(function(s2) {
-          assert(!s2._cancelled);
-
-          assert(this.client._channels.hasSubscription('/datetime'));
+        .then(function() {
+          assert.deepEqual(this.client.listChannels(), ['/datetime']);
           return d.promise;
         });
     });
@@ -125,6 +128,19 @@ module.exports = function() {
           return Promise.all([subscribe, d.promise]);
         });
 
+    });
+
+    it('cancelling one subscription during handshake should not affect another', function() {
+      var subscription1 = this.client.subscribe('/datetime', function() { });
+      var subscription2 = this.client.subscribe('/datetime', function() { });
+
+      return Promise.delay(1)
+        .bind(this)
+        .then(function() {
+          assert(subscription1.isPending());
+          subscription1.cancel();
+          return subscription2;
+        });
     });
 
   });

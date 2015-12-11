@@ -29,6 +29,7 @@ BayeuxServer.prototype = {
 
     this.publishTimer = setInterval(function() {
       bayeux.getClient().publish('/datetime', { date: Date.now() });
+      bayeux.getClient().publish('/slow', { date: Date.now() });
     }, 100);
 
     server.on('upgrade', function(req) {
@@ -76,7 +77,7 @@ BayeuxServer.prototype = {
         if (message.channel === '/meta/subscribe' && message.subscription === '/slow') {
           return setTimeout(function() {
             callback(message);
-          }, 100);
+          }, 200);
         }
 
         return callback(message);
