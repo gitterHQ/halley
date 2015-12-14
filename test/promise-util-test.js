@@ -285,5 +285,168 @@ describe('promise-util', function() {
 
   });
 
+  describe('Throttle', function() {
+    beforeEach(function() {
+      this.count = 0;
+      this.throwError = false;
+      this.batcher = new promiseUtil.Throttle(function() {
+        this.count++;
+        if (this.throwError) throw new Error('Fail');
+      }.bind(this), 10);
+    });
+
+    it('should throttle calls', function() {
+      return Promise.all([
+          this.batcher.fire(),
+          this.batcher.fire(),
+          this.batcher.fire()
+        ])
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.count, 1);
+        });
+    });
+
+    it('should respect fireImmediate', function() {
+      return Promise.all([
+          this.batcher.fire(),
+          this.batcher.fire(true),
+          Promise.delay(1).bind(this).then(function()  {
+            return this.batcher.fire();
+          })
+        ])
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.count, 2);
+        });
+    });
+
+    it('should handle cancellations', function() {
+      var p = this.batcher.fire();
+      return Promise.delay(1)
+        .bind(this)
+        .then(function() {
+
+          assert(p.isCancellable());
+          p.cancel();
+          return Promise.delay(15);
+        })
+        .then(function() {
+          assert.strictEqual(this.count, 0);
+        });
+    });
+
+    it('should isolate cancels from one another', function() {
+      var p = this.batcher.fire();
+      var p2 = this.batcher.fire();
+
+      return Promise.delay(1)
+        .bind(this)
+        .then(function() {
+          assert(p.isCancellable());
+          p.cancel();
+          return p2;
+        })
+        .then(function() {
+          assert.strictEqual(this.count, 1);
+        });
+    });
+
+    it('should cancel the trigger when all fires are cancelled', function() {
+      var p = this.batcher.fire();
+      var p2 = this.batcher.fire();
+
+      return Promise.delay(1)
+        .bind(this)
+        .then(function() {
+          assert(p.isCancellable());
+          assert(p2.isCancellable());
+          p.cancel();
+          p2.cancel();
+          return Promise.delay(15);
+        })
+        .then(function() {
+          assert.strictEqual(this.count, 0);
+        });
+    });
+
+    it('should handle rejections', function() {
+      this.throwError = true;
+      return this.batcher.fire()
+        .bind(this)
+        .then(function() {
+          assert.ok(false, 'Expected error');
+        }, function(err) {
+          assert.strictEqual(err.message, 'Fail');
+        });
+    });
+  });
+
+  describe('Batcher', function() {
+
+    beforeEach(function() {
+      this.count = 0;
+      this.batcher = new promiseUtil.Batcher(function(items) {
+        this.count++;
+        this.items = items;
+        return 'Hello';
+      }.bind(this), 10);
+    });
+
+    it('should call on add', function() {
+      return this.batcher.add(10)
+        .then(function(value) {
+          assert.strictEqual(value, 'Hello');
+        });
+    });
+
+    it('should call on add with multiple items', function() {
+      return Promise.all([
+          this.batcher.add(1),
+          this.batcher.add(2),
+        ])
+        .spread(function(a,b) {
+          assert.strictEqual(a, 'Hello');
+          assert.strictEqual(b, 'Hello');
+        });
+    });
+
+    it('should return a value', function() {
+      var p1 = this.batcher.add(1);
+      var p2 = this.batcher.add(2);
+      var p3 = this.batcher.add(3);
+
+      assert(p1.isCancellable());
+      p1.cancel();
+
+      return this.batcher.next()
+        .bind(this)
+        .then(function() {
+          assert(p1.isCancelled());
+          assert.strictEqual(this.count, 1);
+          assert.deepEqual(this.items, [2, 3]);
+          return Promise.all([p2, p3]);
+        })
+        .spread(function(a,b) {
+          assert.strictEqual(a, 'Hello');
+          assert.strictEqual(b, 'Hello');
+        });
+    });
+
+    it('should not batch if all the items are cancelled', function() {
+      var p1 = this.batcher.add(1);
+      var p2 = this.batcher.add(2);
+      p1.cancel();
+      p2.cancel();
+
+      return Promise.delay(15)
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.count, 0);
+        });
+    });
+
+  });
+
 
 });
