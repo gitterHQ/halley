@@ -84,6 +84,28 @@ describe('promise-util', function() {
         });
     });
 
+    it('cancellation should work', function() {
+      var count = 0;
+
+      var p = this.sync.sync('1', function() {
+        return new Promise(function(resolve, reject, onCancel) {
+           Promise.delay(1).then(resolve);
+
+           onCancel(function() {
+             count++;
+           });
+        });
+      });
+
+      p.cancel();
+
+      return Promise.delay(2)
+        .then(function() {
+          assert.strictEqual(count, 1);
+        });
+    });
+
+
     it('upstream cancellations should be isolated', function() {
       var p1 = this.sync.sync('1', function() { return Promise.delay(3).return('a'); });
       var p2 = this.sync.sync('1', function() { return 'b'; });

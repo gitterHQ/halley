@@ -39,8 +39,12 @@ module.exports = function() {
       });
 
       return Promise.join(subscribe, d.promise, function(subscription) {
-        return subscription.unsubscribe();
-      });
+          return subscription.unsubscribe();
+        })
+        .bind(this)
+        .then(function() {
+          assert.deepEqual(this.client.listChannels(), []);
+        });
     });
 
     it('should handle subscriptions that are cancelled before establishment, single', function() {
@@ -99,6 +103,9 @@ module.exports = function() {
         .then(function() {
           var d = defer();
           return Promise.all([this.client.subscribe('/datetime', d.resolve), d.promise]);
+        })
+        .then(function() {
+          assert.deepEqual(this.client.listChannels(), ['/datetime']);
         });
 
       // Cancel immediately
@@ -141,6 +148,34 @@ module.exports = function() {
           subscription1.cancel();
           return subscription2;
         });
+    });
+
+
+    describe('extended tests #slow', function() {
+
+      it('should handle multiple subscribe/unsubscribes', function() {
+        var i = 0;
+        var client = this.client;
+        return (function next() {
+            if (++i > 100) return;
+
+            var subscribe = client.subscribe('/datetime', function() { });
+
+            return (i % 2 === 0 ? subscribe : Promise.delay(1))
+              .then(function() {
+                if (subscribe.isFulfilled()) {
+                  assert.deepEqual(client.listChannels(), ['/datetime']);
+                  return subscribe.value().unsubscribe();
+                } else {
+                  subscribe.cancel();
+                }
+              })
+              .then(next);
+          })()
+          .then(function() {
+            assert.deepEqual(client.listChannels(), []);
+          });
+      });
     });
 
   });
