@@ -189,5 +189,79 @@ describe('promise-util', function() {
     });
   });
 
+  describe('LazySingleton', function() {
+
+    beforeEach(function() {
+      this.count = 0;
+      this.lazySingleton = new promiseUtil.LazySingleton(function() {
+        this.count++;
+        return this.singletonValue;
+      }.bind(this));
+
+    });
+
+    it('should return a value', function() {
+      this.singletonValue = Promise.resolve('a');
+      return this.lazySingleton.get()
+        .bind(this)
+        .then(function(a) {
+          assert.strictEqual(this.count, 1);
+          assert.strictEqual(a, 'a');
+        });
+    });
+
+    it('should cache the results', function() {
+      this.singletonValue = Promise.resolve('a');
+      return this.lazySingleton.get()
+        .bind(this)
+        .then(function(a) {
+          assert.strictEqual(this.count, 1);
+          assert.strictEqual(a, 'a');
+          return this.lazySingleton.get();
+        })
+        .then(function(a) {
+          assert.strictEqual(this.count, 1);
+          assert.strictEqual(a, 'a');
+        });
+    });
+
+    it('should not make multiple calls', function() {
+      this.singletonValue = Promise.delay(1).return('a');
+      return Promise.all([
+          this.lazySingleton.get(),
+          this.lazySingleton.get()
+        ])
+        .bind(this)
+        .then(function(a) {
+          assert.strictEqual(this.count, 1);
+          assert.deepEqual(a, ['a', 'a']);
+        });
+    });
+
+    it('should handle cancellations', function() {
+      this.singletonValue = Promise.delay(10).return('a');
+
+      return Promise.delay(0)
+        .bind(this)
+        .then(function() {
+          assert(this.singletonValue.isPending());
+          this.singletonValue.cancel();
+          return promiseUtil.after(this.lazySingleton.get());
+        })
+        .then(function() {
+          assert.strictEqual(this.count, 1);
+
+          this.singletonValue = Promise.delay(1).return('a');
+          return this.lazySingleton.get();
+        })
+        .then(function(a) {
+          assert.strictEqual(this.count, 2);
+          assert.strictEqual(a, 'a');
+        });
+
+    });
+
+  });
+
 
 });
