@@ -7,7 +7,7 @@ Halley is an experimental fork of James Coglan's excellent Faye library.
 ## Differences from Faye
 
 The main differences from Faye are (listed in no particular order):
-* **Uses promises** (and Bluebird's promise cancelleation feature) to do the heavy-lifting whereever possible.
+* **Uses promises** (and Bluebird's promise cancellation feature) to do the heavy-lifting whereever possible.
 * No Ruby client or server and no server support. Halley is a **Javascript Bayeux client only**
 * **Webpack/browserify packaging**
 * **Client reset support**. This will force the client to rehandshake. This can be useful when the application realises that the connection is dead before the bayeux client does and allows for faster recovery in these situations.
@@ -18,9 +18,108 @@ The main differences from Faye are (listed in no particular order):
   * Uses backbone events (or backbone-events-standalone) for events
   * Mocha/sinon/karma for testing
 
+### Usage
+
+
+### Basic Example
+
+```js
+var Halley = require('halley');
+var client = new Halley.Client('/bayeux');
+
+function onMessage(message) {
+  console.log('Incoming message', message);
+}
+
+client.subscribe('/channel', onMessage);
+
+client.publish('/channel2', { value: 1 })
+  .then(function(response) {
+    console.log('Publish returned', response);
+  })
+  .catch(function(err) {
+    console.error('Publish failed:', err);
+  });
+```
+
+### Advanced Example
+
+```js
+var Halley = require('halley');
+var Promise = require('bluebird');
+
+/** Create a client (showing the default options) */
+var client = new Halley.Client('/bayeux', {
+  /* The amount of time to wait (in ms) between successive
+   * retries on a single message send */
+  retry: 30000,
+
+  /**
+   * An integer representing the minimum period of time, in milliseconds, for a
+   * client to delay subsequent requests to the /meta/connect channel.
+   * A negative period indicates that the message should not be retried.
+   * A client MUST implement interval support, but a client MAY exceed the
+   * interval provided by the server. A client SHOULD implement a backoff
+   * strategy to increase the interval if requests to the server fail without
+   * new advice being received from the server.
+   */
+  interval: 0,
+
+  /**
+   * An integer representing the period of time, in milliseconds, for the
+   * server to delay responses to the /meta/connect channel.
+   * This value is merely informative for clients. Bayeux servers SHOULD honor
+   * timeout advices sent by clients.
+   */
+  timeout: 30000,
+
+  /**
+   * The maximum number of milliseconds to wait before considering a
+   * request to the Bayeux server failed.
+   */
+  maxNetworkDelay: 30000,
+
+  /**
+   * The maximum number of milliseconds to wait for a WebSocket connection to
+   * be opened. It does not apply to HTTP connections.
+   */
+   connectTimeout: 30000,
+
+  /**
+   * Maximum time to wait on disconnect
+   */
+  disconnectTimeout: 10000
+});
+
+function onMessage(message) {
+  console.log('Incoming message', message);
+}
+
+var subscription;
+/** `.subscribe` returns a cancellable promise */
+var subscribe = client.subscribe('/channel', onMessage)
+  .then(function(subs) {
+    subscription = subs;
+  })
+  .catch(function(err) {
+    console.error('Subscribe failed', err);
+  });
+
+/** As an example, wait 10 seconds and cancel the subscription */
+Promise.delay(10000)
+  .then(function() {
+    /* If the subscribe promise has resolved, unsubscribe from the server */
+    if (subscription) subscription.unsubscribe();
+
+    /* If the subscribe promise is still pending, cancel it */
+    subscribe.cancel();
+  });
+```
+
+
 ### Debugging
 
-Halley uses [debug](https://github.com/visionmedia/debug) for debugging. 
+Halley uses [debug](https://github.com/visionmedia/debug) for debugging.
 
   * To enable in nodejs, `export DEBUG=halley:*`
   * To enable in a browser, `window.localStorage.debug='halley:*'`
