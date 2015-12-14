@@ -13,6 +13,6 @@ require('./lib/util/externals').use({
 var Transport = require('./lib/transport/transport');
 
 Transport.register('websocket'   , require('./lib/transport/node/node-websocket'));
-Transport.register('long-polling', require('./lib/transport/node/node_http'));
+Transport.register('long-polling', require('./lib/transport/node/node-http'));
 
 module.exports = require('./lib/main');
