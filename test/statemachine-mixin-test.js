@@ -370,7 +370,86 @@ describe('statemachine-mixin', function() {
         });
     });
 
-
   });
 
+  describe('cancellation', function() {
+    beforeEach(function() {
+
+      var TEST_FSM = {
+        name: "test",
+        initial: "A",
+        transitions: {
+          A: {
+            t1: "B",
+          },
+          B: {
+            t2: "C",
+          },
+          C: {
+            t3: "D"
+          },
+          D: {
+          }
+        }
+      };
+
+      function TestMachine() {
+        this.count = 0;
+        this.initStateMachine(TEST_FSM);
+      }
+
+      TestMachine.prototype = {
+        _onEnterB: function() {
+          return Promise.delay(1);
+        },
+        _onEnterC: function() {
+          return Promise.delay(5)
+            .bind(this)
+            .then(function() {
+              this.count++;
+            });
+        }
+      };
+      extend(TestMachine.prototype, StateMachineMixin);
+
+      this.testMachine = new TestMachine();
+    });
+
+    it('should handle cancellations before they execute', function() {
+      var p1 = this.testMachine.transitionState('t1');
+      var p2 = this.testMachine.transitionState('t2');
+
+      p2.cancel();
+      return Promise.delay(5)
+        .bind(this)
+        .then(function() {
+          assert(!p1.isCancelled());
+          return p1;
+        })
+        .then(function() {
+          assert(this.testMachine.stateIs('B'));
+        });
+    });
+
+    it('should not cancel transitions after they start', function() {
+      var p;
+      return this.testMachine.transitionState('t1')
+        .bind(this)
+        .then(function() {
+          p = this.testMachine.transitionState('t2');
+          return Promise.delay(1);
+        })
+        .then(function() {
+          assert(p.isCancellable());
+          p.cancel();
+          return Promise.delay(5);
+        })
+        .then(function() {
+          assert.strictEqual(this.testMachine.count, 1);
+          assert(this.testMachine.stateIs('C'));
+        });
+    });
+
+
+  });
 });
