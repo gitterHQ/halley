@@ -449,4 +449,94 @@ describe('promise-util', function() {
   });
 
 
+  describe('Sequencer', function() {
+
+    beforeEach(function() {
+      this.inPlay = 0;
+      this.count = 0;
+      this.sequencer = new promiseUtil.Sequencer();
+      this.fn = function() {
+        this.inPlay++;
+        this.count++;
+        var count = this.count;
+        assert.strictEqual(this.inPlay, 1);
+        return Promise.delay(1)
+          .bind(this)
+          .then(function() {
+            this.inPlay--;
+            assert.strictEqual(this.inPlay, 0);
+            return count;
+          });
+      }.bind(this);
+
+      this.fnReject = function() {
+        this.count++;
+        return Promise.delay(1)
+          .bind(this)
+          .then(function() {
+            throw new Error('Fail');
+          });
+      }.bind(this);
+
+      this.fnWillBeCancelled = function() {
+        this.count++;
+        var promise = new Promise(function() {});
+
+        Promise.delay(1)
+          .then(function() {
+            promise.cancel();
+          });
+
+        return promise;
+      }.bind(this);
+
+    });
+
+    it('should sequence multiple calls', function() {
+      return Promise.all([
+          this.sequencer.chain(this.fn),
+          this.sequencer.chain(this.fn)
+        ])
+        .bind(this)
+        .spread(function(a, b) {
+          assert.strictEqual(a, 1);
+          assert.strictEqual(b, 2);
+          assert.strictEqual(this.count, 2);
+        });
+    });
+
+    it('should handle rejections', function() {
+      var promises = [this.sequencer.chain(this.fnReject), this.sequencer.chain(this.fn)];
+      return Promise.all(promises.map(function(promise) {
+          return promise.reflect();
+        }))
+        .bind(this)
+        .spread(function(a, b) {
+          assert(a.isRejected());
+          assert.strictEqual(a.reason().message, 'Fail');
+
+          assert(b.isFulfilled());
+          assert.strictEqual(b.value(), 2);
+          assert.strictEqual(this.count, 2);
+        });
+    });
+
+
+    it('should handle cancellations', function() {
+      var promises = [this.sequencer.chain(this.fnWillBeCancelled), this.sequencer.chain(this.fn)];
+      return Promise.all(promises.map(function(promise) {
+          return promise.reflect();
+        }))
+        .bind(this)
+        .spread(function(a, b) {
+          assert(a.isCancelled());
+
+          assert(b.isFulfilled());
+          assert.strictEqual(b.value(), 2);
+          assert.strictEqual(this.count, 2);
+        });
+    });
+
+  });
+
 });
