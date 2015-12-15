@@ -41,7 +41,7 @@ module.exports = function() {
                 resolve();
               }
             }),
-            serverControl.networkOutage(1000)
+            serverControl.networkOutage(2000)
               .then(function() {
                 globalEvents.trigger('network');
               })
