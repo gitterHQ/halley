@@ -178,4 +178,4 @@ gulp.task('karma', function (done) {
 
 });
 
-gulp.task('default', ['webpack', 'uglify', 'gzip', 'test']);
+gulp.task('default', ['webpack', 'uglify', 'gzip', 'test-coverage']);
