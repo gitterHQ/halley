@@ -138,15 +138,22 @@ module.exports = function() {
     });
 
     it('cancelling one subscription during handshake should not affect another', function() {
-      var subscription1 = this.client.subscribe('/datetime', function() { });
-      var subscription2 = this.client.subscribe('/datetime', function() { });
+      var subscribe1 = this.client.subscribe('/datetime', function() { });
+      var subscribe2 = this.client.subscribe('/datetime', function() { });
 
       return Promise.delay(1)
         .bind(this)
         .then(function() {
-          assert(subscription1.isPending());
-          subscription1.cancel();
-          return subscription2;
+          assert(subscribe1.isPending());
+          subscribe1.cancel();
+          return subscribe2;
+        })
+        .then(function(subscription2) {
+          assert.deepEqual(this.client.listChannels(), ['/datetime']);
+          return subscription2.unsubscribe();
+        })
+        .then(function() {
+          assert.deepEqual(this.client.listChannels(), []);
         });
     });
 
@@ -157,7 +164,7 @@ module.exports = function() {
         var i = 0;
         var client = this.client;
         return (function next() {
-            if (++i > 100) return;
+            if (++i > 15) return;
 
             var subscribe = client.subscribe('/datetime', function() { });
 
@@ -169,6 +176,10 @@ module.exports = function() {
                 } else {
                   subscribe.cancel();
                 }
+              })
+              .delay(100)
+              .then(function() {
+                assert.deepEqual(client.listChannels(), []);
               })
               .then(next);
           })()
