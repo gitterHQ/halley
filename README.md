@@ -1,6 +1,6 @@
 # Halley
 
-[![Join the chat at https://gitter.im/gitterHQ/halley](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gitterHQ/halley?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/gitterHQ/halley](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gitterHQ/halley?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Coverage Status](https://coveralls.io/repos/gitterHQ/halley/badge.svg?branch=master&service=github)](https://coveralls.io/github/gitterHQ/halley?branch=master)
 
 Halley is an experimental fork of James Coglan's excellent Faye library.
 
