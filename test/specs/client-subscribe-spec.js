@@ -57,9 +57,8 @@ module.exports = function() {
         .then(function() {
           // The subscribe will be inflight right now
           assert(subscribe.isPending());
-          subscribe.cancel();
+          return subscribe.unsubscribe();
         })
-        .delay(10)
         .then(function() {
           assert.deepEqual(this.client.listChannels(), []);
         });
@@ -80,10 +79,9 @@ module.exports = function() {
 
           // The subscribe will be inflight right now
           assert(subscribe1.isPending());
-          subscribe1.cancel();
+          return subscribe1.unsubscribe();
         })
         .then(function() {
-          assert(!subscribe2.isCancelled());
           return subscribe2;
         })
         .then(function() {
@@ -98,7 +96,7 @@ module.exports = function() {
       var promise = this.client.connect()
         .bind(this)
         .then(function() {
-          subscription.cancel();
+          return subscription.unsubscribe();
         })
         .then(function() {
           var d = defer();
@@ -109,7 +107,7 @@ module.exports = function() {
         });
 
       // Cancel immediately
-      subscription.cancel();
+      subscription.unsubscribe();
 
       return promise;
     });
@@ -119,6 +117,32 @@ module.exports = function() {
           assert(false);
         })
         .then(function() { assert(false); }, function() { });
+    });
+
+    it('should handle subscribe then followed by catch', function() {
+      return this.client.subscribe('/banned', function() {
+          assert(false);
+        })
+        .then(function() {
+          assert(false);
+        })
+        .catch(function(err) {
+          assert.strictEqual(err.message, 'Invalid subscription');
+        });
+    });
+
+    it('should handle subscribe with catch', function() {
+      var count = 0;
+      return this.client.subscribe('/banned', function() {
+          assert(false);
+        })
+        .catch(function(err) {
+          assert.strictEqual(err.message, 'Invalid subscription');
+          count++;
+        })
+        .then(function() {
+          assert.strictEqual(count, 1);
+        });
     });
 
     it('should deal with subscriptions that fail with unknown client', function() {
@@ -145,10 +169,9 @@ module.exports = function() {
         .bind(this)
         .then(function() {
           assert(subscribe1.isPending());
-          subscribe1.cancel();
-          return subscribe2;
+          return [subscribe1.unsubscribe(), subscribe2];
         })
-        .then(function(subscription2) {
+        .spread(function(unsubscribe, subscription2) {
           assert.deepEqual(this.client.listChannels(), ['/datetime']);
           return subscription2.unsubscribe();
         })
@@ -170,14 +193,8 @@ module.exports = function() {
 
             return (i % 2 === 0 ? subscribe : Promise.delay(1))
               .then(function() {
-                if (subscribe.isFulfilled()) {
-                  assert.deepEqual(client.listChannels(), ['/datetime']);
-                  return subscribe.value().unsubscribe();
-                } else {
-                  subscribe.cancel();
-                }
+                return subscribe.unsubscribe();
               })
-              .delay(100)
               .then(function() {
                 assert.deepEqual(client.listChannels(), []);
               })

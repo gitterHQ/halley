@@ -18,8 +18,12 @@ The main differences from Faye are (listed in no particular order):
   * Uses backbone events (or backbone-events-standalone) for events
   * Mocha/sinon/karma for testing
 
-### Usage
+## Why's it called "Halley"?
 
+Lots of reasons! Halley implements the Bayeux Protocol. The [Bayeux Tapestry](https://en.wikipedia.org/wiki/Bayeux_Tapestry)
+contains the first know depiction of Halley's Comet. Halley is a [cometd](https://cometd.org) client.
+
+### Usage
 
 ### Basic Example
 
@@ -95,24 +99,24 @@ function onMessage(message) {
   console.log('Incoming message', message);
 }
 
-var subscription;
-/** `.subscribe` returns a cancellable promise */
-var subscribe = client.subscribe('/channel', onMessage)
-  .then(function(subs) {
-    subscription = subs;
+/*
+ *`.subscribe` returns a thenable with a `.unsubscribe` method
+ * but will also resolve as a promise 
+ */
+var subscription = client.subscribe('/channel', onMessage);
+
+subscription
+  .then(function() {
+    console.log('Subscription successful');
   })
   .catch(function(err) {
-    console.error('Subscribe failed', err);
+    console.log('Subscription failed: ', err);
   });
 
 /** As an example, wait 10 seconds and cancel the subscription */
 Promise.delay(10000)
   .then(function() {
-    /* If the subscribe promise has resolved, unsubscribe from the server */
-    if (subscription) subscription.unsubscribe();
-
-    /* If the subscribe promise is still pending, cancel it */
-    subscribe.cancel();
+    return subscription.unsubscribe();
   });
 ```
 
