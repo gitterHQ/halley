@@ -126,6 +126,22 @@ Halley uses [debug](https://github.com/visionmedia/debug) for debugging.
 
 To limit the amount of debug logging produced, you can specify individual categories, eg `export DEBUG=halley:client`.
 
+## Tests
+
+Most of the tests in Halley are end-to-end integration tests, which means running a server environment alongside client tests which run in the browser.
+
+In order to isolate tests from one another, the server will spawn a new Faye server and Proxy server for each test (and tear them down when the test is complete). 
+
+Some of the tests connect to Faye directly, while other tests are performed via the Proxy server which is intended to simulate an reverse-proxy/ELB situation common in many production environments.
+
+The tests do horrible things in order to test some of the situations we've discovered when using Bayeux and websockets on the web. Examples of things we test to ensure that the client recovers include:
+
+* Corrupting websocket streams, like bad MITM proxies sometimes do
+* Dropping random packets
+* Restarting the server during the test
+* Deleting the client connection from the server during the test
+* Not communicating TCP disconnects from the server-to-client and client-to-server when communicating via the proxy (a situation we've seen on ELB)
+
 ## License
 
 (The MIT License)
