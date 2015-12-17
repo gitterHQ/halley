@@ -65,13 +65,18 @@ describe('channel-set', function() {
   });
 
   it('should fail both subscriptions when subscribe occurs in parallel', function() {
-    return settleAll([
-        this.channelSetBadChannel.subscribe('/x', this.listener1),
-        this.channelSetBadChannel.subscribe('/x', this.listener2),
-      ])
+    var p1 = this.channelSetBadChannel.subscribe('/x', this.listener1);
+    var p2 = this.channelSetBadChannel.subscribe('/x', this.listener2);
+
+    // Surpress warnings in tests:
+    p1.catch(function() {});
+    p2.catch(function() {});
+    
+    return settleAll([p1, p2])
       .bind(this)
       .each(function(x) {
         assert(x.isRejected());
+
         assert(this.onSubscribeBadChannel.calledWith('/x'));
         assert(this.onSubscribeBadChannel.calledTwice);
       })
