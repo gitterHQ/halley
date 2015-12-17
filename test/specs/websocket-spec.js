@@ -13,14 +13,9 @@ module.exports = function() {
 
     it('should cancel connect', function() {
       var connect = this.websocket.connect();
-
-      return Promise.delay(1)
+      connect.cancel();
+      return Promise.delay(100)
         .bind(this)
-        .then(function() {
-          assert(connect.isPending());
-          connect.cancel();
-        })
-        .delay(1)
         .then(function() {
           assert(connect.isCancelled());
           assert(!connect._socket);
