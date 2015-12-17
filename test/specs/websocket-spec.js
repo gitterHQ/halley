@@ -18,7 +18,8 @@ module.exports = function() {
         .bind(this)
         .then(function() {
           assert(connect.isCancelled());
-          assert(!connect._socket);
+          assert(!this.websocket._socket);
+          assert.strictEqual(this.websocket._connectPromise, null);
         });
     });
 
