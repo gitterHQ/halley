@@ -180,6 +180,21 @@ module.exports = function() {
         });
     });
 
+    it('unsubscribing from a channel after a disconnect should not reconnect the client', function() {
+      return this.client.subscribe('/datetime', function() { })
+        .bind(this)
+        .then(function(subscription) {
+          return this.client.disconnect()
+            .bind(this)
+            .then(function() {
+              assert(this.client.stateIs('UNCONNECTED'));
+              return subscription.unsubscribe();
+            })
+            .then(function() {
+              assert(this.client.stateIs('UNCONNECTED'));
+            });
+        });
+    });
 
     describe('extended tests #slow', function() {
 
