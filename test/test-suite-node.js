@@ -60,6 +60,7 @@ describe('node-test-suite', function() {
     require('./client-long-polling-test');
     require('./client-websockets-test');
     require('./client-all-transports-test');
+    require('./client-shutdown-test');
   });
 
 
