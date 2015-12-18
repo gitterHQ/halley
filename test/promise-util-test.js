@@ -311,7 +311,7 @@ describe('promise-util', function() {
       return Promise.all([
           this.batcher.fire(),
           this.batcher.fire(true),
-          Promise.delay(1).bind(this).then(function()  {
+          Promise.delay(10).bind(this).then(function()  {
             return this.batcher.fire();
           })
         ])
