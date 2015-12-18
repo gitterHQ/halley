@@ -1,13 +1,27 @@
 'use strict';
 
-var Halley = require('../..');
-var wtf = require('wtfnode');
+var Halley  = require('../..');
+var wtf     = require('wtfnode');
+var Promise = require('bluebird');
 
 var url = process.argv[2];
 
 var client = new Halley.Client(url);
 
 client.publish('/channel', { data: 1 })
+  .then(function() {
+    var resolve;
+    var gotMessage = new Promise(function(res) {
+      resolve = res;
+    });
+
+    return [gotMessage, client.subscribe('/datetime', function() {
+      resolve();
+    })];
+  })
+  .spread(function(message, subscription) {
+    return subscription.unsubscribe();
+  })
   .then(function() {
     return client.disconnect();
   })
