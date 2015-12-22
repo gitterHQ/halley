@@ -69,6 +69,36 @@ module.exports = function() {
         });
     });
 
+    /**
+     * Ensure the client is disabled after advice:none
+     */
+    it('should handle advice none', function() {
+      var client = this.client;
+      var d = defer();
+
+      client.once('disabled', function() {
+        d.resolve();
+      });
+
+      client.publish('/advice-none', { data: 1 });
+
+      return d.promise
+        .then(function() {
+          assert(client.stateIs('DISABLED'));
+
+          // Don't reconnect
+          return client.publish('/advice-none', { data: 1 })
+            .then(function() {
+              assert.ok(false);
+            }, function(err) {
+              assert.strictEqual(err.message, 'Client disabled');
+
+              return client.reset();    
+            });
+        });
+
+    });
+
   });
 
 };
