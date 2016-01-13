@@ -1,6 +1,8 @@
 'use strict';
 
-var Halley = require('..');
+var Halley    = require('..');
+var Websocket = require('../lib/transport/base-websocket');
+var assert    = require('assert');
 
 describe('client-all-transport', function() {
 
@@ -14,7 +16,11 @@ describe('client-all-transport', function() {
     });
 
     afterEach(function() {
-      this.client.disconnect();
+      return this.client.disconnect()
+        .then(function() {
+          // Ensure that all sockets are closed
+          assert.strictEqual(Websocket._countSockets(), 0);
+        });
     });
 
     require('./specs/client-spec')();
@@ -31,7 +37,11 @@ describe('client-all-transport', function() {
     });
 
     afterEach(function() {
-      this.client.disconnect();
+      return this.client.disconnect()
+        .then(function() {
+          // Ensure that all sockets are closed
+          assert.strictEqual(Websocket._countSockets(), 0);
+        });
     });
 
     require('./specs/client-proxied-spec')();
