@@ -149,13 +149,13 @@ module.exports = function() {
       return this.client.connect()
         .bind(this)
         .then(function() {
-          return this.serverControl.deleteSocket(this.client.getClientId());
+          return this.serverControl.deleteSocket(this.client.getClientId())
+            .delay(100); // Give the server time to disconnect
         })
         .then(function() {
           var d = defer();
 
           var subscribe = this.client.subscribe('/datetime', d.resolve);
-
           return Promise.all([subscribe, d.promise]);
         });
 

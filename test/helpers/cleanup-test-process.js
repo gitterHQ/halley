@@ -1,7 +1,7 @@
 'use strict';
 
+var wtf     = require('wtfnode'); // Must be first
 var Halley  = require('../..');
-var wtf     = require('wtfnode');
 var Promise = require('bluebird');
 
 var url = process.argv[2];
