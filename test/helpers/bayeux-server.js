@@ -19,7 +19,7 @@ BayeuxServer.prototype = {
 
     var bayeux = this.bayeux = new faye.NodeAdapter({
       mount: '/bayeux',
-      timeout: 10,
+      timeout: 5,
       ping: 2,
       engine: {
         interval: 0.3

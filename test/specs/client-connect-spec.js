@@ -19,8 +19,7 @@ module.exports = function() {
         })
         .then(function() {
           assert(!connectionWentDown);
-        })
-
+        });
     });
 
   });

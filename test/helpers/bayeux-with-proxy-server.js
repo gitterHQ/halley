@@ -57,6 +57,7 @@ BayeuxWithProxyServer.prototype = {
   restart: Promise.method(function() {
     var proxy = this.proxyServer;
     return Promise.fromCallback(proxy.stop.bind(proxy))
+      .delay(500)
       .then(function() {
         return Promise.fromCallback(proxy.start.bind(proxy));
       });
