@@ -86,6 +86,34 @@ module.exports = function() {
         });
     });
 
+    it('should emit connection events without messages', function() {
+      var client = this.client;
+
+      var d1 = defer();
+      client.on('connection:down', function() {
+        d1.resolve();
+      });
+
+      var d2 = defer();
+      return client.connect()
+        .bind(this)
+        .then(function() {
+          client.on('connection:up', function() {
+            d2.resolve();
+          });
+
+          return this.serverControl.restart();
+        })
+        .then(function() {
+          // connection:down fired
+          return d1.promise;
+        })
+        .then(function() {
+          // connection:up fired
+          return d2.promise;
+        });
+    });
+
   });
 
 };
