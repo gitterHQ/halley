@@ -16,7 +16,7 @@ describe('onbeforeunload', function() {
 
   it('should respond to beforeunload correctly', function(done) {
     var count = 0;
-    var subscription = client.subscribe('/datetime', function(message) {
+    var subscription = client.subscribe('/datetime', function() {
       count++;
 
       if (count === 3) {
@@ -25,7 +25,7 @@ describe('onbeforeunload', function() {
       }
     });
 
-    subscription.catch(function() {
+    subscription.catch(function(err) {
       done(err);
     });
 
