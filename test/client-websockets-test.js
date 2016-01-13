@@ -7,6 +7,8 @@ var assert    = require('assert');
 describe('client-websocket', function() {
   describe('direct', function() {
     beforeEach(function() {
+      this.openSocketsBefore = Websocket._countSockets();
+
       this.client = new Halley.Client(this.urlDirect, {
         retry: this.clientOptions.retry,
         timeout: this.clientOptions.timeout,
@@ -17,9 +19,10 @@ describe('client-websocket', function() {
 
     afterEach(function() {
       return this.client.disconnect()
+        .bind(this)
         .then(function() {
           // Ensure that all sockets are closed
-          assert.strictEqual(Websocket._countSockets(), 0);
+          assert.strictEqual(Websocket._countSockets(), this.openSocketsBefore);
         });
 
     });
