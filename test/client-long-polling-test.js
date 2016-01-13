@@ -16,7 +16,7 @@ describe('client-long-polling', function() {
     });
 
     afterEach(function() {
-      this.client.disconnect();
+      return this.client.disconnect();
     });
 
     require('./specs/client-spec')();
@@ -35,7 +35,7 @@ describe('client-long-polling', function() {
     });
 
     afterEach(function() {
-      this.client.disconnect();
+      return this.client.disconnect();
     });
 
     require('./specs/client-proxied-spec')();
