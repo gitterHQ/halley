@@ -59,30 +59,40 @@ module.exports = function() {
       var client = this.client;
 
       var d1 = defer();
-      client.on('connection:down', function() {
+      var d2 = defer();
+      var d3 = defer();
+
+      client.once('connection:up', function() {
         d1.resolve();
       });
 
-      var d2 = defer();
       return client.connect()
         .bind(this)
         .then(function() {
+          // Awaiting initial connection:up
+          return d1.promise;
+        })
+        .then(function() {
+          client.once('connection:down', function() {
+            d2.resolve();
+          });
+
           return client.subscribe('/datetime', function() {});
         })
         .then(function() {
-          client.on('connection:up', function() {
-            d2.resolve();
+          client.once('connection:up', function() {
+            d3.resolve();
           });
 
           return this.serverControl.restart();
         })
         .then(function() {
           // connection:down fired
-          return d1.promise;
+          return d2.promise;
         })
         .then(function() {
           // connection:up fired
-          return d2.promise;
+          return d3.promise;
         });
     });
 
