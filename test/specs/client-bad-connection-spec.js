@@ -107,16 +107,16 @@ module.exports = function() {
       var d2 = defer();
       return client.connect()
         .bind(this)
+        .delay(400) // Give the connection time to send a connect
         .then(function() {
           client.on('connection:up', function() {
             d2.resolve();
           });
-
           return this.serverControl.restart();
         })
         .then(function() {
           // connection:down fired
-          return d1.promise;
+          return d1.promise.timeout(200); // connection:down should be fast
         })
         .then(function() {
           // connection:up fired
