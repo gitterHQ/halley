@@ -116,7 +116,7 @@ module.exports = function() {
         })
         .then(function() {
           // connection:down fired
-          return d1.promise.timeout(200); // connection:down should be fast
+          return d1.promise;
         })
         .then(function() {
           // connection:up fired
