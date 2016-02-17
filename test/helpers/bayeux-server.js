@@ -87,6 +87,26 @@ BayeuxServer.prototype = {
 
     bayeux.addExtension({
       incoming: function(message, req, callback) {
+
+        if (message.channel === '/meta/handshake' && message.ext && message.ext.deny) {
+          message.error = '401::Unauthorised';
+        }
+
+        return callback(message);
+      },
+
+      outgoing: function(message, req, callback) {
+        if (message.channel === '/meta/handshake' && message.error === '401::Unauthorised') {
+          message.advice = { reconnect: 'none' };
+        }
+
+        return callback(message);
+      }
+
+    });
+
+    bayeux.addExtension({
+      incoming: function(message, req, callback) {
         if (self.crushWebsocketConnections) {
           if (req && req.headers.connection === 'Upgrade') {
             debug('Disconnecting websocket');
