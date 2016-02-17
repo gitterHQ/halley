@@ -1,6 +1,6 @@
 'use strict';
 
-var TransportPool = require('../lib/protocol/transport-pool');
+var TransportPool = require('../lib/transport/pool');
 var assert = require('assert');
 var Promise = require('bluebird');
 var sinon = require('sinon');
