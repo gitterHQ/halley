@@ -175,7 +175,12 @@ describe('promise-util', function() {
 
     it('should execute after reject', function() {
       var e = new Error();
-      return promiseUtil.after(Promise.reject(e));
+      var p = Promise.delay(1).throw(e);
+      p.catch(function() {
+        // Dangling catch to prevent bluebird warnings
+      });
+
+      return promiseUtil.after(p);
     });
 
     it('should propogate when the source promise is cancelled', function() {
@@ -513,30 +518,52 @@ describe('promise-util', function() {
         .bind(this)
         .spread(function(a, b) {
           assert(a.isRejected());
+
           assert.strictEqual(a.reason().message, 'Fail');
 
           assert(b.isFulfilled());
           assert.strictEqual(b.value(), 2);
           assert.strictEqual(this.count, 2);
+          return a;
         });
     });
 
 
-    it('should handle cancellations', function() {
-      var promises = [this.sequencer.chain(this.fnWillBeCancelled), this.sequencer.chain(this.fn)];
-      return Promise.all(promises.map(function(promise) {
-          return promise.reflect();
-        }))
-        .bind(this)
-        .spread(function(a, b) {
-          assert(a.isCancelled());
+    it('should handle upstream cancellations', function() {
+      var p1 = this.sequencer.chain(this.fnWillBeCancelled);
+      var p2 = this.sequencer.chain(this.fn);
 
-          assert(b.isFulfilled());
-          assert.strictEqual(b.value(), 2);
+      return p2.bind(this)
+        .then(function(value) {
+          assert(p1.isCancelled());
+
+          assert(p2.isFulfilled());
+          assert.strictEqual(value, 2);
           assert.strictEqual(this.count, 2);
         });
     });
 
+    it('should handle downstream cancellations', function() {
+      var count = 0;
+
+      var p1 = this.sequencer.chain(function() {
+        console.log('p1. waiting 10');
+        return Promise.delay(10).then(function() {
+          console.log('p1. waiting 10');
+
+          count++;
+          assert.ok(false);
+        });
+      });
+
+      var p2 = this.sequencer.chain(function() {
+        assert.strictEqual(count, 0);
+      });
+
+      p1.cancel();
+      return p2;
+    });
   });
+
 
 });
