@@ -47,8 +47,8 @@ module.exports = function() {
           .then(function() {
             assert.ok(false);
           }, function(e) {
-            assert.strictEqual(e.reconnect, 'none');
-          })
+            assert.strictEqual(e.message, 'Client disabled');
+          });
       });
     });
 

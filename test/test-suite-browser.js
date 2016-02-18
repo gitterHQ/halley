@@ -53,6 +53,7 @@ describe('browser integration tests', function() {
 });
 
 describe('browser unit tests', function() {
+  require('./errors-test');
   require('./promise-util-test');
   require('./channel-set-test');
   require('./extensions-test');

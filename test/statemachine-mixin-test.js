@@ -511,7 +511,10 @@ describe('statemachine-mixin', function() {
     it('should transition', function() {
       var promise = this.testMachine.transitionState('t1');
 
-      return this.testMachine.resetTransition('disable')
+      promise.catch(function() {}); // Prevent warnings here
+
+      var resetReason = new Error('We need to reset');
+      return this.testMachine.resetTransition('disable', resetReason)
         .bind(this)
         .then(function() {
           assert.strictEqual(this.leaveACount, 1);
@@ -523,6 +526,11 @@ describe('statemachine-mixin', function() {
 
           return promise; // Ensure the original transition completed
         })
+        .then(function() {
+          assert.ok(false);
+        }, function(err) {
+          assert.strictEqual(err, resetReason);
+        });
     });
 
 
