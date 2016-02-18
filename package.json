@@ -20,7 +20,7 @@
   "dependencies": {
     "backbone": "1.2.3",
     "backbone-events-standalone": "git://github.com/suprememoocow/backbone-events-standalone.git#e3cf6aaf0742d655687296753836339dcf0ff483",
-    "bluebird": "^3.1.1",
+    "bluebird": "^3.3.1",
     "debug": "^2.0.0",
     "faye-websocket": "~0.10.0",
     "inherits": "^2.0.0",
