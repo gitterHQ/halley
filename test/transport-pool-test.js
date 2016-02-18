@@ -109,7 +109,9 @@ describe('transport pool', function() {
         .bind(this)
         .then(function() {
           assert.ok(false, 'Expected a failure');
-        }, function() {});
+        }, function(e) {
+          assert.strictEqual(e.message, 'Connect fail');
+        });
     });
 
     it('should return polling transport and then switch to streaming when it comes online', function() {
