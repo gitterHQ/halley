@@ -547,10 +547,7 @@ describe('promise-util', function() {
       var count = 0;
 
       var p1 = this.sequencer.chain(function() {
-        console.log('p1. waiting 10');
-        return Promise.delay(10).then(function() {
-          console.log('p1. waiting 10');
-
+        return Promise.delay(1).then(function() {
           count++;
           assert.ok(false);
         });
@@ -562,6 +559,42 @@ describe('promise-util', function() {
 
       p1.cancel();
       return p2;
+    });
+
+    it('should handle the queue being cleared', function() {
+      var count = 0;
+      var p1 = this.sequencer.chain(function() {
+        return Promise.delay(1).then(function() {
+          count++;
+          return "a";
+        });
+      });
+
+      var p2 = this.sequencer.chain(function() {
+        return Promise.delay(1).then(function() {
+          count++;
+        });
+      });
+
+      p2.catch(function() {}); // Stop warnings
+
+      var err = new Error('Queue cleared');
+      this.sequencer.clear(err);
+
+      return p1.reflect()
+        .then(function(r) {
+          assert.strictEqual(count, 1);
+          assert(r.isFulfilled());
+          assert.strictEqual(r.value(), "a");
+
+          return p2.reflect();
+        })
+        .then(function(r) {
+          assert.strictEqual(count, 1);
+          assert(r.isRejected());
+          assert.strictEqual(r.reason(), err);
+        });
+
     });
   });
 
