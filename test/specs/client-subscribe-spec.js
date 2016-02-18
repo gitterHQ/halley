@@ -2,6 +2,7 @@
 
 var assert = require('assert');
 var Promise = require('bluebird');
+var errors = require('../../lib/util/errors');
 
 function defer() {
   var d = {};
@@ -127,6 +128,7 @@ module.exports = function() {
           assert(false);
         })
         .catch(function(err) {
+          assert(err instanceof errors.BayeuxError);
           assert.strictEqual(err.message, 'Invalid subscription');
         });
     });
@@ -137,6 +139,7 @@ module.exports = function() {
           assert(false);
         })
         .catch(function(err) {
+          assert(err instanceof errors.BayeuxError);
           assert.strictEqual(err.message, 'Invalid subscription');
           count++;
         })
