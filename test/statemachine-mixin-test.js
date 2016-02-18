@@ -465,13 +465,17 @@ describe('statemachine-mixin', function() {
         transitions: {
           A: {
             t1: "B",
-            t2: "C"
+            t2: "C",
+            t5: "D"
           },
           B: {
             t3: "C"
           },
           C: {
             t4: "B"
+          },
+          D: {
+            t6: "A"
           },
           DISABLED: {
 
@@ -531,6 +535,23 @@ describe('statemachine-mixin', function() {
         }, function(err) {
           assert.strictEqual(err, resetReason);
         });
+    });
+
+    it('should not cancel the first transition', function() {
+      var promise1 = this.testMachine.transitionState('t5');
+      var promise2 = this.testMachine.transitionState('t5');
+      var promise3 = this.testMachine.transitionState('tXXX');
+
+      var resetReason = new Error('We need to reset');
+      return this.testMachine.resetTransition('disable', resetReason)
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.leaveACount, 1);
+          assert(this.testMachine.stateIs('DISABLED'));
+          assert(promise1.isFulfilled());
+          assert(promise2.reason(), resetReason);
+          assert(promise3.reason(), resetReason);
+      });
     });
 
 

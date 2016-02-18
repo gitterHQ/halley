@@ -47,7 +47,7 @@ module.exports = function() {
           .then(function() {
             assert.ok(false);
           }, function(e) {
-            assert.strictEqual(e.message, 'Client disabled');
+            assert.strictEqual(e.message, 'Unauthorised');
           });
       });
     });
