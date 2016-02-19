@@ -294,17 +294,21 @@ describe('promise-util', function() {
     beforeEach(function() {
       this.count = 0;
       this.throwError = false;
-      this.batcher = new promiseUtil.Throttle(function() {
+      this.throttle = new promiseUtil.Throttle(function() {
         this.count++;
         if (this.throwError) throw new Error('Fail');
       }.bind(this), 10);
+
+      this.slowThrottle = new promiseUtil.Throttle(function() {
+        this.count++;
+      }.bind(this), 1000000);
     });
 
     it('should throttle calls', function() {
       return Promise.all([
-          this.batcher.fire(),
-          this.batcher.fire(),
-          this.batcher.fire()
+          this.throttle.fire(),
+          this.throttle.fire(),
+          this.throttle.fire()
         ])
         .bind(this)
         .then(function() {
@@ -314,10 +318,10 @@ describe('promise-util', function() {
 
     it('should respect fireImmediate', function() {
       return Promise.all([
-          this.batcher.fire(),
-          this.batcher.fire(true),
+          this.throttle.fire(),
+          this.throttle.fire(true),
           Promise.delay(10).bind(this).then(function()  {
-            return this.batcher.fire();
+            return this.throttle.fire();
           })
         ])
         .bind(this)
@@ -326,8 +330,16 @@ describe('promise-util', function() {
         });
     });
 
+    it('should not wait if fireImmediate is called on the first call', function() {
+      return this.slowThrottle.fire(true)
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.count, 1);
+        });
+    });
+
     it('should handle cancellations', function() {
-      var p = this.batcher.fire();
+      var p = this.throttle.fire();
       return Promise.delay(1)
         .bind(this)
         .then(function() {
@@ -342,8 +354,8 @@ describe('promise-util', function() {
     });
 
     it('should isolate cancels from one another', function() {
-      var p = this.batcher.fire();
-      var p2 = this.batcher.fire();
+      var p = this.throttle.fire();
+      var p2 = this.throttle.fire();
 
       return Promise.delay(1)
         .bind(this)
@@ -358,8 +370,8 @@ describe('promise-util', function() {
     });
 
     it('should cancel the trigger when all fires are cancelled', function() {
-      var p = this.batcher.fire();
-      var p2 = this.batcher.fire();
+      var p = this.throttle.fire();
+      var p2 = this.throttle.fire();
 
       return Promise.delay(1)
         .bind(this)
@@ -377,7 +389,7 @@ describe('promise-util', function() {
 
     it('should handle rejections', function() {
       this.throwError = true;
-      return this.batcher.fire()
+      return this.throttle.fire()
         .bind(this)
         .then(function() {
           assert.ok(false, 'Expected error');
