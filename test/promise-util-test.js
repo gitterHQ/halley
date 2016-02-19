@@ -338,6 +338,17 @@ describe('promise-util', function() {
         });
     });
 
+    it('should reject on destroy', function() {
+      var p = this.slowThrottle.fire();
+      var e = new Error();
+      this.slowThrottle.destroy(e);
+      return p.then(function() {
+          assert.ok(false);
+        }, function(err) {
+          assert.strictEqual(err, e);
+        });
+    });
+
     it('should handle cancellations', function() {
       var p = this.throttle.fire();
       return Promise.delay(1)
