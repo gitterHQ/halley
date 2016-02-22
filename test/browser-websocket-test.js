@@ -7,8 +7,6 @@ var Advice = require('../lib/protocol/advice');
 describe('browser websocket transport', function() {
   beforeEach(function() {
     this.dispatcher = {
-      transportDown: function() {
-      },
       handleResponse: function() {
       },
       handleError: function() {

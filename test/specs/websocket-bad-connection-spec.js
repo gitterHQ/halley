@@ -15,7 +15,7 @@ module.exports = function() {
           var self = this;
           return Promise.all([
             new Promise(function(resolve) {
-              self.dispatcher.transportDown = function() {
+              self.dispatcher.handleError = function() {
                 resolve();
               }
             }),
@@ -37,7 +37,7 @@ module.exports = function() {
           var self = this;
           return Promise.all([
             new Promise(function(resolve) {
-              self.dispatcher.transportDown = function() {
+              self.dispatcher.handleError = function() {
                 resolve();
               }
             }),

@@ -48,8 +48,6 @@ describe('transport pool', function() {
 
 
     this.dispatcher = {
-      transportDown: function() {
-      },
       handleResponse: function() {
       },
       handleError: function() {
