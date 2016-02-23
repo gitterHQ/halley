@@ -602,13 +602,12 @@ describe('promise-util', function() {
       p2.catch(function() {}); // Stop warnings
 
       var err = new Error('Queue cleared');
-      this.sequencer.clear(err);
 
-      return p1.reflect()
-        .then(function(r) {
+      return this.sequencer.clear(err)
+        .then(function() {
           assert.strictEqual(count, 1);
-          assert(r.isFulfilled());
-          assert.strictEqual(r.value(), "a");
+          assert(p1.isFulfilled());
+          assert.strictEqual(p1.value(), "a");
 
           return p2.reflect();
         })
@@ -619,6 +618,7 @@ describe('promise-util', function() {
         });
 
     });
+
   });
 
 

@@ -42,4 +42,20 @@ describe('client-long-polling', function() {
 
   });
 
+  describe('invalid-endpoint', function() {
+    beforeEach(function() {
+      this.client = new Halley.Client(this.urlInvalid, {
+        retry: this.clientOptions.retry,
+        timeout: this.clientOptions.timeout,
+        connectionTypes: ['long-polling'],
+        disabled: ['websocket', 'callback-polling']
+      });
+    });
+
+    afterEach(function() {
+      return this.client.disconnect();
+    });
+
+    require('./specs/client-invalid-endpoint-spec')();
+  });
 });
