@@ -134,6 +134,7 @@ gulp.task("webpack-test-suite-browser", function(callback) {
 gulp.task('test-coverage', function() {
   return gulp.src(['test/test-suite-node.js'], { read: false })
     .pipe(mocha({
+      exposeGc: true,
       istanbul: {
         dir: 'dist/coverage'
       }
@@ -143,6 +144,7 @@ gulp.task('test-coverage', function() {
 gulp.task('test', function() {
   return gulp.src(['test/test-suite-node.js'], { read: false })
     .pipe(mocha({
+      exposeGc: true
     }));
 });
 

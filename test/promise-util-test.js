@@ -175,7 +175,12 @@ describe('promise-util', function() {
 
     it('should execute after reject', function() {
       var e = new Error();
-      return promiseUtil.after(Promise.reject(e));
+      var p = Promise.delay(1).throw(e);
+      p.catch(function() {
+        // Dangling catch to prevent bluebird warnings
+      });
+
+      return promiseUtil.after(p);
     });
 
     it('should propogate when the source promise is cancelled', function() {
@@ -289,17 +294,21 @@ describe('promise-util', function() {
     beforeEach(function() {
       this.count = 0;
       this.throwError = false;
-      this.batcher = new promiseUtil.Throttle(function() {
+      this.throttle = new promiseUtil.Throttle(function() {
         this.count++;
         if (this.throwError) throw new Error('Fail');
       }.bind(this), 10);
+
+      this.slowThrottle = new promiseUtil.Throttle(function() {
+        this.count++;
+      }.bind(this), 1000000);
     });
 
     it('should throttle calls', function() {
       return Promise.all([
-          this.batcher.fire(),
-          this.batcher.fire(),
-          this.batcher.fire()
+          this.throttle.fire(),
+          this.throttle.fire(),
+          this.throttle.fire()
         ])
         .bind(this)
         .then(function() {
@@ -309,10 +318,10 @@ describe('promise-util', function() {
 
     it('should respect fireImmediate', function() {
       return Promise.all([
-          this.batcher.fire(),
-          this.batcher.fire(true),
+          this.throttle.fire(),
+          this.throttle.fire(true),
           Promise.delay(10).bind(this).then(function()  {
-            return this.batcher.fire();
+            return this.throttle.fire();
           })
         ])
         .bind(this)
@@ -321,8 +330,27 @@ describe('promise-util', function() {
         });
     });
 
+    it('should not wait if fireImmediate is called on the first call', function() {
+      return this.slowThrottle.fire(true)
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.count, 1);
+        });
+    });
+
+    it('should reject on destroy', function() {
+      var p = this.slowThrottle.fire();
+      var e = new Error();
+      this.slowThrottle.destroy(e);
+      return p.then(function() {
+          assert.ok(false);
+        }, function(err) {
+          assert.strictEqual(err, e);
+        });
+    });
+
     it('should handle cancellations', function() {
-      var p = this.batcher.fire();
+      var p = this.throttle.fire();
       return Promise.delay(1)
         .bind(this)
         .then(function() {
@@ -337,8 +365,8 @@ describe('promise-util', function() {
     });
 
     it('should isolate cancels from one another', function() {
-      var p = this.batcher.fire();
-      var p2 = this.batcher.fire();
+      var p = this.throttle.fire();
+      var p2 = this.throttle.fire();
 
       return Promise.delay(1)
         .bind(this)
@@ -353,8 +381,8 @@ describe('promise-util', function() {
     });
 
     it('should cancel the trigger when all fires are cancelled', function() {
-      var p = this.batcher.fire();
-      var p2 = this.batcher.fire();
+      var p = this.throttle.fire();
+      var p2 = this.throttle.fire();
 
       return Promise.delay(1)
         .bind(this)
@@ -372,7 +400,7 @@ describe('promise-util', function() {
 
     it('should handle rejections', function() {
       this.throwError = true;
-      return this.batcher.fire()
+      return this.throttle.fire()
         .bind(this)
         .then(function() {
           assert.ok(false, 'Expected error');
@@ -513,30 +541,85 @@ describe('promise-util', function() {
         .bind(this)
         .spread(function(a, b) {
           assert(a.isRejected());
+
           assert.strictEqual(a.reason().message, 'Fail');
 
           assert(b.isFulfilled());
           assert.strictEqual(b.value(), 2);
           assert.strictEqual(this.count, 2);
+          return a;
         });
     });
 
 
-    it('should handle cancellations', function() {
-      var promises = [this.sequencer.chain(this.fnWillBeCancelled), this.sequencer.chain(this.fn)];
-      return Promise.all(promises.map(function(promise) {
-          return promise.reflect();
-        }))
-        .bind(this)
-        .spread(function(a, b) {
-          assert(a.isCancelled());
+    it('should handle upstream cancellations', function() {
+      var p1 = this.sequencer.chain(this.fnWillBeCancelled);
+      var p2 = this.sequencer.chain(this.fn);
 
-          assert(b.isFulfilled());
-          assert.strictEqual(b.value(), 2);
+      return p2.bind(this)
+        .then(function(value) {
+          assert(p1.isCancelled());
+
+          assert(p2.isFulfilled());
+          assert.strictEqual(value, 2);
           assert.strictEqual(this.count, 2);
         });
     });
 
+    it('should handle downstream cancellations', function() {
+      var count = 0;
+
+      var p1 = this.sequencer.chain(function() {
+        return Promise.delay(1).then(function() {
+          count++;
+          assert.ok(false);
+        });
+      });
+
+      var p2 = this.sequencer.chain(function() {
+        assert.strictEqual(count, 0);
+      });
+
+      p1.cancel();
+      return p2;
+    });
+
+    it('should handle the queue being cleared', function() {
+      var count = 0;
+      var p1 = this.sequencer.chain(function() {
+        return Promise.delay(1).then(function() {
+          count++;
+          return "a";
+        });
+      });
+
+      var p2 = this.sequencer.chain(function() {
+        return Promise.delay(1).then(function() {
+          count++;
+        });
+      });
+
+      p2.catch(function() {}); // Stop warnings
+
+      var err = new Error('Queue cleared');
+
+      return this.sequencer.clear(err)
+        .then(function() {
+          assert.strictEqual(count, 1);
+          assert(p1.isFulfilled());
+          assert.strictEqual(p1.value(), "a");
+
+          return p2.reflect();
+        })
+        .then(function(r) {
+          assert.strictEqual(count, 1);
+          assert(r.isRejected());
+          assert.strictEqual(r.reason(), err);
+        });
+
+    });
+
   });
+
 
 });

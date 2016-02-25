@@ -51,4 +51,23 @@ describe('client-all-transport', function() {
 
   });
 
+  describe('invalid-endpoint', function() {
+    beforeEach(function() {
+      this.client = new Halley.Client(this.urlInvalid, {
+        retry: this.clientOptions.retry,
+        timeout: this.clientOptions.timeout
+      });
+    });
+
+    afterEach(function() {
+      return this.client.disconnect()
+        .then(function() {
+          // Ensure that all sockets are closed
+          assert.strictEqual(Websocket._countSockets(), 0);
+        });
+    });
+
+    require('./specs/client-invalid-endpoint-spec')();
+  });
+
 });

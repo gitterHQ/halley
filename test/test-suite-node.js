@@ -45,6 +45,7 @@ describe('node-test-suite', function() {
     beforeEach(function() {
       this.urlDirect = this.urls.bayeux;
       this.urlProxied = this.urls.proxied;
+      this.urlInvalid = 'https://127.0.0.2:65534/bayeux';
 
       this.clientOptions = {
         retry: 500,
@@ -65,6 +66,7 @@ describe('node-test-suite', function() {
 
 
   describe('unit tests', function() {
+    require('./errors-test');
     require('./promise-util-test');
     require('./channel-set-test');
     require('./extensions-test');

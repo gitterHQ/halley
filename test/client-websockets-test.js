@@ -53,5 +53,26 @@ describe('client-websocket', function() {
     require('./specs/client-proxied-spec')();
   });
 
+  describe('invalid-endpoint', function() {
+    beforeEach(function() {
+      this.client = new Halley.Client(this.urlInvalid, {
+        retry: this.clientOptions.retry,
+        timeout: this.clientOptions.timeout,
+        
+        connectionTypes: ['websocket'],
+        disabled: ['long-polling', 'callback-polling']
+      });
+    });
+
+    afterEach(function() {
+      return this.client.disconnect()
+        .then(function() {
+          // Ensure that all sockets are closed
+          assert.strictEqual(Websocket._countSockets(), 0);
+        });
+    });
+
+    require('./specs/client-invalid-endpoint-spec')();
+  });
 
 });

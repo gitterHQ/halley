@@ -22,6 +22,36 @@ module.exports = function() {
         });
     });
 
+    describe('should not try reconnect when denied access', function() {
+      beforeEach(function() {
+        this.extension = {
+          outgoing: function(message, callback) {
+            if (message.channel === '/meta/handshake') {
+              message.ext = { deny: true };
+            }
+            callback(message);
+          }
+        };
+
+        this.client.addExtension(this.extension);
+      });
+
+      afterEach(function() {
+        this.client.removeExtension(this.extension);
+      });
+
+      it('should disconnect', function() {
+        var client = this.client;
+
+        return client.connect()
+          .then(function() {
+            assert.ok(false);
+          }, function(e) {
+            assert.strictEqual(e.message, 'Unauthorised');
+          });
+      });
+    });
+
   });
 
 };

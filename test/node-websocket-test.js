@@ -8,8 +8,6 @@ describe('node websocket transport', function() {
 
   beforeEach(function() {
     this.dispatcher = {
-      transportDown: function() {
-      },
       handleResponse: function() {
       },
       handleError: function() {

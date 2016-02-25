@@ -450,6 +450,110 @@ describe('statemachine-mixin', function() {
         });
     });
 
+  });
+
+
+  describe('resetTransition', function() {
+    beforeEach(function() {
+      var self = this;
+      var TEST_FSM = {
+        name: "test",
+        initial: "A",
+        globalTransitions: {
+          disable: "DISABLED"
+        },
+        transitions: {
+          A: {
+            t1: "B",
+            t2: "C",
+            t5: "D"
+          },
+          B: {
+            t3: "C"
+          },
+          C: {
+            t4: "B"
+          },
+          D: {
+            t6: "A"
+          },
+          DISABLED: {
+
+          }
+        }
+      };
+
+      function TestMachine() {
+        this.initStateMachine(TEST_FSM);
+      }
+
+      TestMachine.prototype = {
+        _onLeaveA: function() {
+          self.leaveACount++;
+        },
+        _onEnterB: function() {
+          self.enterBCount++;
+          return Promise.delay(1, 't3');
+        },
+        _onLeaveB: function() {
+          self.leaveBCount++;
+        },
+        _onEnterC: function() {
+          self.enterCCount++;
+          return Promise.delay(1, 't4');
+        }
+      };
+      extend(TestMachine.prototype, StateMachineMixin);
+
+      this.testMachine = new TestMachine();
+      this.leaveACount = 0;
+      this.enterBCount = 0;
+      this.leaveBCount = 0;
+      this.enterCCount = 0;
+    });
+
+    it('should transition', function() {
+      var promise = this.testMachine.transitionState('t1');
+
+      promise.catch(function() {}); // Prevent warnings here
+
+      var resetReason = new Error('We need to reset');
+      return this.testMachine.resetTransition('disable', resetReason)
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.leaveACount, 1);
+          assert.strictEqual(this.enterBCount, 1);
+          assert.strictEqual(this.leaveBCount, 1);
+          assert.strictEqual(this.enterCCount, 0);
+
+          assert(this.testMachine.stateIs('DISABLED'));
+
+          return promise; // Ensure the original transition completed
+        })
+        .then(function() {
+          assert.ok(false);
+        }, function(err) {
+          assert.strictEqual(err, resetReason);
+        });
+    });
+
+    it('should not cancel the first transition', function() {
+      var promise1 = this.testMachine.transitionState('t5');
+      var promise2 = this.testMachine.transitionState('t5');
+      var promise3 = this.testMachine.transitionState('tXXX');
+
+      var resetReason = new Error('We need to reset');
+      return this.testMachine.resetTransition('disable', resetReason)
+        .bind(this)
+        .then(function() {
+          assert.strictEqual(this.leaveACount, 1);
+          assert(this.testMachine.stateIs('DISABLED'));
+          assert(promise1.isFulfilled());
+          assert(promise2.reason(), resetReason);
+          assert(promise3.reason(), resetReason);
+      });
+    });
+
 
   });
 });

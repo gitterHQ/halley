@@ -1,6 +1,6 @@
 'use strict';
 
-var TransportPool = require('../lib/protocol/transport-pool');
+var TransportPool = require('../lib/transport/pool');
 var assert = require('assert');
 var Promise = require('bluebird');
 var sinon = require('sinon');
@@ -48,8 +48,6 @@ describe('transport pool', function() {
 
 
     this.dispatcher = {
-      transportDown: function() {
-      },
       handleResponse: function() {
       },
       handleError: function() {
@@ -109,7 +107,9 @@ describe('transport pool', function() {
         .bind(this)
         .then(function() {
           assert.ok(false, 'Expected a failure');
-        }, function() {});
+        }, function(e) {
+          assert.strictEqual(e.message, 'Connect fail');
+        });
     });
 
     it('should return polling transport and then switch to streaming when it comes online', function() {

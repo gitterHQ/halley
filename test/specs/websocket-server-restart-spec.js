@@ -8,7 +8,7 @@ module.exports = function() {
     it('should terminate if the server disconnects', function() {
       var self = this;
       var mock = sinon.mock(this.dispatcher);
-      mock.expects("transportDown").once();
+      mock.expects("handleError").once();
 
       return this.websocket.connect()
         .bind(this)
