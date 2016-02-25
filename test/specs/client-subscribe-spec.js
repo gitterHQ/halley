@@ -19,17 +19,21 @@ module.exports = function() {
   describe('client-subscribe', function() {
 
     it('should subscribe to a channel and receive messages', function() {
-      var d = defer();
+      var onMessage = defer();
+      var onSubscribe = defer();
 
       var subscription = this.client.subscribe('/datetime', function() {
-        d.resolve();
+        onMessage.resolve();
+      }, null, function() {
+        onSubscribe.resolve();
       });
 
-      return Promise.all([subscription, d.promise]);
+      return Promise.all([subscription, onMessage.promise, onSubscribe.promise]);
     });
 
     it('should unsubscribe a subscription correctly', function() {
       var count = 0;
+      var onSubscribeCount = 0;
       var d = defer();
 
       var subscribe = this.client.subscribe('/datetime', function() {
@@ -37,6 +41,8 @@ module.exports = function() {
         if (count === 2) {
           d.resolve();
         }
+      }, null, function() {
+        onSubscribeCount++;
       });
 
       return Promise.join(subscribe, d.promise, function(subscription) {
@@ -44,13 +50,18 @@ module.exports = function() {
         })
         .bind(this)
         .then(function() {
+          assert.strictEqual(onSubscribeCount, 1);
           assert.deepEqual(this.client.listChannels(), []);
         });
     });
 
     it('should handle subscriptions that are cancelled before establishment, single', function() {
+      var onSubscribeCount = 0;
+
       var subscribe = this.client.subscribe('/datetime', function() {
           assert.ok(false);
+        }, null, function() {
+
         });
 
       return this.client.connect()
@@ -61,18 +72,25 @@ module.exports = function() {
           return subscribe.unsubscribe();
         })
         .then(function() {
+          assert.strictEqual(onSubscribeCount, 0);
           assert.deepEqual(this.client.listChannels(), []);
         });
     });
 
     it('should handle subscriptions that are cancelled before establishment, double', function() {
+      var onSubscribe = 0;
+
       var subscribe1 = this.client.subscribe('/datetime', function() {
           assert.ok(false);
+        }, null, function() {
+          onSubscribe++;
         });
 
       var d = defer();
 
-      var subscribe2 = this.client.subscribe('/datetime', d.resolve);
+      var subscribe2 = this.client.subscribe('/datetime', d.resolve, null, function() {
+        onSubscribe++;
+      });
 
       return this.client.connect()
         .bind(this)
@@ -86,6 +104,7 @@ module.exports = function() {
           return subscribe2;
         })
         .then(function() {
+          assert.strictEqual(onSubscribe, 1);
           assert.deepEqual(this.client.listChannels(), ['/datetime']);
           return d.promise;
         });
