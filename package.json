@@ -19,7 +19,7 @@
   "browser": "./browser-standalone",
   "dependencies": {
     "backbone": "1.2.3",
-    "backbone-events-standalone": "git://github.com/suprememoocow/backbone-events-standalone.git#e3cf6aaf0742d655687296753836339dcf0ff483",
+    "backbone-events-standalone": "github:suprememoocow/backbone-events-standalone#f9b7ec37495f9ef62ebe563d6fdaec89882da0b0",
     "bluebird": "^3.3.1",
     "debug": "^2.0.0",
     "faye-websocket": "~0.10.0",
